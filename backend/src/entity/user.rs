@@ -20,7 +20,8 @@ pub struct Model {
     pub is_bot: bool,
     pub host: String,
     pub inbox: String,
-    pub shared_inbox: String,
+    pub public_key: String,
+    pub private_key: Option<String>,
     pub uri: String,
 }
 

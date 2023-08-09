@@ -48,7 +48,8 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(User::IsBot).boolean().not_null())
                     .col(ColumnDef::new(User::Host).string().not_null())
                     .col(ColumnDef::new(User::Inbox).string().not_null())
-                    .col(ColumnDef::new(User::SharedInbox).string().not_null())
+                    .col(ColumnDef::new(User::PublicKey).string_len(4096).not_null())
+                    .col(ColumnDef::new(User::PrivateKey).string_len(4096))
                     .col(ColumnDef::new(User::Uri).string().not_null())
                     .to_owned(),
             )
@@ -308,7 +309,8 @@ enum User {
     IsBot,
     Host,
     Inbox,
-    SharedInbox,
+    PublicKey,
+    PrivateKey,
     Uri,
 }
 
