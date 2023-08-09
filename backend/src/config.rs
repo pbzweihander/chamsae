@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
-use url::Url;
 
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {
     Config::try_from_env().expect("failed to parse config from environment variables")
@@ -39,7 +38,7 @@ fn default_static_files_directory_path() -> Option<PathBuf> {
 
 #[derive(Clone, Deserialize)]
 pub struct Config {
-    pub domain: Url,
+    pub domain: String,
 
     #[serde(default = "default_listen_addr")]
     pub listen_addr: String,

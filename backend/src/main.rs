@@ -2,8 +2,10 @@ use anyhow::Context;
 use migration::MigratorTrait;
 use sea_orm::Database;
 
+mod ap;
 mod config;
 mod entity;
+mod entity_impl;
 mod error;
 mod handler;
 
@@ -55,7 +57,9 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("failed to migrate database")?;
 
-    let router = crate::handler::create_router(db);
+    let router = crate::handler::create_router(db)
+        .await
+        .context("failed to create router")?;
 
     let listen_addr = &crate::config::CONFIG.listen_addr;
     tracing::info!(%listen_addr, "starting http server...");

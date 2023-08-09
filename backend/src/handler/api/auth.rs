@@ -6,9 +6,9 @@ use axum::{
     response::Redirect,
     routing, Json, RequestPartsExt, Router, TypedHeader,
 };
+use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait};
 use serde::Deserialize;
-use time::OffsetDateTime;
 use ulid::Ulid;
 
 use crate::{
@@ -51,7 +51,7 @@ impl FromRequestParts<AppState> for Access {
             .ok_or_else(|| format_err!(UNAUTHORIZED, "user not authorized"))?;
 
         let mut access_key_activemodel: access_key::ActiveModel = access_key.into();
-        access_key_activemodel.last_used_at = ActiveValue::Set(Some(OffsetDateTime::now_utc()));
+        access_key_activemodel.last_used_at = ActiveValue::Set(Some(Utc::now().fixed_offset()));
         let access_key = access_key_activemodel
             .update(&*state.db)
             .await
@@ -91,7 +91,7 @@ async fn post_login(
         let access_key_activemodel = access_key::ActiveModel {
             id: ActiveValue::Set(Ulid::new().to_string()),
             name: ActiveValue::Set(req.hostname),
-            created_at: ActiveValue::Set(OffsetDateTime::now_utc()),
+            created_at: ActiveValue::Set(Utc::now().fixed_offset()),
             last_used_at: ActiveValue::NotSet,
         };
         let access_key = access_key_activemodel

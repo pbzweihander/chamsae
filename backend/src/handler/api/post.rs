@@ -1,14 +1,11 @@
 use axum::{extract, routing, Json, Router};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue, EntityTrait, FromQueryResult, ModelTrait, PaginatorTrait,
-    QuerySelect, TransactionTrait,
-};
+use chrono::{DateTime, FixedOffset, Utc};
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, PaginatorTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 use ulid::Ulid;
 
 use crate::{
-    entity::{file, post, sea_orm_active_enums, user},
+    entity::{post, sea_orm_active_enums, user},
     error::{Context, Result},
     format_err,
     handler::AppState,
@@ -88,7 +85,7 @@ async fn post_post(
 
     let post_activemodel = post::ActiveModel {
         id: ActiveValue::Set(Ulid::new().to_string()),
-        created_at: ActiveValue::Set(OffsetDateTime::now_utc()),
+        created_at: ActiveValue::Set(Utc::now().fixed_offset()),
         reply_id: ActiveValue::Set(req.reply_id.as_ref().map(Ulid::to_string)),
         repost_id: ActiveValue::Set(req.repost_id.as_ref().map(Ulid::to_string)),
         text: ActiveValue::Set(req.text),
@@ -119,29 +116,18 @@ async fn post_post(
     Ok(())
 }
 
-#[derive(Serialize, FromQueryResult)]
-#[serde(rename_all = "camelCase")]
-struct GetPostRespFile {
-    url: String,
-    thumbnail_url: String,
-    is_sensitive: bool,
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GetPostRespUser {
     handle: Ulid,
     host: String,
-    avatar: GetPostRespFile,
-    is_bot: bool,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GetPostResp {
     id: Ulid,
-    #[serde(with = "time::serde::rfc3339")]
-    created_at: OffsetDateTime,
+    created_at: DateTime<FixedOffset>,
     reply_id: Option<Ulid>,
     repost_id: Option<Ulid>,
     text: String,
@@ -152,7 +138,6 @@ struct GetPostResp {
     reactions: serde_json::Value,
     visibility: Visibility,
     uri: Option<String>,
-    files: Vec<GetPostRespFile>,
 }
 
 async fn get_post(
@@ -171,30 +156,13 @@ async fn get_post(
             .await
             .context_internal_server_error("failed to query database")?
             .ok_or_else(|| format_err!(INTERNAL_SERVER_ERROR, "user not found"))?;
-        let avatar = file::Entity::find_by_id(user.avatar_id)
-            .into_model::<GetPostRespFile>()
-            .one(&*state.db)
-            .await
-            .context_internal_server_error("failed to query database")?
-            .ok_or_else(|| format_err!(INTERNAL_SERVER_ERROR, "failed to find file"))?;
-
         Some(GetPostRespUser {
             handle: Ulid::from_string(&user.id).context_internal_server_error("malformed id")?,
             host: user.host,
-            avatar,
-            is_bot: user.is_bot,
         })
     } else {
         None
     };
-    let files = post
-        .find_related(file::Entity)
-        .select_only()
-        .column(file::Column::Url)
-        .into_model::<GetPostRespFile>()
-        .all(&*state.db)
-        .await
-        .context_internal_server_error("failed to query database")?;
 
     Ok(Json(GetPostResp {
         id: Ulid::from_string(&post.id).context_internal_server_error("malformed id")?,
@@ -224,7 +192,6 @@ async fn get_post(
             sea_orm_active_enums::Visibility::DirectMessage => Visibility::DirectMessage,
         },
         uri: post.uri,
-        files,
     }))
 }
 

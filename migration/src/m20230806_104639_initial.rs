@@ -21,64 +21,17 @@ impl MigrationTrait for Migration {
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(User::UpdatedAt).timestamp_with_time_zone())
-                    .col(ColumnDef::new(User::LastFetchedAt).timestamp_with_time_zone())
-                    .col(ColumnDef::new(User::Handle).string().not_null())
-                    .col(ColumnDef::new(User::Name).string().not_null())
                     .col(
-                        ColumnDef::new(User::FollowerCount)
-                            .unsigned()
-                            .not_null()
-                            .default(0),
-                    )
-                    .col(
-                        ColumnDef::new(User::FollowingCount)
-                            .unsigned()
-                            .not_null()
-                            .default(0),
-                    )
-                    .col(
-                        ColumnDef::new(User::PostCount)
-                            .unsigned()
-                            .not_null()
-                            .default(0),
-                    )
-                    .col(ColumnDef::new(User::AvatarId).string_len(26).not_null())
-                    .col(ColumnDef::new(User::BannerId).string_len(26).not_null())
-                    .col(ColumnDef::new(User::IsBot).boolean().not_null())
-                    .col(ColumnDef::new(User::Host).string().not_null())
-                    .col(ColumnDef::new(User::Inbox).string().not_null())
-                    .col(ColumnDef::new(User::PublicKey).string_len(4096).not_null())
-                    .col(ColumnDef::new(User::PrivateKey).string_len(4096))
-                    .col(ColumnDef::new(User::Uri).string().not_null())
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_table(
-                Table::create()
-                    .table(File::Table)
-                    .col(
-                        ColumnDef::new(File::Id)
-                            .string_len(26)
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(
-                        ColumnDef::new(File::CreatedAt)
+                        ColumnDef::new(User::LastFetchedAt)
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(File::UserId).string_len(26))
-                    .col(ColumnDef::new(File::PostId).string_len(26))
-                    .col(ColumnDef::new(File::Hash).string_len(64).not_null())
-                    .col(ColumnDef::new(File::Mime).string().not_null())
-                    .col(ColumnDef::new(File::Path).string().not_null())
-                    .col(ColumnDef::new(File::Url).string().not_null())
-                    .col(ColumnDef::new(File::ThumbnailUrl).string().not_null())
-                    .col(ColumnDef::new(File::IsSensitive).boolean().not_null())
-                    .col(ColumnDef::new(File::OriginalUrl).string())
+                    .col(ColumnDef::new(User::Handle).string().not_null())
+                    .col(ColumnDef::new(User::Name).string().not_null())
+                    .col(ColumnDef::new(User::Host).string().not_null())
+                    .col(ColumnDef::new(User::Inbox).string().not_null())
+                    .col(ColumnDef::new(User::PublicKey).string_len(4096).not_null())
+                    .col(ColumnDef::new(User::Uri).string().not_null())
                     .to_owned(),
             )
             .await?;
@@ -184,90 +137,10 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .name("user_avatar_id_fkey")
-                    .from(User::Table, User::AvatarId)
-                    .to(File::Table, File::Id)
-                    .on_delete(ForeignKeyAction::SetNull)
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .name("user_banner_id_fkey")
-                    .from(User::Table, User::BannerId)
-                    .to(File::Table, File::Id)
-                    .on_delete(ForeignKeyAction::SetNull)
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .name("file_user_id_fkey")
-                    .from(File::Table, File::UserId)
-                    .to(User::Table, User::Id)
-                    .on_delete(ForeignKeyAction::SetNull)
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .name("file_post_id_fkey")
-                    .from(File::Table, File::PostId)
-                    .to(Post::Table, Post::Id)
-                    .on_delete(ForeignKeyAction::SetNull)
-                    .to_owned(),
-            )
-            .await?;
-
         Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager
-            .drop_foreign_key(
-                ForeignKey::drop()
-                    .table(File::Table)
-                    .name("file_post_id_fkey")
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .drop_foreign_key(
-                ForeignKey::drop()
-                    .table(File::Table)
-                    .name("file_user_id_fkey")
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .drop_foreign_key(
-                ForeignKey::drop()
-                    .table(User::Table)
-                    .name("user_banner_id_fkey")
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .drop_foreign_key(
-                ForeignKey::drop()
-                    .table(User::Table)
-                    .name("user_avatar_id_fkey")
-                    .to_owned(),
-            )
-            .await?;
-
         manager
             .drop_table(Table::drop().table(AccessKey::Table).to_owned())
             .await?;
@@ -278,10 +151,6 @@ impl MigrationTrait for Migration {
 
         manager
             .drop_type(Type::drop().name(Visibility::Table).to_owned())
-            .await?;
-
-        manager
-            .drop_table(Table::drop().table(File::Table).to_owned())
             .await?;
 
         manager
@@ -297,37 +166,13 @@ enum User {
     Table,
     Id,
     CreatedAt,
-    UpdatedAt,
     LastFetchedAt,
     Handle,
     Name,
-    FollowerCount,
-    FollowingCount,
-    PostCount,
-    AvatarId,
-    BannerId,
-    IsBot,
     Host,
     Inbox,
     PublicKey,
-    PrivateKey,
     Uri,
-}
-
-#[derive(Iden)]
-enum File {
-    Table,
-    Id,
-    CreatedAt,
-    UserId,
-    PostId,
-    Hash,
-    Mime,
-    Path,
-    Url,
-    ThumbnailUrl,
-    IsSensitive,
-    OriginalUrl,
 }
 
 #[derive(Iden)]
