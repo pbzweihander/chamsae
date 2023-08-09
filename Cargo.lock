@@ -585,6 +585,7 @@ dependencies = [
  "once_cell",
  "sea-orm",
  "serde",
+ "serde_json",
  "time",
  "tokio",
  "tower-http",

@@ -7,9 +7,11 @@ mod post;
 
 pub(super) fn create_router() -> Router<AppState> {
     let auth = self::auth::create_router();
+    let post = self::post::create_router();
 
     Router::new()
         .nest("/auth", auth)
+        .nest("/post", post)
         .route("/healthz", routing::get(get_healthz))
 }
 
