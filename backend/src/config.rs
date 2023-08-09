@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
+use url::Url;
 
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {
     Config::try_from_env().expect("failed to parse config from environment variables")
@@ -63,12 +64,39 @@ pub struct Config {
     pub user_handle: String,
     /// Password bcrypt hash of the owner user of this instance
     pub user_password_bcrypt: String,
+
+    #[serde(skip)]
+    pub user_id: Option<Url>,
+    #[serde(skip)]
+    pub inbox_url: Option<Url>,
+
+    /// Public key PEM file path for the owner user of this instance
+    pub user_public_key_path: PathBuf,
+    /// Private key PEM file path for the owner user of this instance
+    pub user_private_key_path: PathBuf,
+
+    #[serde(skip)]
+    pub user_public_key: String,
+    #[serde(skip)]
+    pub user_private_key: String,
 }
 
 impl Config {
     pub fn try_from_env() -> Result<Self> {
-        let config: Config =
+        let mut config: Config =
             envy::from_env().context("failed to parse config fro environment variables")?;
+        let user_id = Url::parse(&format!("https://{}/ap/user", config.domain))
+            .context("failed to construct ID URL")?;
+        let inbox_url = Url::parse(&format!("https://{}/ap/inbox", config.domain))
+            .context("failed to construct inbox URL")?;
+        let user_public_key = std::fs::read_to_string(&config.user_public_key_path)
+            .context("failed to read public key file")?;
+        let user_private_key = std::fs::read_to_string(&config.user_private_key_path)
+            .context("failed to read private key file")?;
+        config.user_id = Some(user_id);
+        config.inbox_url = Some(inbox_url);
+        config.user_public_key = user_public_key;
+        config.user_private_key = user_private_key;
         Ok(config)
     }
 }
