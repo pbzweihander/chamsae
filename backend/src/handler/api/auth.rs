@@ -84,36 +84,35 @@ async fn post_login(
     extract::Query(query): extract::Query<PostLoginQuery>,
     Json(req): Json<PostLoginReq>,
 ) -> Result<(HeaderMap, Redirect)> {
-    if CONFIG.user_handle == req.id {
-        if bcrypt::verify(&req.password, &CONFIG.user_password_bcrypt)
+    if CONFIG.user_handle == req.id
+        && bcrypt::verify(&req.password, &CONFIG.user_password_bcrypt)
             .context_bad_request("failed to authenticate")?
-        {
-            let access_key_activemodel = access_key::ActiveModel {
-                id: ActiveValue::Set(Ulid::new().to_string()),
-                name: ActiveValue::Set(req.hostname),
-                created_at: ActiveValue::Set(OffsetDateTime::now_utc()),
-                last_used_at: ActiveValue::NotSet,
-            };
-            let access_key = access_key_activemodel
-                .insert(&*state.db)
-                .await
-                .context_internal_server_error("failed to insert to database")?;
+    {
+        let access_key_activemodel = access_key::ActiveModel {
+            id: ActiveValue::Set(Ulid::new().to_string()),
+            name: ActiveValue::Set(req.hostname),
+            created_at: ActiveValue::Set(OffsetDateTime::now_utc()),
+            last_used_at: ActiveValue::NotSet,
+        };
+        let access_key = access_key_activemodel
+            .insert(&*state.db)
+            .await
+            .context_internal_server_error("failed to insert to database")?;
 
-            let mut header_map = HeaderMap::new();
-            header_map.insert(
-                header::COOKIE,
-                format!("ACCESS_KEY={}; SameSite=Lax; Path=/", access_key.id)
-                    .parse()
-                    .context_internal_server_error("failed to generate header value")?,
-            );
+        let mut header_map = HeaderMap::new();
+        header_map.insert(
+            header::COOKIE,
+            format!("ACCESS_KEY={}; SameSite=Lax; Path=/", access_key.id)
+                .parse()
+                .context_internal_server_error("failed to generate header value")?,
+        );
 
-            let redirect_to = query.redirect_to.as_deref().unwrap_or("/");
+        let redirect_to = query.redirect_to.as_deref().unwrap_or("/");
 
-            return Ok((header_map, Redirect::to(redirect_to)));
-        }
+        Ok((header_map, Redirect::to(redirect_to)))
+    } else {
+        Err(format_err!(BAD_REQUEST, "failed to authenticate"))
     }
-
-    Err(format_err!(BAD_REQUEST, "failed to authenticate"))
 }
 
 async fn get_check(_access: Access) {
