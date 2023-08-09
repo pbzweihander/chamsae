@@ -43,8 +43,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(0),
                     )
-                    .col(ColumnDef::new(User::AvatarId).string_len(26))
-                    .col(ColumnDef::new(User::BannerId).string_len(26))
+                    .col(ColumnDef::new(User::AvatarId).string_len(26).not_null())
+                    .col(ColumnDef::new(User::BannerId).string_len(26).not_null())
                     .col(ColumnDef::new(User::IsBot).boolean().not_null())
                     .col(ColumnDef::new(User::Host).string().not_null())
                     .col(ColumnDef::new(User::Inbox).string().not_null())
