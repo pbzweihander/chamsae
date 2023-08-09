@@ -178,6 +178,7 @@ impl MigrationTrait for Migration {
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
+                    .col(ColumnDef::new(AccessKey::LastUsedAt).timestamp_with_time_zone())
                     .to_owned(),
             )
             .await?;
@@ -354,7 +355,7 @@ enum Visibility {
 }
 
 #[derive(Iden)]
-pub enum AccessKey {
+enum AccessKey {
     Table,
     Id,
     Name,
