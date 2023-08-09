@@ -354,9 +354,10 @@ enum Visibility {
 }
 
 #[derive(Iden)]
-enum AccessKey {
+pub enum AccessKey {
     Table,
     Id,
     Name,
     CreatedAt,
+    LastUsedAt,
 }

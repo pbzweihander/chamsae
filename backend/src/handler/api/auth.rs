@@ -50,6 +50,13 @@ impl FromRequestParts<AppState> for Access {
             .context_internal_server_error("failed to request database")?
             .ok_or_else(|| format_err!(UNAUTHORIZED, "user not authorized"))?;
 
+        let mut access_key_activemodel: access_key::ActiveModel = access_key.into();
+        access_key_activemodel.last_used_at = ActiveValue::Set(Some(OffsetDateTime::now_utc()));
+        let access_key = access_key_activemodel
+            .update(&*state.db)
+            .await
+            .context_internal_server_error("failed to update database")?;
+
         Ok(Access { key: access_key })
     }
 }
@@ -85,6 +92,7 @@ async fn post_login(
                 id: ActiveValue::Set(Ulid::new().to_string()),
                 name: ActiveValue::Set(req.hostname),
                 created_at: ActiveValue::Set(OffsetDateTime::now_utc()),
+                last_used_at: ActiveValue::NotSet,
             };
             let access_key = access_key_activemodel
                 .insert(&*state.db)
