@@ -16,12 +16,12 @@ use crate::{
     entity::user,
     error::{Context, Error},
     format_err,
-    handler::AppState,
+    state::State,
 };
 
 #[async_trait]
 impl Object for user::Model {
-    type DataType = AppState;
+    type DataType = State;
     type Kind = Person;
     type Error = Error;
 

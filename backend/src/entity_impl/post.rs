@@ -15,19 +15,12 @@ use crate::{
     entity::{post, sea_orm_active_enums, user},
     error::{Context, Error},
     format_err,
-    handler::AppState,
+    state::State,
 };
-
-impl post::Model {
-    pub fn local_id(&self) -> Result<Url, Error> {
-        Url::parse(&format!("https://{}/ap/post/{}", CONFIG.domain, self.id))
-            .context_internal_server_error("failed to construct post ID")
-    }
-}
 
 #[async_trait]
 impl Object for post::Model {
-    type DataType = AppState;
+    type DataType = State;
     type Kind = Note;
     type Error = Error;
 
@@ -43,21 +36,18 @@ impl Object for post::Model {
     }
 
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        let (id, user_id) = if let (Some(uri), Some(user_id)) = (&self.uri, &self.user_id) {
-            let id = Url::parse(uri).context_internal_server_error("malformed post URI")?;
+        let user_id = if let Some(user_id) = &self.user_id {
             let user = user::Entity::find_by_id(user_id)
                 .one(&*data.db)
                 .await
                 .context_internal_server_error("failed to query database")?
                 .ok_or_else(|| format_err!(INTERNAL_SERVER_ERROR, "failed to find user"))?;
-            let user_id =
-                Url::parse(&user.uri).context_internal_server_error("malformed user URI")?;
-            (id, user_id)
+
+            Url::parse(&user.uri).context_internal_server_error("malformed user URI")?
         } else {
-            let id = self.local_id()?;
-            let user_id = CONFIG.user_id.clone().unwrap();
-            (id, user_id)
+            CONFIG.user_id.clone().unwrap()
         };
+        let id = Url::parse(&self.uri).context_internal_server_error("malformed post URI")?;
         let in_reply_to_id = if let Some(reply_id) = self.reply_id {
             let reply_post = post::Entity::find_by_id(reply_id)
                 .one(&*data.db)
@@ -66,11 +56,8 @@ impl Object for post::Model {
                 .ok_or_else(|| {
                     format_err!(INTERNAL_SERVER_ERROR, "failed to find reply target post")
                 })?;
-            Some(if let Some(uri) = reply_post.uri {
-                Url::parse(&uri).context_internal_server_error("malformed post URI")?
-            } else {
-                reply_post.local_id()?
-            })
+
+            Some(Url::parse(&reply_post.uri).context_internal_server_error("malformed post URI")?)
         } else {
             None
         };
@@ -104,7 +91,7 @@ impl Object for post::Model {
             title: None,
             user_id: Some(user.id),
             visibility: sea_orm_active_enums::Visibility::Public,
-            uri: Some(json.id.inner().to_string()),
+            uri: json.id.inner().to_string(),
         };
 
         let tx = data

@@ -1,16 +1,17 @@
 use axum::{routing, Router};
 
-use super::AppState;
-
 mod auth;
+mod follow;
 mod post;
 
-pub(super) fn create_router() -> Router<AppState> {
+pub(super) fn create_router() -> Router {
     let auth = self::auth::create_router();
+    let follow = self::follow::create_router();
     let post = self::post::create_router();
 
     Router::new()
         .nest("/auth", auth)
+        .nest("/follow", follow)
         .nest("/post", post)
         .route("/healthz", routing::get(get_healthz))
 }

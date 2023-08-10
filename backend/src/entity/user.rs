@@ -14,13 +14,30 @@ pub struct Model {
     pub host: String,
     pub inbox: String,
     pub public_key: String,
+    #[sea_orm(unique)]
     pub uri: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(has_one = "super::follow::Entity")]
+    Follow,
+    #[sea_orm(has_one = "super::follower::Entity")]
+    Follower,
     #[sea_orm(has_many = "super::post::Entity")]
     Post,
+}
+
+impl Related<super::follow::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Follow.def()
+    }
+}
+
+impl Related<super::follower::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Follower.def()
+    }
 }
 
 impl Related<super::post::Entity> for Entity {

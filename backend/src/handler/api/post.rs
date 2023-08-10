@@ -1,3 +1,4 @@
+use activitypub_federation::{config::Data, traits::Object};
 use axum::{extract, routing, Json, Router};
 use chrono::{DateTime, FixedOffset, Utc};
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, PaginatorTrait, TransactionTrait};
@@ -5,15 +6,16 @@ use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
 use crate::{
+    config::CONFIG,
     entity::{post, sea_orm_active_enums, user},
     error::{Context, Result},
     format_err,
-    handler::AppState,
+    state::State,
 };
 
 use super::auth::Access;
 
-pub(super) fn create_router() -> Router<AppState> {
+pub(super) fn create_router() -> Router {
     Router::new()
         .route("/", routing::post(post_post))
         .route("/:id", routing::get(get_post).delete(delete_post))
@@ -37,16 +39,12 @@ struct PostPostReq {
     visibility: Visibility,
 }
 
-async fn post_post(
-    extract::State(state): extract::State<AppState>,
-    _access: Access,
-    Json(req): Json<PostPostReq>,
-) -> Result<()> {
-    let tx = state
+async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostReq>) -> Result<()> {
+    let tx = data
         .db
         .begin()
         .await
-        .context_internal_server_error("failed to start database transaction")?;
+        .context_internal_server_error("failed to begin database transaction")?;
 
     if let Some(reply_id) = &req.reply_id {
         let reply_post_count = post::Entity::find_by_id(reply_id.to_string())
@@ -58,8 +56,9 @@ async fn post_post(
         }
     }
 
+    let id = Ulid::new();
     let post_activemodel = post::ActiveModel {
-        id: ActiveValue::Set(Ulid::new().to_string()),
+        id: ActiveValue::Set(id.to_string()),
         created_at: ActiveValue::Set(Utc::now().fixed_offset()),
         reply_id: ActiveValue::Set(req.reply_id.as_ref().map(Ulid::to_string)),
         text: ActiveValue::Set(req.text),
@@ -71,9 +70,9 @@ async fn post_post(
             Visibility::Followers => sea_orm_active_enums::Visibility::Followers,
             Visibility::DirectMessage => sea_orm_active_enums::Visibility::DirectMessage,
         }),
-        uri: ActiveValue::Set(None),
+        uri: ActiveValue::Set(format!("https://{}/ap/post/{}", CONFIG.domain, id)),
     };
-    post_activemodel
+    let post = post_activemodel
         .insert(&tx)
         .await
         .context_internal_server_error("failed to insert to database")?;
@@ -82,7 +81,9 @@ async fn post_post(
         .await
         .context_internal_server_error("failed to commmit database transaction")?;
 
-    // TODO: broadcast via ActivityPub
+    let post = post.into_json(&data).await?;
+    let create = post.into_create()?;
+    create.send(&data).await?;
 
     Ok(())
 }
@@ -104,22 +105,22 @@ struct GetPostResp {
     title: Option<String>,
     user: Option<GetPostRespUser>,
     visibility: Visibility,
-    uri: Option<String>,
+    uri: String,
 }
 
 async fn get_post(
+    data: Data<State>,
     extract::Path(id): extract::Path<Ulid>,
-    extract::State(state): extract::State<AppState>,
     _access: Access,
 ) -> Result<Json<GetPostResp>> {
     let post = post::Entity::find_by_id(id.to_string())
-        .one(&*state.db)
+        .one(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?
         .ok_or_else(|| format_err!(NOT_FOUND, "post not found"))?;
     let user = if let Some(user_id) = &post.user_id {
         let user = user::Entity::find_by_id(user_id.to_string())
-            .one(&*state.db)
+            .one(&*data.db)
             .await
             .context_internal_server_error("failed to query database")?
             .ok_or_else(|| format_err!(INTERNAL_SERVER_ERROR, "user not found"))?;
@@ -154,11 +155,11 @@ async fn get_post(
 }
 
 async fn delete_post(
+    data: Data<State>,
     extract::Path(id): extract::Path<Ulid>,
-    extract::State(state): extract::State<AppState>,
     _access: Access,
 ) -> Result<()> {
-    let tx = state
+    let tx = data
         .db
         .begin()
         .await
@@ -170,7 +171,7 @@ async fn delete_post(
         .context_internal_server_error("failed to query database")?;
 
     if post_count == 0 {
-        return Err(format_err!(NOT_FOUND, "post not found"));
+        return Ok(());
     }
 
     post::Entity::delete_by_id(id.to_string())

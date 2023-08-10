@@ -9,13 +9,13 @@ use activitypub_federation::{
 // use axum::{routing, Router};
 
 use crate::{
-    ap::{Person, PersonAcceptedActivity},
+    ap::{Activity, Person},
     config::CONFIG,
     entity::user,
     error::Result,
 };
 
-use super::AppState;
+use super::State;
 
 // pub(super) fn create_router() -> Router {
 //     Router::new()
@@ -40,10 +40,7 @@ pub(super) async fn get_user() -> FederationJson<WithContext<Person>> {
     FederationJson(WithContext::new_default(user))
 }
 
-pub(super) async fn post_inbox(data: Data<AppState>, activity_data: ActivityData) -> Result<()> {
-    receive_activity::<WithContext<PersonAcceptedActivity>, user::Model, AppState>(
-        activity_data,
-        &data,
-    )
-    .await
+pub(super) async fn post_inbox(data: Data<State>, activity_data: ActivityData) -> Result<()> {
+    tracing::info!(?activity_data, "activity data"); // TODO: remove
+    receive_activity::<WithContext<Activity>, user::Model, State>(activity_data, &data).await
 }

@@ -1,3 +1,4 @@
+use activitypub_federation::config::Data;
 use async_trait::async_trait;
 use axum::{
     extract::{self, rejection::TypedHeaderRejectionReason, FromRequestParts},
@@ -7,7 +8,7 @@ use axum::{
     routing, Json, RequestPartsExt, Router, TypedHeader,
 };
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, TransactionTrait};
 use serde::Deserialize;
 use ulid::Ulid;
 
@@ -16,7 +17,7 @@ use crate::{
     entity::access_key,
     error::{Context, Error, Result},
     format_err,
-    handler::AppState,
+    state::State,
 };
 
 pub struct Access {
@@ -24,10 +25,17 @@ pub struct Access {
 }
 
 #[async_trait]
-impl FromRequestParts<AppState> for Access {
+impl<S> FromRequestParts<S> for Access
+where
+    S: Clone + Send + Sync + 'static,
+{
     type Rejection = Error;
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self> {
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
+        let data = parts
+            .extract::<Data<State>>()
+            .await
+            .map_err(|(code, message)| Error::new(code, message))?;
         let cookies = parts
             .extract::<TypedHeader<headers::Cookie>>()
             .await
@@ -40,12 +48,19 @@ impl FromRequestParts<AppState> for Access {
                 },
                 _ => format_err!(INTERNAL_SERVER_ERROR, "failed to authorize"),
             })?;
+
         let access_key_id = cookies
             .get("ACCESS_KEY")
             .ok_or(format_err!(UNAUTHORIZED, "user not authorized"))?;
 
+        let tx = data
+            .db
+            .begin()
+            .await
+            .context_internal_server_error("failed to begin database transaction")?;
+
         let access_key = access_key::Entity::find_by_id(access_key_id)
-            .one(&*state.db)
+            .one(&tx)
             .await
             .context_internal_server_error("failed to request database")?
             .ok_or_else(|| format_err!(UNAUTHORIZED, "user not authorized"))?;
@@ -53,15 +68,19 @@ impl FromRequestParts<AppState> for Access {
         let mut access_key_activemodel: access_key::ActiveModel = access_key.into();
         access_key_activemodel.last_used_at = ActiveValue::Set(Some(Utc::now().fixed_offset()));
         let access_key = access_key_activemodel
-            .update(&*state.db)
+            .update(&tx)
             .await
             .context_internal_server_error("failed to update database")?;
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
 
         Ok(Access { key: access_key })
     }
 }
 
-pub(super) fn create_router() -> Router<AppState> {
+pub(super) fn create_router() -> Router {
     Router::new()
         .route("/login", routing::post(post_login))
         .route("/check", routing::get(get_check))
@@ -80,7 +99,7 @@ struct PostLoginReq {
 }
 
 async fn post_login(
-    extract::State(state): extract::State<AppState>,
+    data: Data<State>,
     extract::Query(query): extract::Query<PostLoginQuery>,
     Json(req): Json<PostLoginReq>,
 ) -> Result<(HeaderMap, Redirect)> {
@@ -95,7 +114,7 @@ async fn post_login(
             last_used_at: ActiveValue::NotSet,
         };
         let access_key = access_key_activemodel
-            .insert(&*state.db)
+            .insert(&*data.db)
             .await
             .context_internal_server_error("failed to insert to database")?;
 

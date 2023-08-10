@@ -9,6 +9,7 @@ mod entity;
 mod entity_impl;
 mod error;
 mod handler;
+mod state;
 
 async fn shutdown_signal() {
     let ctrl_c = async {

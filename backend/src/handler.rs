@@ -17,6 +17,7 @@ use crate::{
     config::CONFIG,
     error::{Context, Result},
     format_err,
+    state::State,
 };
 
 mod ap;
@@ -33,13 +34,8 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
     resp
 }
 
-#[derive(Clone)]
-pub struct AppState {
-    pub db: Arc<DatabaseConnection>,
-}
-
 pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
-    let state = AppState { db: Arc::new(db) };
+    let state = State { db: Arc::new(db) };
 
     let federation_config = anyhow::Context::context(
         FederationConfig::builder()
@@ -56,7 +52,6 @@ pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
 
     let router = Router::new()
         .nest("/api", api)
-        .with_state(state)
         // .nest("/ap", ap)
         // TODO: We cannot use nested router because of https://github.com/LemmyNet/activitypub-federation-rust/issues/73
         .route("/ap/user", routing::get(self::ap::get_user))
@@ -86,7 +81,7 @@ struct GetWebfingerQuery {
 
 async fn get_webfinger(
     extract::Query(query): extract::Query<GetWebfingerQuery>,
-    data: Data<AppState>,
+    data: Data<State>,
 ) -> Result<Json<Webfinger>> {
     let name = extract_webfinger_name(&query.resource, &data)
         .context_bad_request("failed to extract resource name")?;

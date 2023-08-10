@@ -31,7 +31,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(User::Host).string().not_null())
                     .col(ColumnDef::new(User::Inbox).string().not_null())
                     .col(ColumnDef::new(User::PublicKey).string_len(4096).not_null())
-                    .col(ColumnDef::new(User::Uri).string().not_null())
+                    .col(ColumnDef::new(User::Uri).string().not_null().unique_key())
                     .to_owned(),
             )
             .await?;
@@ -82,7 +82,7 @@ impl MigrationTrait for Migration {
                             )
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Post::Uri).string())
+                    .col(ColumnDef::new(Post::Uri).string().not_null().unique_key())
                     .foreign_key(
                         ForeignKey::create()
                             .from(Post::Table, Post::ReplyId)
@@ -118,10 +118,75 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        manager
+            .create_table(
+                Table::create()
+                    .table(Follow::Table)
+                    .col(
+                        ColumnDef::new(Follow::Id)
+                            .string_len(26)
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Follow::ToId)
+                            .string_len(26)
+                            .not_null()
+                            .unique_key(),
+                    )
+                    .col(ColumnDef::new(Follow::Accepted).boolean().not_null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Follow::Table, Follow::ToId)
+                            .to(User::Table, User::Id),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_table(
+                Table::create()
+                    .table(Follower::Table)
+                    .col(
+                        ColumnDef::new(Follower::Id)
+                            .string_len(26)
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Follower::FromId)
+                            .string_len(26)
+                            .not_null()
+                            .unique_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Follower::Uri)
+                            .string()
+                            .not_null()
+                            .unique_key(),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Follower::Table, Follower::FromId)
+                            .to(User::Table, User::Id),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(Table::drop().table(Follower::Table).to_owned())
+            .await?;
+
+        manager
+            .drop_table(Table::drop().table(Follow::Table).to_owned())
+            .await?;
+
         manager
             .drop_table(Table::drop().table(AccessKey::Table).to_owned())
             .await?;
@@ -185,4 +250,20 @@ enum AccessKey {
     Name,
     CreatedAt,
     LastUsedAt,
+}
+
+#[derive(Iden)]
+enum Follow {
+    Table,
+    Id,
+    ToId,
+    Accepted,
+}
+
+#[derive(Iden)]
+enum Follower {
+    Table,
+    Id,
+    FromId,
+    Uri,
 }

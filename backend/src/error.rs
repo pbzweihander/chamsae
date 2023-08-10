@@ -15,6 +15,19 @@ pub struct Error {
     pub status_code: StatusCode,
 }
 
+impl Error {
+    pub fn new<M>(status_code: StatusCode, message: M) -> Self
+    where
+        M: fmt::Display + fmt::Debug + Send + Sync + 'static,
+    {
+        Self {
+            id: Ulid::new(),
+            inner: anyhow::Error::msg(message),
+            status_code,
+        }
+    }
+}
+
 #[derive(Serialize)]
 struct ResponseError {
     id: Ulid,
