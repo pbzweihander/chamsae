@@ -6,8 +6,8 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 
 ## Features
 
-- Mastodon or Misskey like microblogging service
-- Misskey like emoji reactions
+- ~~Mastodon or Misskey like microblogging service~~ TODO
+- ~~Misskey like emoji reactions~~ TODO
 
 ## Usage
 
