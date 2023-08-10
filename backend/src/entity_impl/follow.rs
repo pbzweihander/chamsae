@@ -60,9 +60,9 @@ impl Object for follow::Model {
             Url::parse(&to_user_id).context_internal_server_error("malformed user URI")?;
         Ok(Self::Kind {
             ty: Default::default(),
-            id: self.ap_id()?.into(),
+            id: self.ap_id()?,
             actor: CONFIG.user_id.clone().unwrap(),
-            object: to_user_id.into(),
+            object: to_user_id,
         })
     }
 
@@ -71,7 +71,7 @@ impl Object for follow::Model {
         expected_domain: &Url,
         _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
-        verify_domains_match(json.id.inner(), expected_domain)
+        verify_domains_match(&json.id, expected_domain)
             .context_bad_request("failed to verify domain")
     }
 

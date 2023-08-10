@@ -1,15 +1,17 @@
 use activitypub_federation::{
-    config::Data, protocol::verification::verify_domains_match, traits::Object,
+    config::Data, fetch::object_id::ObjectId, protocol::verification::verify_domains_match,
+    traits::Object,
 };
 use async_trait::async_trait;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QuerySelect, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
+    QuerySelect, TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
 
 use crate::{
-    ap::Follower,
+    ap::Follow,
     config::CONFIG,
     entity::{follower, user},
     error::{Context, Error},
@@ -20,7 +22,7 @@ use crate::{
 #[async_trait]
 impl Object for follower::Model {
     type DataType = State;
-    type Kind = Follower;
+    type Kind = Follow;
     type Error = Error;
 
     async fn read_from_id(
@@ -47,10 +49,8 @@ impl Object for follower::Model {
             Url::parse(&from_user_id).context_internal_server_error("malformed user URI")?;
         Ok(Self::Kind {
             ty: Default::default(),
-            id: Url::parse(&self.uri)
-                .context_internal_server_error("malformed follower URI")?
-                .into(),
-            actor: from_user_id.into(),
+            id: Url::parse(&self.uri).context_internal_server_error("malformed follower URI")?,
+            actor: from_user_id,
             object: CONFIG.user_id.clone().unwrap(),
         })
     }
@@ -60,16 +60,17 @@ impl Object for follower::Model {
         expected_domain: &Url,
         _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
-        verify_domains_match(json.id.inner(), expected_domain)
+        verify_domains_match(&json.id, expected_domain)
             .context_bad_request("failed to verify domain")
     }
 
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
-        let from_user = json.actor.dereference(data).await?;
+        let actor: ObjectId<user::Model> = json.actor.into();
+        let from_user = actor.dereference(data).await?;
         let this = Self {
             id: Ulid::new().to_string(),
             from_id: from_user.id.clone(),
-            uri: json.id.inner().to_string(),
+            uri: json.id.to_string(),
         };
 
         let tx = data
@@ -81,7 +82,7 @@ impl Object for follower::Model {
         let existing_id = follower::Entity::find()
             .filter(
                 follower::Column::Uri
-                    .eq(json.id.inner().to_string())
+                    .eq(json.id.to_string())
                     .or(follower::Column::FromId.eq(&from_user.id)),
             )
             .select_only()
@@ -106,5 +107,27 @@ impl Object for follower::Model {
         };
 
         Ok(this)
+    }
+
+    async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        let tx = data
+            .db
+            .begin()
+            .await
+            .context_internal_server_error("failed to begin database transaction")?;
+        let existing_count = follower::Entity::find_by_id(&self.id)
+            .count(&tx)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        if existing_count == 0 {
+            return Ok(());
+        }
+        ModelTrait::delete(self, &tx)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
+        Ok(())
     }
 }

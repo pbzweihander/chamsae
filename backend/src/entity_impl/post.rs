@@ -4,7 +4,8 @@ use activitypub_federation::{
 use async_trait::async_trait;
 use chrono::Utc;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QuerySelect, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
+    QuerySelect, TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
@@ -124,5 +125,27 @@ impl Object for post::Model {
         };
 
         Ok(this)
+    }
+
+    async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        let tx = data
+            .db
+            .begin()
+            .await
+            .context_internal_server_error("failed to begin database transaction")?;
+        let existing_count = post::Entity::find_by_id(&self.id)
+            .count(&tx)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        if existing_count == 0 {
+            return Ok(());
+        }
+        ModelTrait::delete(self, &tx)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
+        Ok(())
     }
 }

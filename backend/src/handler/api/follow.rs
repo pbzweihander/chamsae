@@ -1,14 +1,16 @@
-use activitypub_federation::{config::Data, traits::Object};
+use activitypub_federation::{config::Data, fetch::object_id::ObjectId, traits::Object};
 use axum::{extract, routing, Json, Router};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter,
-    TransactionTrait,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
+    QueryFilter, TransactionTrait,
 };
 use serde::Deserialize;
 use ulid::Ulid;
+use url::Url;
 
 use crate::{
-    entity::follow,
+    ap::{Follow, Undo},
+    entity::{follow, user},
     error::{Context, Result},
     state::State,
 };
@@ -79,26 +81,32 @@ async fn delete_follow(
         .await
         .context_internal_server_error("failed to begin database transaction")?;
 
-    let existing_count = follow::Entity::find()
+    let existing = follow::Entity::find()
         .filter(follow::Column::ToId.eq(id.to_string()))
-        .count(&tx)
+        .one(&tx)
         .await
         .context_internal_server_error("failed to query database")?;
 
-    if existing_count == 0 {
-        return Ok(());
+    if let Some(existing) = existing {
+        let ap = existing.clone().into_json(&data).await?;
+
+        ModelTrait::delete(existing, &tx)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
+
+        let object_id: ObjectId<user::Model> = ap.object.clone().into();
+        let object = object_id.dereference(&data).await?;
+        let inbox =
+            Url::parse(&object.inbox).context_internal_server_error("malformed user inbox URL")?;
+        let undo = Undo::<Follow, follow::Model>::new(ap)?;
+        undo.send(&data, vec![inbox]).await?;
+
+        Ok(())
+    } else {
+        Ok(())
     }
-
-    follow::Entity::delete_by_id(id.to_string())
-        .exec(&tx)
-        .await
-        .context_internal_server_error("failed to delete from database")?;
-
-    tx.commit()
-        .await
-        .context_internal_server_error("failed to commit database transaction")?;
-
-    // TODO: broadcast via ActivityPub
-
-    Ok(())
 }

@@ -1,11 +1,14 @@
 use activitypub_federation::{config::Data, traits::Object};
 use axum::{extract, routing, Json, Router};
 use chrono::{DateTime, FixedOffset, Utc};
-use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, PaginatorTrait, TransactionTrait};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, EntityTrait, ModelTrait, PaginatorTrait, TransactionTrait,
+};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
 use crate::{
+    ap::Delete,
     config::CONFIG,
     entity::{post, sea_orm_active_enums, user},
     error::{Context, Result},
@@ -165,25 +168,30 @@ async fn delete_post(
         .await
         .context_internal_server_error("failed to begin database transaction")?;
 
-    let post_count = post::Entity::find_by_id(id.to_string())
-        .count(&tx)
+    let existing = post::Entity::find_by_id(id.to_string())
+        .one(&tx)
         .await
         .context_internal_server_error("failed to query database")?;
 
-    if post_count == 0 {
-        return Ok(());
+    if let Some(existing) = existing {
+        let uri = existing.uri.clone();
+
+        ModelTrait::delete(existing, &tx)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
+
+        let delete = Delete::new(
+            uri.parse()
+                .context_internal_server_error("malformed post URI")?,
+        )?;
+        delete.send(&data).await?;
+
+        Ok(())
+    } else {
+        Ok(())
     }
-
-    post::Entity::delete_by_id(id.to_string())
-        .exec(&tx)
-        .await
-        .context_internal_server_error("failed to delete from database")?;
-
-    tx.commit()
-        .await
-        .context_internal_server_error("failed to commit database transaction")?;
-
-    // TODO: broadcast via ActivityPub
-
-    Ok(())
 }

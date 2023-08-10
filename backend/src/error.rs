@@ -41,7 +41,9 @@ impl IntoResponse for Error {
             error: self.inner.to_string(),
         };
         if self.status_code.is_server_error() {
-            tracing::error!(id = %self.id, error = ?self.inner, "response error");
+            tracing::error!(id = %self.id, error = ?self.inner, "server error");
+        } else {
+            tracing::warn!(id = %self.id, error = ?self.inner, "client error");
         }
         (self.status_code, Json(resp)).into_response()
     }
