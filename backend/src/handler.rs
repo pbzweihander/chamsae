@@ -7,7 +7,11 @@ use activitypub_federation::{
 use axum::{extract, http::Request, middleware::Next, response::Response, routing, Json, Router};
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::{
+    services::{ServeDir, ServeFile},
+    trace::{DefaultMakeSpan, TraceLayer},
+};
+use tracing::Level;
 
 use crate::{
     config::CONFIG,
@@ -41,20 +45,27 @@ pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
         FederationConfig::builder()
             .domain(&crate::config::CONFIG.domain)
             .app_data(state.clone())
+            .debug(true) // TODO: remove
             .build()
             .await,
         "failed to build federation config",
     )?;
 
-    let ap = self::ap::create_router();
+    // let ap = self::ap::create_router();
     let api = self::api::create_router();
 
     let router = Router::new()
         .nest("/api", api)
         .with_state(state)
-        .nest("/ap", ap)
+        // .nest("/ap", ap)
+        // TODO: We cannot use nested router because of https://github.com/LemmyNet/activitypub-federation-rust/issues/73
+        .route("/ap/user", routing::get(self::ap::get_user))
+        .route("/ap/inbox", routing::post(self::ap::post_inbox))
         .route("/.well-known/webfinger", routing::get(get_webfinger))
-        .layer(FederationMiddleware::new(federation_config));
+        .layer(FederationMiddleware::new(federation_config))
+        .layer(
+            TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)),
+        );
 
     let router = if let Some(dir) = &CONFIG.static_files_directory_path {
         router.nest_service(

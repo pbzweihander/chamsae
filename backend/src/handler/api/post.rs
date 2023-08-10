@@ -32,7 +32,6 @@ enum Visibility {
 #[serde(rename_all = "camelCase")]
 struct PostPostReq {
     reply_id: Option<Ulid>,
-    repost_id: Option<Ulid>,
     text: String,
     title: Option<String>,
     visibility: Visibility,
@@ -43,20 +42,6 @@ async fn post_post(
     _access: Access,
     Json(req): Json<PostPostReq>,
 ) -> Result<()> {
-    if req.reply_id.is_some() && req.repost_id.is_some() {
-        return Err(format_err!(
-            BAD_REQUEST,
-            "cannot reply and repost at same time"
-        ));
-    }
-
-    if req.repost_id.is_some() && (!req.text.is_empty() || req.title.is_some()) {
-        return Err(format_err!(
-            BAD_REQUEST,
-            "cannot set text or title while reposting"
-        ));
-    }
-
     let tx = state
         .db
         .begin()
@@ -73,27 +58,13 @@ async fn post_post(
         }
     }
 
-    if let Some(repost_id) = &req.repost_id {
-        let repost_post_count = post::Entity::find_by_id(repost_id.to_string())
-            .count(&tx)
-            .await
-            .context_internal_server_error("failed to request database")?;
-        if repost_post_count == 0 {
-            return Err(format_err!(NOT_FOUND, "repost target post not found"));
-        }
-    }
-
     let post_activemodel = post::ActiveModel {
         id: ActiveValue::Set(Ulid::new().to_string()),
         created_at: ActiveValue::Set(Utc::now().fixed_offset()),
         reply_id: ActiveValue::Set(req.reply_id.as_ref().map(Ulid::to_string)),
-        repost_id: ActiveValue::Set(req.repost_id.as_ref().map(Ulid::to_string)),
         text: ActiveValue::Set(req.text),
         title: ActiveValue::Set(req.title),
         user_id: ActiveValue::Set(None),
-        repost_count: ActiveValue::Set(0),
-        reply_count: ActiveValue::Set(0),
-        reactions: ActiveValue::Set(serde_json::Value::Object(serde_json::Map::new())),
         visibility: ActiveValue::Set(match req.visibility {
             Visibility::Public => sea_orm_active_enums::Visibility::Public,
             Visibility::Home => sea_orm_active_enums::Visibility::Home,
@@ -129,13 +100,9 @@ struct GetPostResp {
     id: Ulid,
     created_at: DateTime<FixedOffset>,
     reply_id: Option<Ulid>,
-    repost_id: Option<Ulid>,
     text: String,
     title: Option<String>,
     user: Option<GetPostRespUser>,
-    repost_count: i32,
-    reply_count: i32,
-    reactions: serde_json::Value,
     visibility: Visibility,
     uri: Option<String>,
 }
@@ -173,18 +140,9 @@ async fn get_post(
             .map(Ulid::from_string)
             .transpose()
             .context_internal_server_error("malformed id")?,
-        repost_id: post
-            .repost_id
-            .as_deref()
-            .map(Ulid::from_string)
-            .transpose()
-            .context_internal_server_error("malformed id")?,
         text: post.text,
         title: post.title,
         user,
-        repost_count: post.repost_count,
-        reply_count: post.reply_count,
-        reactions: post.reactions,
         visibility: match post.visibility {
             sea_orm_active_enums::Visibility::Public => Visibility::Public,
             sea_orm_active_enums::Visibility::Home => Visibility::Home,

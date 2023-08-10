@@ -27,7 +27,7 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(ColumnDef::new(User::Handle).string().not_null())
-                    .col(ColumnDef::new(User::Name).string().not_null())
+                    .col(ColumnDef::new(User::Name).string())
                     .col(ColumnDef::new(User::Host).string().not_null())
                     .col(ColumnDef::new(User::Inbox).string().not_null())
                     .col(ColumnDef::new(User::PublicKey).string_len(4096).not_null())
@@ -66,23 +66,9 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(ColumnDef::new(Post::ReplyId).string_len(26))
-                    .col(ColumnDef::new(Post::RepostId).string_len(26))
                     .col(ColumnDef::new(Post::Text).string().not_null())
                     .col(ColumnDef::new(Post::Title).string())
                     .col(ColumnDef::new(Post::UserId).string_len(26))
-                    .col(
-                        ColumnDef::new(Post::RepostCount)
-                            .unsigned()
-                            .not_null()
-                            .default(0),
-                    )
-                    .col(
-                        ColumnDef::new(Post::ReplyCount)
-                            .unsigned()
-                            .not_null()
-                            .default(0),
-                    )
-                    .col(ColumnDef::new(Post::Reactions).json_binary().not_null())
                     .col(
                         ColumnDef::new(Post::Visibility)
                             .enumeration(
@@ -100,11 +86,6 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .from(Post::Table, Post::ReplyId)
-                            .to(Post::Table, Post::Id),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .from(Post::Table, Post::RepostId)
                             .to(Post::Table, Post::Id),
                     )
                     .foreign_key(
@@ -181,13 +162,9 @@ enum Post {
     Id,
     CreatedAt,
     ReplyId,
-    RepostId,
     Text,
     Title,
     UserId,
-    RepostCount,
-    ReplyCount,
-    Reactions,
     Visibility,
     Uri,
 }

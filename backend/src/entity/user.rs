@@ -10,7 +10,7 @@ pub struct Model {
     pub created_at: DateTimeWithTimeZone,
     pub last_fetched_at: DateTimeWithTimeZone,
     pub handle: String,
-    pub name: String,
+    pub name: Option<String>,
     pub host: String,
     pub inbox: String,
     pub public_key: String,

@@ -10,14 +10,9 @@ pub struct Model {
     pub id: String,
     pub created_at: DateTimeWithTimeZone,
     pub reply_id: Option<String>,
-    pub repost_id: Option<String>,
     pub text: String,
     pub title: Option<String>,
     pub user_id: Option<String>,
-    pub repost_count: i32,
-    pub reply_count: i32,
-    #[sea_orm(column_type = "JsonBinary")]
-    pub reactions: Json,
     pub visibility: Visibility,
     pub uri: Option<String>,
 }
@@ -31,15 +26,7 @@ pub enum Relation {
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    SelfRef2,
-    #[sea_orm(
-        belongs_to = "Entity",
-        from = "Column::RepostId",
-        to = "Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    SelfRef1,
+    SelfRef,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::UserId",

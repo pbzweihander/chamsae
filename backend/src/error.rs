@@ -27,7 +27,23 @@ impl IntoResponse for Error {
             id: self.id,
             error: self.inner.to_string(),
         };
+        if self.status_code.is_server_error() {
+            tracing::error!(id = %self.id, error = ?self.inner, "response error");
+        }
         (self.status_code, Json(resp)).into_response()
+    }
+}
+
+impl<E> From<E> for Error
+where
+    anyhow::Error: From<E>,
+{
+    fn from(value: E) -> Self {
+        Self {
+            id: Ulid::new(),
+            inner: value.into(),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
 }
 
