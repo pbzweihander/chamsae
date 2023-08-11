@@ -14,7 +14,6 @@ pub struct Model {
     pub title: Option<String>,
     pub user_id: Option<Uuid>,
     pub visibility: Visibility,
-    #[sea_orm(unique)]
     pub is_sensitive: bool,
     #[sea_orm(unique)]
     pub uri: String,
