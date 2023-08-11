@@ -1,5 +1,5 @@
-name: frontend-dprint
-run-name: "Frontend: dprint"
+name: frontend-format
+run-name: "Frontend: format"
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   pull_request:
 
 jobs:
-  prettier:
+  format:
     runs-on: ubuntu-latest
     container: node:20
     steps:
