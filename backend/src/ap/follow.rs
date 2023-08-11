@@ -107,7 +107,7 @@ impl ActivityHandler for FollowAccept {
     }
 
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        verify_domains_match(&self.object.id, &self.id)
+        verify_domains_match(&self.actor, &self.object.object)
             .context_bad_request("failed to verify domain")
     }
 
