@@ -1,0 +1,27 @@
+name: frontend-dprint
+run-name: "Frontend: dprint"
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    container: node:20
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: frontend/.yarn/cache
+        key: frontend-yarn-${{ runner.os }}-${{ hashFiles('frontend/yarn.lock') }}
+        restore-keys: |
+          frontend-yarn-${{ runner.os }}-
+    - name: Install dependencies
+      working-directory: frontend
+      run: yarn --immutable
+    - name: Check formatting
+      working-directory: frontend
+      run: yarn fmt:check

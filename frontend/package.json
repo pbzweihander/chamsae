@@ -1,41 +1,38 @@
 {
+  "name": "chamsae",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "npm run server:dev",
-    "prod": "npm run lint && npm run build && npm run server:prod",
-    "build": "vite build",
-    "server:dev": "ts-node ./server/index.ts",
-    "server:prod": "cross-env NODE_ENV=production ts-node ./server/index.ts",
-    "lint": "eslint . --max-warnings 0",
-    "prettier": "prettier --write --config prettier.config.cjs './pages/**/*.{js,jsx,ts,tsx,css}' './renderer/**/*.{js,jsx,ts,tsx,css}' './server/**/*.{js,jsx,ts,tsx,css}'",
-    "prettier:check": "prettier --check --config prettier.config.cjs './pages/**/*.{js,jsx,ts,tsx,css}' './renderer/**/*.{js,jsx,ts,tsx,css}' './server/**/*.{js,jsx,ts,tsx,css}'"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "fmt": "dprint fmt",
+    "fmt:check": "dprint check"
   },
   "dependencies": {
-    "@types/compression": "^1.7.2",
-    "@types/express": "^4.17.14",
-    "@types/node": "^18.11.9",
-    "@types/react": "^18.0.8",
-    "@types/react-dom": "^18.0.3",
-    "@typescript-eslint/eslint-plugin": "^5.59.0",
-    "@typescript-eslint/parser": "^5.59.0",
-    "@vitejs/plugin-react": "^3.0.0",
-    "compression": "^1.7.4",
-    "cross-env": "^7.0.3",
-    "eslint": "^8.38.0",
-    "eslint-plugin-react": "^7.32.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.3.4",
-    "express": "^4.18.1",
+    "negotiator": "^0.6.3",
+    "next": "^13.4.12",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sirv": "^2.0.2",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.4",
-    "vite": "^4.0.3",
-    "vite-plugin-ssr": "^0.4.135"
+    "swr": "^2.2.0",
+    "zod": "^3.21.4"
   },
-  "type": "module",
   "devDependencies": {
-    "@trivago/prettier-plugin-sort-imports": "^4.2.0",
-    "prettier": "^3.0.1"
-  }
+    "@types/negotiator": "^0.6.1",
+    "@types/node": "^20.4.3",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
+    "autoprefixer": "^10.4.14",
+    "dprint": "^0.39.1",
+    "eslint": "^8.45.0",
+    "eslint-config-next": "^13.4.13",
+    "postcss": "^8.4.27",
+    "tailwindcss": "^3.3.3",
+    "typescript": "^5.1.6"
+  },
+  "packageManager": "yarn@3.6.0"
 }

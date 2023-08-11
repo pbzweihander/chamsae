@@ -1,19 +1,10 @@
 module.exports = {
-  rules: {
-    'react-refresh/only-export-components': 'warn'
-  },
   reportUnusedDisableDirectives: true,
-  ignorePatterns: ['dist/*'],
-  env: { browser: true, es2020: true, node: true },
-  parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
-  settings: { react: { version: 'detect' } },
-  plugins: ['react-refresh'],
+  plugins: ["@typescript-eslint"],
   extends: [
-    'eslint:recommended',
-    'plugin:react/recommended',
-    'plugin:react/jsx-runtime',
-    'plugin:react-hooks/recommended',
-    'plugin:@typescript-eslint/recommended'
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "next",
   ],
-  parser: '@typescript-eslint/parser'
-}
+  parser: "@typescript-eslint/parser",
+};

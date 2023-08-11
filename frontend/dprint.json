@@ -1,0 +1,21 @@
+{
+  "typescript": {
+    "lineWidth": 100,
+    "useBraces": "always",
+    "quoteStyle": "alwaysDouble",
+    "jsx.quoteStyle": "preferDouble",
+    "arrowFunction.useParentheses": "preferNone"
+  },
+  "includes": [
+    "**/*.{ts,tsx,js,jsx,cjs,mjs}"
+  ],
+  "excludes": [
+    "node_modules",
+    ".yarn",
+    ".next",
+    "next-env.d.ts"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.84.4.wasm"
+  ]
+}
