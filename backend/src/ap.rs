@@ -34,6 +34,7 @@ pub enum Activity {
     Accept(self::follow::FollowAccept),
     UndoFollow(self::undo::Undo<self::follow::Follow, follower::Model>),
     Delete(self::delete::Delete),
+    Reject(self::follow::FollowReject),
     /// Fallback
     Other(self::other_activity::OtherActivity),
 }
