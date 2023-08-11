@@ -34,6 +34,7 @@ impl Object for follow::Model {
     type Kind = Follow;
     type Error = Error;
 
+    #[tracing::instrument(skip(data))]
     async fn read_from_id(
         object_id: Url,
         data: &Data<Self::DataType>,
@@ -49,6 +50,7 @@ impl Object for follow::Model {
         }
     }
 
+    #[tracing::instrument(skip(data))]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let to_user_id = user::Entity::find_by_id(&self.to_id)
             .select_only()
@@ -57,7 +59,7 @@ impl Object for follow::Model {
             .one(&*data.db)
             .await
             .context_internal_server_error("failed to query database")?
-            .ok_or_else(|| format_err!(INTERNAL_SERVER_ERROR, "failed to find target user"))?;
+            .context_internal_server_error("failed to find target user")?;
         let to_user_id =
             Url::parse(&to_user_id).context_internal_server_error("malformed user URI")?;
         Ok(Self::Kind {
@@ -68,6 +70,7 @@ impl Object for follow::Model {
         })
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
@@ -77,6 +80,7 @@ impl Object for follow::Model {
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn from_json(
         _json: Self::Kind,
         _data: &Data<Self::DataType>,

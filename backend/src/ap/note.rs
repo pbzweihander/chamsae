@@ -19,14 +19,14 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Mention {
     #[serde(rename = "type")]
     pub ty: MentionType,
     pub href: Url,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Note {
     #[serde(rename = "type")]
@@ -45,7 +45,7 @@ impl Note {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateNote {
     #[serde(rename = "type")]
@@ -68,6 +68,7 @@ impl CreateNote {
         })
     }
 
+    #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
         let inboxes = get_follower_inboxes(&*data.db).await?;
         let with_context = WithContext::new_default(self);

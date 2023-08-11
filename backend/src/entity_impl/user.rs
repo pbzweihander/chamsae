@@ -15,7 +15,6 @@ use crate::{
     ap::person::Person,
     entity::user,
     error::{Context, Error},
-    format_err,
     state::State,
 };
 
@@ -29,6 +28,7 @@ impl Object for user::Model {
         Some(self.last_fetched_at.naive_utc())
     }
 
+    #[tracing::instrument(skip(data))]
     async fn read_from_id(
         object_id: Url,
         data: &Data<Self::DataType>,
@@ -40,6 +40,7 @@ impl Object for user::Model {
             .context_internal_server_error("failed to query database")
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = Url::parse(&self.uri).context_internal_server_error("malformed user URI")?;
         Ok(Self::Kind {
@@ -59,6 +60,7 @@ impl Object for user::Model {
         })
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
@@ -68,6 +70,7 @@ impl Object for user::Model {
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let this = Self {
             id: Ulid::new().to_string(),
@@ -79,7 +82,7 @@ impl Object for user::Model {
                 .id
                 .inner()
                 .host()
-                .ok_or_else(|| format_err!(BAD_REQUEST, "invalid host"))?
+                .context_bad_request("invalid host")?
                 .to_string(),
             inbox: json.inbox.to_string(),
             public_key: json.public_key.public_key_pem,

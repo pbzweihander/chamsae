@@ -20,7 +20,7 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Undo<T, M> {
     #[serde(rename = "type")]
@@ -34,7 +34,7 @@ pub struct Undo<T, M> {
 
 impl<T, M, U> Undo<T, M>
 where
-    T: ActivityHandler + Serialize + Send + Sync + 'static,
+    T: std::fmt::Debug + ActivityHandler + Serialize + Send + Sync + 'static,
     M: Object<DataType = State, Kind = U, Error = Error> + Send + Sync + 'static,
     for<'de> U: Deserialize<'de>,
 {
@@ -48,6 +48,7 @@ where
         })
     }
 
+    #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>, inboxes: Vec<Url>) -> Result<(), Error> {
         let with_context = WithContext::new_default(self);
         send_activity(with_context, &LocalPerson, inboxes, data).await
@@ -57,7 +58,7 @@ where
 #[async_trait]
 impl<T, M, U> ActivityHandler for Undo<T, M>
 where
-    T: ActivityHandler + Send + Sync + 'static,
+    T: std::fmt::Debug + ActivityHandler + Send + Sync + 'static,
     M: Object<DataType = State, Kind = U, Error = Error> + Send + Sync + 'static,
     for<'de> U: Deserialize<'de>,
 {
@@ -72,11 +73,13 @@ where
         &self.actor
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         verify_domains_match(self.object.id(), &self.id)
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let object_id: ObjectId<M> = self.object.id().clone().into();
         let res = object_id.dereference_local(data).await;

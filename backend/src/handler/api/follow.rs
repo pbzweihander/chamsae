@@ -23,12 +23,13 @@ pub(super) fn create_router() -> Router {
         .route("/:id", routing::delete(delete_follow))
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostFollowReq {
     to_id: Ulid,
 }
 
+#[tracing::instrument(skip(data, _access))]
 async fn post_follow(
     data: Data<State>,
     _access: Access,
@@ -70,6 +71,7 @@ async fn post_follow(
     Ok(())
 }
 
+#[tracing::instrument(skip(data, _access))]
 async fn delete_follow(
     data: Data<State>,
     extract::Path(id): extract::Path<Ulid>,

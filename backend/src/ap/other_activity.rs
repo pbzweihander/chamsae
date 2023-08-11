@@ -33,6 +33,7 @@ impl ActivityHandler for OtherActivity {
         Ok(())
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn receive(self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         if let Ok(activity) = serde_json::to_string(&self) {
             tracing::warn!("unimplemented activity received: {}", activity);

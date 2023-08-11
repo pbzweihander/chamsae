@@ -17,7 +17,6 @@ use crate::{
     ap::{note::Note, person::LocalPerson},
     entity::{post, sea_orm_active_enums, user},
     error::{Context, Error},
-    format_err,
     state::State,
 };
 
@@ -27,6 +26,7 @@ impl Object for post::Model {
     type Kind = Note;
     type Error = Error;
 
+    #[tracing::instrument(skip(data))]
     async fn read_from_id(
         object_id: Url,
         data: &Data<Self::DataType>,
@@ -38,13 +38,14 @@ impl Object for post::Model {
             .context_internal_server_error("failed to query database")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let user_id = if let Some(user_id) = &self.user_id {
             let user = user::Entity::find_by_id(user_id)
                 .one(&*data.db)
                 .await
                 .context_internal_server_error("failed to query database")?
-                .ok_or_else(|| format_err!(INTERNAL_SERVER_ERROR, "failed to find user"))?;
+                .context_internal_server_error("failed to find user")?;
 
             Url::parse(&user.uri).context_internal_server_error("malformed user URI")?
         } else {
@@ -56,9 +57,7 @@ impl Object for post::Model {
                 .one(&*data.db)
                 .await
                 .context_internal_server_error("failed to query database")?
-                .ok_or_else(|| {
-                    format_err!(INTERNAL_SERVER_ERROR, "failed to find reply target post")
-                })?;
+                .context_internal_server_error("failed to find reply target post")?;
 
             Some(Url::parse(&reply_post.uri).context_internal_server_error("malformed post URI")?)
         } else {
@@ -75,6 +74,7 @@ impl Object for post::Model {
         })
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
@@ -84,6 +84,7 @@ impl Object for post::Model {
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let user = json.attributed_to.dereference(data).await?;
         let this = Self {
@@ -129,6 +130,7 @@ impl Object for post::Model {
         Ok(this)
     }
 
+    #[tracing::instrument(skip(data))]
     async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let tx = data
             .db

@@ -17,7 +17,7 @@ use crate::{
     state::State,
 };
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Person {
     #[serde(rename = "type")]
@@ -38,6 +38,7 @@ impl Object for LocalPerson {
     type Kind = Person;
     type Error = Error;
 
+    #[tracing::instrument(skip(_data))]
     async fn read_from_id(
         object_id: Url,
         _data: &Data<Self::DataType>,
@@ -49,6 +50,7 @@ impl Object for LocalPerson {
         }
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = Self.id();
         Ok(Self::Kind {
@@ -65,6 +67,7 @@ impl Object for LocalPerson {
         })
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
@@ -74,6 +77,7 @@ impl Object for LocalPerson {
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn from_json(
         _json: Self::Kind,
         _data: &Data<Self::DataType>,

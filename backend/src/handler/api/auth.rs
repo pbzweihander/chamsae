@@ -30,6 +30,7 @@ where
 {
     type Rejection = Error;
 
+    #[tracing::instrument(skip(parts, _state))]
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
         let data = parts
             .extract::<Data<State>>()
@@ -60,7 +61,7 @@ where
             .one(&tx)
             .await
             .context_internal_server_error("failed to request database")?
-            .ok_or_else(|| format_err!(UNAUTHORIZED, "user not authorized"))?;
+            .context_unauthorized("user not authorized")?;
 
         let mut access_key_activemodel: access_key::ActiveModel = access_key.into();
         access_key_activemodel.last_used_at = ActiveValue::Set(Some(Utc::now().fixed_offset()));
@@ -95,6 +96,7 @@ struct PostLoginResp {
     token: String,
 }
 
+#[tracing::instrument(skip(data, req))]
 async fn post_login(
     data: Data<State>,
     Json(req): Json<PostLoginReq>,

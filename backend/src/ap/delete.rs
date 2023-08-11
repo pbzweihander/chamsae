@@ -20,7 +20,7 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Tombstone {
     #[serde(rename = "type")]
@@ -28,7 +28,7 @@ pub struct Tombstone {
     pub id: Url,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Delete {
     #[serde(rename = "type")]
@@ -51,6 +51,7 @@ impl Delete {
         })
     }
 
+    #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
         let inboxes = get_follower_inboxes(&*data.db).await?;
         let with_context = WithContext::new_default(self);
@@ -71,11 +72,13 @@ impl ActivityHandler for Delete {
         &self.actor
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         verify_domains_match(&self.object.id, &self.id)
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let post_id = self.object.id;
         let res = post::Entity::delete_many()

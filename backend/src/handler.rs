@@ -61,11 +61,12 @@ pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
     Ok(router)
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct GetWebfingerQuery {
     resource: String,
 }
 
+#[tracing::instrument(skip(data))]
 async fn get_webfinger(
     extract::Query(query): extract::Query<GetWebfingerQuery>,
     data: Data<State>,

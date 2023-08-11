@@ -23,7 +23,7 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson};
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Follow {
     #[serde(rename = "type")]
@@ -56,10 +56,12 @@ impl ActivityHandler for Follow {
         &self.actor
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         verify_domains_match(&self.actor, &self.id).context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         follower::Model::from_json(self.clone(), data).await?;
         let accept = FollowAccept {
@@ -73,7 +75,7 @@ impl ActivityHandler for Follow {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FollowAccept {
     #[serde(rename = "type")]
@@ -84,6 +86,7 @@ pub struct FollowAccept {
 }
 
 impl FollowAccept {
+    #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
         let actor: ObjectId<user::Model> = self.object.actor.clone().into();
         let inbox = actor.dereference(data).await?.inbox;
@@ -106,11 +109,13 @@ impl ActivityHandler for FollowAccept {
         &self.actor
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         verify_domains_match(&self.actor, &self.object.object)
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let follow_id: ObjectId<follow::Model> = self.object.id.into();
         let follow = follow_id.dereference(data).await?;
@@ -124,7 +129,7 @@ impl ActivityHandler for FollowAccept {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FollowReject {
     #[serde(rename = "type")]
@@ -147,11 +152,13 @@ impl ActivityHandler for FollowReject {
         &self.actor
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         verify_domains_match(&self.id, &self.object.id)
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let follow_user_id = self.object.object;
 

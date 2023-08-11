@@ -20,9 +20,16 @@ impl Error {
     where
         M: fmt::Display + fmt::Debug + Send + Sync + 'static,
     {
+        let id = Ulid::new();
+        let inner = anyhow::Error::msg(message);
+        if status_code.is_server_error() {
+            tracing::error!(%id, error = ?inner, "server error constructed");
+        } else {
+            tracing::warn!(%id, error = ?inner, "client error constructed");
+        }
         Self {
-            id: Ulid::new(),
-            inner: anyhow::Error::msg(message),
+            id,
+            inner,
             status_code,
         }
     }
@@ -41,9 +48,9 @@ impl IntoResponse for Error {
             error: self.inner.to_string(),
         };
         if self.status_code.is_server_error() {
-            tracing::error!(id = %self.id, error = ?self.inner, "server error");
+            tracing::error!(id = %self.id, error = ?self.inner, "responding server error");
         } else {
-            tracing::warn!(id = %self.id, error = ?self.inner, "client error");
+            tracing::warn!(id = %self.id, error = ?self.inner, "responding client error");
         }
         (self.status_code, Json(resp)).into_response()
     }
@@ -114,14 +121,6 @@ pub trait Context<T> {
         C: fmt::Display + Send + Sync + 'static,
         F: FnOnce() -> (C, StatusCode);
 
-    fn context_internal_server_error<C>(self, context: C) -> Result<T>
-    where
-        Self: Sized,
-        C: fmt::Display + Send + Sync + 'static,
-    {
-        self.context(context, StatusCode::INTERNAL_SERVER_ERROR)
-    }
-
     fn context_bad_request<C>(self, context: C) -> Result<T>
     where
         Self: Sized,
@@ -136,6 +135,22 @@ pub trait Context<T> {
         C: fmt::Display + Send + Sync + 'static,
     {
         self.context(context, StatusCode::UNAUTHORIZED)
+    }
+
+    fn context_not_found<C>(self, context: C) -> Result<T>
+    where
+        Self: Sized,
+        C: fmt::Display + Send + Sync + 'static,
+    {
+        self.context(context, StatusCode::NOT_FOUND)
+    }
+
+    fn context_internal_server_error<C>(self, context: C) -> Result<T>
+    where
+        Self: Sized,
+        C: fmt::Display + Send + Sync + 'static,
+    {
+        self.context(context, StatusCode::INTERNAL_SERVER_ERROR)
     }
 }
 
@@ -152,6 +167,11 @@ where
             Err(error) => {
                 let id = Ulid::new();
                 let inner = anyhow::Error::new(error).context(context);
+                if status_code.is_server_error() {
+                    tracing::error!(%id, error = ?inner, "server error constructed");
+                } else {
+                    tracing::warn!(%id, error = ?inner, "client error constructed");
+                }
                 Err(Error {
                     id,
                     inner,
@@ -172,6 +192,11 @@ where
                 let (context, status_code) = f();
                 let id = Ulid::new();
                 let inner = anyhow::Error::new(error).context(context);
+                if status_code.is_server_error() {
+                    tracing::error!(%id, error = ?inner, "server error constructed");
+                } else {
+                    tracing::warn!(%id, error = ?inner, "client error constructed");
+                }
                 Err(Error {
                     id,
                     inner,
@@ -192,6 +217,11 @@ impl<T> Context<T> for std::option::Option<T> {
             None => {
                 let id = Ulid::new();
                 let inner = anyhow::format_err!("{}", context);
+                if status_code.is_server_error() {
+                    tracing::error!(%id, error = ?inner, "server error constructed");
+                } else {
+                    tracing::warn!(%id, error = ?inner, "client error constructed");
+                }
                 Err(Error {
                     id,
                     inner,
@@ -212,6 +242,11 @@ impl<T> Context<T> for std::option::Option<T> {
                 let (context, status_code) = f();
                 let id = Ulid::new();
                 let inner = anyhow::format_err!("{}", context);
+                if status_code.is_server_error() {
+                    tracing::error!(%id, error = ?inner, "server error constructed");
+                } else {
+                    tracing::warn!(%id, error = ?inner, "client error constructed");
+                }
                 Err(Error {
                     id,
                     inner,
@@ -225,17 +260,9 @@ impl<T> Context<T> for std::option::Option<T> {
 #[macro_export]
 macro_rules! format_err {
     ($status_code:ident, $msg:literal $(,)?) => {
-        $crate::error::Error {
-            id: ::ulid::Ulid::new(),
-            status_code: ::axum::http::StatusCode::$status_code,
-            inner: anyhow::format_err!($msg),
-        }
+        $crate::error::Error::new(::axum::http::StatusCode::$status_code, $msg)
     };
     ($status_code:expr, $fmt:expr, $($arg:tt)*) => {
-        $crate::error::Error {
-            id: ::ulid::Ulid::new(),
-            status_code: ::axum::http::StatusCode::$status_code,
-            inner: anyhow::format_err!($fmt, $($arg,)*),
-        }
+        $crate::error::Error::new(::axum::http::StatusCode::$status_code, format!($fmt, $($arg,)*))
     };
 }

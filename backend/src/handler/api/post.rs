@@ -42,6 +42,7 @@ struct PostPostReq {
     visibility: Visibility,
 }
 
+#[tracing::instrument(skip(data, _access, req))]
 async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostReq>) -> Result<()> {
     let tx = data
         .db
@@ -111,6 +112,7 @@ struct GetPostResp {
     uri: String,
 }
 
+#[tracing::instrument(skip(data, _access))]
 async fn get_post(
     data: Data<State>,
     extract::Path(id): extract::Path<Ulid>,
@@ -120,13 +122,13 @@ async fn get_post(
         .one(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?
-        .ok_or_else(|| format_err!(NOT_FOUND, "post not found"))?;
+        .context_not_found("post not found")?;
     let user = if let Some(user_id) = &post.user_id {
         let user = user::Entity::find_by_id(user_id.to_string())
             .one(&*data.db)
             .await
             .context_internal_server_error("failed to query database")?
-            .ok_or_else(|| format_err!(INTERNAL_SERVER_ERROR, "user not found"))?;
+            .context_internal_server_error("user not found")?;
         Some(GetPostRespUser {
             handle: Ulid::from_string(&user.id).context_internal_server_error("malformed id")?,
             host: user.host,
@@ -157,6 +159,7 @@ async fn get_post(
     }))
 }
 
+#[tracing::instrument(skip(data, _access))]
 async fn delete_post(
     data: Data<State>,
     extract::Path(id): extract::Path<Ulid>,

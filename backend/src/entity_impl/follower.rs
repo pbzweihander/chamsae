@@ -16,7 +16,6 @@ use crate::{
     ap::{follow::Follow, person::LocalPerson},
     entity::{follower, user},
     error::{Context, Error},
-    format_err,
     state::State,
 };
 
@@ -26,6 +25,7 @@ impl Object for follower::Model {
     type Kind = Follow;
     type Error = Error;
 
+    #[tracing::instrument(skip(data))]
     async fn read_from_id(
         object_id: Url,
         data: &Data<Self::DataType>,
@@ -37,6 +37,7 @@ impl Object for follower::Model {
             .context_internal_server_error("failed to query database")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let from_user_id = user::Entity::find_by_id(self.from_id)
             .select_only()
@@ -45,7 +46,7 @@ impl Object for follower::Model {
             .one(&*data.db)
             .await
             .context_internal_server_error("failed to query database")?
-            .ok_or_else(|| format_err!(INTERNAL_SERVER_ERROR, "failed to find target user"))?;
+            .context_internal_server_error("failed to find target user")?;
         let from_user_id =
             Url::parse(&from_user_id).context_internal_server_error("malformed user URI")?;
         Ok(Self::Kind {
@@ -56,6 +57,7 @@ impl Object for follower::Model {
         })
     }
 
+    #[tracing::instrument(skip(_data))]
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
@@ -65,6 +67,7 @@ impl Object for follower::Model {
             .context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let actor: ObjectId<user::Model> = json.actor.into();
         let from_user = actor.dereference(data).await?;
@@ -110,6 +113,7 @@ impl Object for follower::Model {
         Ok(this)
     }
 
+    #[tracing::instrument(skip(data))]
     async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let tx = data
             .db

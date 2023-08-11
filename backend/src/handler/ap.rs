@@ -26,11 +26,13 @@ use super::State;
 //         .route("/inbox", routing::post(post_inbox))
 // }
 
+#[tracing::instrument(skip(data))]
 pub(super) async fn get_user(data: Data<State>) -> Result<FederationJson<WithContext<Person>>> {
     let user = LocalPerson.into_json(&data).await?;
     Ok(FederationJson(WithContext::new_default(user)))
 }
 
+#[tracing::instrument(skip(data, activity_data))]
 pub(super) async fn post_inbox(data: Data<State>, activity_data: ActivityData) -> Result<()> {
     tracing::info!(?activity_data, "activity data"); // TODO: remove
     receive_activity::<WithContext<Activity>, user::Model, State>(activity_data, &data).await
