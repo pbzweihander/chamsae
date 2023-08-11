@@ -5,7 +5,9 @@
     "build": "vite build",
     "server:dev": "ts-node ./server/index.ts",
     "server:prod": "cross-env NODE_ENV=production ts-node ./server/index.ts",
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint . --max-warnings 0",
+    "prettier": "prettier --write --config prettier.config.cjs './pages/**/*.{js,jsx,ts,tsx,css}' './renderer/**/*.{js,jsx,ts,tsx,css}' './server/**/*.{js,jsx,ts,tsx,css}'",
+    "prettier:check": "prettier --check --config prettier.config.cjs './pages/**/*.{js,jsx,ts,tsx,css}' './renderer/**/*.{js,jsx,ts,tsx,css}' './server/**/*.{js,jsx,ts,tsx,css}'"
   },
   "dependencies": {
     "@types/compression": "^1.7.2",
@@ -31,5 +33,9 @@
     "vite": "^4.0.3",
     "vite-plugin-ssr": "^0.4.135"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.2.0",
+    "prettier": "^3.0.1"
+  }
 }

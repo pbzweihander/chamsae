@@ -1,6 +1,6 @@
-import { Counter } from './Counter'
+import { Counter } from "./Counter";
 
-export { Page }
+export { Page };
 
 function Page() {
   return (
@@ -14,5 +14,5 @@ function Page() {
         </li>
       </ul>
     </>
-  )
+  );
 }
