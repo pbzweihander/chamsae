@@ -1,0 +1,25 @@
+name: prettier
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    container: node:20
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: frontend/node_modules
+        key: frontend-node-modules-${{ runner.os }}-${{ hashFiles('frontend/yarn.lock') }}
+        restore-keys: |
+          frontend-node-modules-${{ runner.os }}-
+    - name: Check prettier
+      working-directory: frontend
+      run: |
+        yarn
+        yarn prettier:check
