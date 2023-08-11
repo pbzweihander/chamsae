@@ -12,7 +12,7 @@ use ulid::Ulid;
 use url::Url;
 
 use crate::{
-    ap::Person,
+    ap::person::Person,
     entity::user,
     error::{Context, Error},
     format_err,

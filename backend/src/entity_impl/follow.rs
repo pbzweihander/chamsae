@@ -1,12 +1,14 @@
 use activitypub_federation::{
-    config::Data, protocol::verification::verify_domains_match, traits::Object,
+    config::Data,
+    protocol::verification::verify_domains_match,
+    traits::{Actor, Object},
 };
 use async_trait::async_trait;
 use sea_orm::{EntityTrait, QuerySelect};
 use url::Url;
 
 use crate::{
-    ap::Follow,
+    ap::{follow::Follow, person::LocalPerson},
     config::CONFIG,
     entity::{follow, user},
     error::{Context, Error},
@@ -61,7 +63,7 @@ impl Object for follow::Model {
         Ok(Self::Kind {
             ty: Default::default(),
             id: self.ap_id()?,
-            actor: CONFIG.user_id.clone().unwrap(),
+            actor: LocalPerson.id(),
             object: to_user_id,
         })
     }

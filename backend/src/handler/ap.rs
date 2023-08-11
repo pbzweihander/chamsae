@@ -4,13 +4,16 @@ use activitypub_federation::{
         json::FederationJson,
     },
     config::Data,
-    protocol::{context::WithContext, public_key::PublicKey},
+    protocol::context::WithContext,
+    traits::Object,
 };
 // use axum::{routing, Router};
 
 use crate::{
-    ap::{Activity, Person},
-    config::CONFIG,
+    ap::{
+        person::{LocalPerson, Person},
+        Activity,
+    },
     entity::user,
     error::Result,
 };
@@ -23,21 +26,9 @@ use super::State;
 //         .route("/inbox", routing::post(post_inbox))
 // }
 
-pub(super) async fn get_user() -> FederationJson<WithContext<Person>> {
-    let id = CONFIG.user_id.clone().unwrap();
-    let user = Person {
-        ty: Default::default(),
-        id: id.clone().into(),
-        preferred_username: CONFIG.user_handle.clone(),
-        name: None,
-        inbox: CONFIG.inbox_url.clone().unwrap(),
-        public_key: PublicKey {
-            id: format!("{}#main-key", id),
-            owner: id,
-            public_key_pem: CONFIG.user_public_key.clone(),
-        },
-    };
-    FederationJson(WithContext::new_default(user))
+pub(super) async fn get_user(data: Data<State>) -> Result<FederationJson<WithContext<Person>>> {
+    let user = LocalPerson.into_json(&data).await?;
+    Ok(FederationJson(WithContext::new_default(user)))
 }
 
 pub(super) async fn post_inbox(data: Data<State>, activity_data: ActivityData) -> Result<()> {

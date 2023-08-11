@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
 use crate::{
-    ap::Delete,
+    ap::delete::Delete,
     config::CONFIG,
     entity::{post, sea_orm_active_enums, user},
     error::{Context, Result},

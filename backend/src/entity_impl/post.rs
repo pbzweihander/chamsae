@@ -1,5 +1,8 @@
 use activitypub_federation::{
-    config::Data, kinds::public, protocol::verification::verify_domains_match, traits::Object,
+    config::Data,
+    kinds::public,
+    protocol::verification::verify_domains_match,
+    traits::{Actor, Object},
 };
 use async_trait::async_trait;
 use chrono::Utc;
@@ -11,8 +14,7 @@ use ulid::Ulid;
 use url::Url;
 
 use crate::{
-    ap::Note,
-    config::CONFIG,
+    ap::{note::Note, person::LocalPerson},
     entity::{post, sea_orm_active_enums, user},
     error::{Context, Error},
     format_err,
@@ -46,7 +48,7 @@ impl Object for post::Model {
 
             Url::parse(&user.uri).context_internal_server_error("malformed user URI")?
         } else {
-            CONFIG.user_id.clone().unwrap()
+            LocalPerson.id()
         };
         let id = Url::parse(&self.uri).context_internal_server_error("malformed post URI")?;
         let in_reply_to_id = if let Some(reply_id) = self.reply_id {

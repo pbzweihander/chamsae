@@ -9,7 +9,7 @@ use ulid::Ulid;
 use url::Url;
 
 use crate::{
-    ap::{Follow, Undo},
+    ap::{follow::Follow, undo::Undo},
     entity::{follow, user},
     error::{Context, Result},
     state::State,
