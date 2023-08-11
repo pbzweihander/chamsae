@@ -1,12 +1,12 @@
 use activitypub_federation::{
     activity_queue::send_activity,
     config::Data,
-    fetch::object_id::ObjectId,
     kinds::{activity::DeleteType, object::TombstoneType},
     protocol::{context::WithContext, verification::verify_domains_match},
-    traits::{ActivityHandler, Actor, Object},
+    traits::{ActivityHandler, Actor},
 };
 use async_trait::async_trait;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -76,24 +76,12 @@ impl ActivityHandler for Delete {
     }
 
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        let post_id: ObjectId<post::Model> = self.object.id.into();
-        let res = post_id.dereference_local(data).await;
-        match res {
-            Ok(post) => {
-                post.delete(data).await?;
-                Ok(())
-            }
-            Err(error) => {
-                if let Some(activitypub_federation::error::Error::NotFound) =
-                    error
-                        .inner
-                        .downcast_ref::<activitypub_federation::error::Error>()
-                {
-                    Ok(())
-                } else {
-                    Err(error)
-                }
-            }
-        }
+        let post_id = self.object.id;
+        post::Entity::delete_many()
+            .filter(post::Column::Uri.eq(post_id.as_str()))
+            .exec(&*data.db)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+        Ok(())
     }
 }
