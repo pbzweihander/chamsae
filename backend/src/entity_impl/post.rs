@@ -11,8 +11,8 @@ use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
     QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
-use ulid::Ulid;
 use url::Url;
+use uuid::Uuid;
 
 use crate::{
     ap::{
@@ -45,7 +45,7 @@ impl Object for post::Model {
     #[tracing::instrument(skip(data))]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let user_id = if let Some(user_id) = &self.user_id {
-            let user = user::Entity::find_by_id(user_id)
+            let user = user::Entity::find_by_id(*user_id)
                 .one(&*data.db)
                 .await
                 .context_internal_server_error("failed to query database")?
@@ -59,7 +59,7 @@ impl Object for post::Model {
         let id = Url::parse(&self.uri).context_internal_server_error("malformed post URI")?;
 
         let in_reply_to_id = if let Some(reply_id) = &self.reply_id {
-            let reply_post = post::Entity::find_by_id(reply_id)
+            let reply_post = post::Entity::find_by_id(*reply_id)
                 .one(&*data.db)
                 .await
                 .context_internal_server_error("failed to query database")?
@@ -116,7 +116,7 @@ impl Object for post::Model {
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let user = json.attributed_to.dereference(data).await?;
         let this = Self {
-            id: Ulid::new().to_string(),
+            id: Uuid::new_v4(),
             created_at: Utc::now().fixed_offset(),
             reply_id: None,
             text: json.content,
@@ -137,7 +137,7 @@ impl Object for post::Model {
             .filter(post::Column::Uri.eq(json.id.inner().to_string()))
             .select_only()
             .column(post::Column::Id)
-            .into_tuple::<String>()
+            .into_tuple::<Uuid>()
             .one(&tx)
             .await
             .context_internal_server_error("failed to query database")?;
@@ -157,8 +157,7 @@ impl Object for post::Model {
             .into_iter()
             .enumerate()
             .map(|(idx, attachment)| remote_file::ActiveModel {
-                id: ActiveValue::Set(Ulid::new().to_string()),
-                post_id: ActiveValue::Set(this.id.clone()),
+                post_id: ActiveValue::Set(this.id),
                 order: ActiveValue::Set(idx as i16),
                 media_type: ActiveValue::Set(attachment.media_type.to_string()),
                 url: ActiveValue::Set(attachment.url.to_string()),
@@ -189,7 +188,7 @@ impl Object for post::Model {
             .begin()
             .await
             .context_internal_server_error("failed to begin database transaction")?;
-        let existing_count = post::Entity::find_by_id(&self.id)
+        let existing_count = post::Entity::find_by_id(self.id)
             .count(&tx)
             .await
             .context_internal_server_error("failed to query database")?;

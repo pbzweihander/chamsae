@@ -8,8 +8,8 @@ use chrono::{NaiveDateTime, Utc};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QuerySelect, TransactionTrait,
 };
-use ulid::Ulid;
 use url::Url;
+use uuid::Uuid;
 
 use crate::{
     ap::person::Person,
@@ -73,7 +73,7 @@ impl Object for user::Model {
     #[tracing::instrument(skip(data))]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let this = Self {
-            id: Ulid::new().to_string(),
+            id: Uuid::new_v4(),
             created_at: Utc::now().fixed_offset(),
             last_fetched_at: Utc::now().fixed_offset(),
             handle: json.preferred_username,
@@ -99,7 +99,7 @@ impl Object for user::Model {
             .filter(user::Column::Uri.eq(json.id.inner().to_string()))
             .select_only()
             .column(user::Column::Id)
-            .into_tuple::<String>()
+            .into_tuple::<Uuid>()
             .one(&tx)
             .await
             .context_internal_server_error("failed to query database")?;

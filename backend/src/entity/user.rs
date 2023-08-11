@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "user")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: String,
+    pub id: Uuid,
     pub created_at: DateTimeWithTimeZone,
     pub last_fetched_at: DateTimeWithTimeZone,
     pub handle: String,
@@ -22,7 +22,7 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_one = "super::follow::Entity")]
     Follow,
-    #[sea_orm(has_one = "super::follower::Entity")]
+    #[sea_orm(has_many = "super::follower::Entity")]
     Follower,
     #[sea_orm(has_many = "super::post::Entity")]
     Post,

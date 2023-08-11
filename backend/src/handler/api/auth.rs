@@ -9,7 +9,7 @@ use axum::{
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
-use ulid::Ulid;
+use uuid::Uuid;
 
 use crate::{
     config::CONFIG,
@@ -49,7 +49,8 @@ where
                 _ => format_err!(INTERNAL_SERVER_ERROR, "failed to authorize"),
             })?;
 
-        let access_key_id = bearer.token();
+        let access_key_id =
+            Uuid::parse_str(bearer.token()).context_unauthorized("user not authorized")?;
 
         let tx = data
             .db
@@ -93,7 +94,7 @@ struct PostLoginReq {
 
 #[derive(Serialize)]
 struct PostLoginResp {
-    token: String,
+    token: Uuid,
 }
 
 #[tracing::instrument(skip(data, req))]
@@ -106,7 +107,7 @@ async fn post_login(
             .context_bad_request("failed to authenticate")?
     {
         let access_key_activemodel = access_key::ActiveModel {
-            id: ActiveValue::Set(Ulid::new().to_string()),
+            id: ActiveValue::Set(Uuid::new_v4()),
             name: ActiveValue::Set(req.hostname),
             created_at: ActiveValue::Set(Utc::now().fixed_offset()),
             last_used_at: ActiveValue::NotSet,

@@ -6,9 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "follower")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: String,
-    #[sea_orm(unique)]
-    pub from_id: String,
+    pub from_id: Uuid,
     #[sea_orm(unique)]
     pub uri: String,
 }

@@ -7,12 +7,12 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "post")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: String,
+    pub id: Uuid,
     pub created_at: DateTimeWithTimeZone,
-    pub reply_id: Option<String>,
+    pub reply_id: Option<Uuid>,
     pub text: String,
     pub title: Option<String>,
-    pub user_id: Option<String>,
+    pub user_id: Option<Uuid>,
     pub visibility: Visibility,
     #[sea_orm(unique)]
     pub is_sensitive: bool,

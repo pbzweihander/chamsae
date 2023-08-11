@@ -10,12 +10,7 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(User::Table)
-                    .col(
-                        ColumnDef::new(User::Id)
-                            .string_len(26)
-                            .not_null()
-                            .primary_key(),
-                    )
+                    .col(ColumnDef::new(User::Id).uuid().not_null().primary_key())
                     .col(
                         ColumnDef::new(User::CreatedAt)
                             .timestamp_with_time_zone()
@@ -54,21 +49,16 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Post::Table)
-                    .col(
-                        ColumnDef::new(Post::Id)
-                            .string_len(26)
-                            .not_null()
-                            .primary_key(),
-                    )
+                    .col(ColumnDef::new(Post::Id).uuid().not_null().primary_key())
                     .col(
                         ColumnDef::new(Post::CreatedAt)
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Post::ReplyId).string_len(26))
+                    .col(ColumnDef::new(Post::ReplyId).uuid())
                     .col(ColumnDef::new(Post::Text).string().not_null())
                     .col(ColumnDef::new(Post::Title).string())
-                    .col(ColumnDef::new(Post::UserId).string_len(26))
+                    .col(ColumnDef::new(Post::UserId).uuid())
                     .col(
                         ColumnDef::new(Post::Visibility)
                             .enumeration(
@@ -82,12 +72,7 @@ impl MigrationTrait for Migration {
                             )
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(Post::IsSensitive)
-                            .boolean()
-                            .not_null()
-                            .unique_key(),
-                    )
+                    .col(ColumnDef::new(Post::IsSensitive).boolean().not_null())
                     .col(ColumnDef::new(Post::Uri).string().not_null().unique_key())
                     .foreign_key(
                         ForeignKey::create()
@@ -111,7 +96,7 @@ impl MigrationTrait for Migration {
                     .table(AccessKey::Table)
                     .col(
                         ColumnDef::new(AccessKey::Id)
-                            .string_len(26)
+                            .uuid()
                             .not_null()
                             .primary_key(),
                     )
@@ -130,18 +115,8 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Follow::Table)
-                    .col(
-                        ColumnDef::new(Follow::Id)
-                            .string_len(26)
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(
-                        ColumnDef::new(Follow::ToId)
-                            .string_len(26)
-                            .not_null()
-                            .unique_key(),
-                    )
+                    .col(ColumnDef::new(Follow::Id).uuid().not_null().primary_key())
+                    .col(ColumnDef::new(Follow::ToId).uuid().not_null().unique_key())
                     .col(ColumnDef::new(Follow::Accepted).boolean().not_null())
                     .foreign_key(
                         ForeignKey::create()
@@ -158,16 +133,10 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Follower::Table)
                     .col(
-                        ColumnDef::new(Follower::Id)
-                            .string_len(26)
+                        ColumnDef::new(Follower::FromId)
+                            .uuid()
                             .not_null()
                             .primary_key(),
-                    )
-                    .col(
-                        ColumnDef::new(Follower::FromId)
-                            .string_len(26)
-                            .not_null()
-                            .unique_key(),
                     )
                     .col(
                         ColumnDef::new(Follower::Uri)
@@ -185,10 +154,41 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        manager
+            .create_table(
+                Table::create()
+                    .table(RemoteFile::Table)
+                    .if_not_exists()
+                    .col(ColumnDef::new(RemoteFile::PostId).uuid().not_null())
+                    .col(ColumnDef::new(RemoteFile::Order).tiny_unsigned().not_null())
+                    .col(ColumnDef::new(RemoteFile::MediaType).string().not_null())
+                    .col(ColumnDef::new(RemoteFile::Url).string().not_null())
+                    .col(ColumnDef::new(RemoteFile::Alt).string())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(RemoteFile::Table, RemoteFile::PostId)
+                            .to(Post::Table, Post::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
+                    )
+                    .index(
+                        Index::create()
+                            .table(RemoteFile::Table)
+                            .col(RemoteFile::PostId)
+                            .col(RemoteFile::Order)
+                            .primary(),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(Table::drop().table(RemoteFile::Table).to_owned())
+            .await?;
+
         manager
             .drop_table(Table::drop().table(Follower::Table).to_owned())
             .await?;
@@ -232,7 +232,7 @@ enum User {
 }
 
 #[derive(Iden)]
-pub enum Post {
+enum Post {
     Table,
     Id,
     CreatedAt,
@@ -274,7 +274,16 @@ enum Follow {
 #[derive(Iden)]
 enum Follower {
     Table,
-    Id,
     FromId,
     Uri,
+}
+
+#[derive(Iden)]
+enum RemoteFile {
+    Table,
+    PostId,
+    Order,
+    MediaType,
+    Url,
+    Alt,
 }

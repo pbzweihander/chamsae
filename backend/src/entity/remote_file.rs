@@ -6,8 +6,8 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "remote_file")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: String,
-    pub post_id: String,
+    pub post_id: Uuid,
+    #[sea_orm(primary_key, auto_increment = false)]
     pub order: i16,
     pub media_type: String,
     pub url: String,

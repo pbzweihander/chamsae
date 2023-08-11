@@ -9,7 +9,6 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
     QuerySelect, TransactionTrait,
 };
-use ulid::Ulid;
 use url::Url;
 
 use crate::{
@@ -72,8 +71,7 @@ impl Object for follower::Model {
         let actor: ObjectId<user::Model> = json.actor.into();
         let from_user = actor.dereference(data).await?;
         let this = Self {
-            id: Ulid::new().to_string(),
-            from_id: from_user.id.clone(),
+            from_id: from_user.id,
             uri: json.id.to_string(),
         };
 
@@ -83,22 +81,17 @@ impl Object for follower::Model {
             .await
             .context_internal_server_error("failed to begin database transaction")?;
 
-        let existing_id = follower::Entity::find()
+        let existing_count = follower::Entity::find()
             .filter(
                 follower::Column::Uri
                     .eq(json.id.to_string())
-                    .or(follower::Column::FromId.eq(&from_user.id)),
+                    .or(follower::Column::FromId.eq(from_user.id)),
             )
-            .select_only()
-            .column(follower::Column::Id)
-            .into_tuple::<String>()
-            .one(&tx)
+            .count(&tx)
             .await
             .context_internal_server_error("failed to query database")?;
 
-        let this = if let Some(id) = existing_id {
-            Self { id, ..this }
-        } else {
+        let this = if existing_count == 0 {
             let this_activemodel: follower::ActiveModel = this.into();
             let this = this_activemodel
                 .insert(&tx)
@@ -107,6 +100,8 @@ impl Object for follower::Model {
             tx.commit()
                 .await
                 .context_internal_server_error("failed to commit database transaction")?;
+            this
+        } else {
             this
         };
 
@@ -120,7 +115,7 @@ impl Object for follower::Model {
             .begin()
             .await
             .context_internal_server_error("failed to begin database transaction")?;
-        let existing_count = follower::Entity::find_by_id(&self.id)
+        let existing_count = follower::Entity::find_by_id(self.from_id)
             .count(&tx)
             .await
             .context_internal_server_error("failed to query database")?;

@@ -13,6 +13,7 @@ use sea_orm::{
 };
 use serde::{Deserialize, Serialize};
 use url::Url;
+use uuid::Uuid;
 
 use crate::{
     entity::{follow, follower, user},
@@ -173,7 +174,7 @@ impl ActivityHandler for FollowReject {
             .inner_join(follow::Entity)
             .select_only()
             .column(follow::Column::Id)
-            .into_tuple::<String>()
+            .into_tuple::<Uuid>()
             .one(&tx)
             .await
             .context_internal_server_error("failed to query database")?;

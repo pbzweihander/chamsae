@@ -5,8 +5,8 @@ use sea_orm::{
     QueryFilter, TransactionTrait,
 };
 use serde::Deserialize;
-use ulid::Ulid;
 use url::Url;
+use uuid::Uuid;
 
 use crate::{
     ap::{follow::Follow, undo::Undo},
@@ -27,7 +27,7 @@ pub(super) fn create_router() -> Router {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostFollowReq {
-    to_id: Ulid,
+    to_id: Uuid,
 }
 
 #[tracing::instrument(skip(data, _access))]
@@ -42,7 +42,7 @@ async fn post_follow(
         .await
         .context_internal_server_error("failed to begin database transaction")?;
 
-    let user_existing_count = user::Entity::find_by_id(req.to_id.to_string())
+    let user_existing_count = user::Entity::find_by_id(req.to_id)
         .count(&tx)
         .await
         .context_internal_server_error("failed to query database")?;
@@ -52,7 +52,7 @@ async fn post_follow(
     }
 
     let existing_count = follow::Entity::find()
-        .filter(follow::Column::ToId.eq(req.to_id.to_string()))
+        .filter(follow::Column::ToId.eq(req.to_id))
         .count(&tx)
         .await
         .context_internal_server_error("failed to query database")?;
@@ -62,8 +62,8 @@ async fn post_follow(
     }
 
     let follow_activemodel = follow::ActiveModel {
-        id: ActiveValue::Set(Ulid::new().to_string()),
-        to_id: ActiveValue::Set(req.to_id.to_string()),
+        id: ActiveValue::Set(Uuid::new_v4()),
+        to_id: ActiveValue::Set(req.to_id),
         accepted: ActiveValue::Set(false),
     };
     let follow = follow_activemodel
@@ -84,7 +84,7 @@ async fn post_follow(
 #[tracing::instrument(skip(data, _access))]
 async fn delete_follow(
     data: Data<State>,
-    extract::Path(id): extract::Path<Ulid>,
+    extract::Path(id): extract::Path<Uuid>,
     _access: Access,
 ) -> Result<()> {
     let tx = data
@@ -94,7 +94,7 @@ async fn delete_follow(
         .context_internal_server_error("failed to begin database transaction")?;
 
     let existing = follow::Entity::find()
-        .filter(follow::Column::ToId.eq(id.to_string()))
+        .filter(follow::Column::ToId.eq(id))
         .one(&tx)
         .await
         .context_internal_server_error("failed to query database")?;

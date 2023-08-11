@@ -7,8 +7,8 @@ use sea_orm::{
     TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
-use ulid::Ulid;
 use url::Url;
+use uuid::Uuid;
 
 use crate::{
     ap::delete::Delete,
@@ -39,7 +39,7 @@ enum Visibility {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostPostReq {
-    reply_id: Option<Ulid>,
+    reply_id: Option<Uuid>,
     text: String,
     title: Option<String>,
     visibility: Visibility,
@@ -55,7 +55,7 @@ async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostR
         .context_internal_server_error("failed to begin database transaction")?;
 
     if let Some(reply_id) = &req.reply_id {
-        let reply_post_count = post::Entity::find_by_id(reply_id.to_string())
+        let reply_post_count = post::Entity::find_by_id(*reply_id)
             .count(&tx)
             .await
             .context_internal_server_error("failed to request database")?;
@@ -64,11 +64,11 @@ async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostR
         }
     }
 
-    let id = Ulid::new();
+    let id = Uuid::new_v4();
     let post_activemodel = post::ActiveModel {
-        id: ActiveValue::Set(id.to_string()),
+        id: ActiveValue::Set(id),
         created_at: ActiveValue::Set(Utc::now().fixed_offset()),
-        reply_id: ActiveValue::Set(req.reply_id.as_ref().map(Ulid::to_string)),
+        reply_id: ActiveValue::Set(req.reply_id),
         text: ActiveValue::Set(req.text),
         title: ActiveValue::Set(req.title),
         user_id: ActiveValue::Set(None),
@@ -100,14 +100,13 @@ async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostR
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GetPostRespUser {
-    handle: Ulid,
+    handle: Uuid,
     host: String,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GetPostRespFile {
-    id: Ulid,
     #[serde(with = "mime_serde_shim")]
     media_type: Mime,
     url: Url,
@@ -117,9 +116,9 @@ struct GetPostRespFile {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GetPostResp {
-    id: Ulid,
+    id: Uuid,
     created_at: DateTime<FixedOffset>,
-    reply_id: Option<Ulid>,
+    reply_id: Option<Uuid>,
     text: String,
     title: Option<String>,
     user: Option<GetPostRespUser>,
@@ -132,23 +131,23 @@ struct GetPostResp {
 #[tracing::instrument(skip(data, _access))]
 async fn get_post(
     data: Data<State>,
-    extract::Path(id): extract::Path<Ulid>,
+    extract::Path(id): extract::Path<Uuid>,
     _access: Access,
 ) -> Result<Json<GetPostResp>> {
-    let post = post::Entity::find_by_id(id.to_string())
+    let post = post::Entity::find_by_id(id)
         .one(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?
         .context_not_found("post not found")?;
 
     let user = if let Some(user_id) = &post.user_id {
-        let user = user::Entity::find_by_id(user_id.to_string())
+        let user = user::Entity::find_by_id(*user_id)
             .one(&*data.db)
             .await
             .context_internal_server_error("failed to query database")?
             .context_internal_server_error("user not found")?;
         Some(GetPostRespUser {
-            handle: Ulid::from_string(&user.id).context_internal_server_error("malformed id")?,
+            handle: user.id,
             host: user.host,
         })
     } else {
@@ -166,7 +165,6 @@ async fn get_post(
         .into_iter()
         .filter_map(|file| {
             Some(GetPostRespFile {
-                id: Ulid::from_string(&file.id).ok()?,
                 media_type: file.media_type.parse().ok()?,
                 url: file.url.parse().ok()?,
                 alt: file.alt,
@@ -175,14 +173,9 @@ async fn get_post(
         .collect::<Vec<_>>();
 
     Ok(Json(GetPostResp {
-        id: Ulid::from_string(&post.id).context_internal_server_error("malformed id")?,
+        id: post.id,
         created_at: post.created_at,
-        reply_id: post
-            .reply_id
-            .as_deref()
-            .map(Ulid::from_string)
-            .transpose()
-            .context_internal_server_error("malformed post ID")?,
+        reply_id: post.reply_id,
         text: post.text,
         title: post.title,
         user,
@@ -204,7 +197,7 @@ async fn get_post(
 #[tracing::instrument(skip(data, _access))]
 async fn delete_post(
     data: Data<State>,
-    extract::Path(id): extract::Path<Ulid>,
+    extract::Path(id): extract::Path<Uuid>,
     _access: Access,
 ) -> Result<()> {
     let tx = data
@@ -213,7 +206,7 @@ async fn delete_post(
         .await
         .context_internal_server_error("failed to begin database transaction")?;
 
-    let existing = post::Entity::find_by_id(id.to_string())
+    let existing = post::Entity::find_by_id(id)
         .one(&tx)
         .await
         .context_internal_server_error("failed to query database")?;
