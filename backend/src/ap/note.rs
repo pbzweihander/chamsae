@@ -52,6 +52,8 @@ pub struct Note {
     pub id: ObjectId<post::Model>,
     pub attributed_to: ObjectId<user::Model>,
     pub to: Vec<Url>,
+    #[serde(default)]
+    pub summary: Option<String>,
     pub content: String,
     pub in_reply_to: Option<ObjectId<post::Model>>,
     #[serde(default)]
