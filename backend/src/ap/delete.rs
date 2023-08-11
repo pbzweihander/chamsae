@@ -13,6 +13,7 @@ use url::Url;
 use crate::{
     entity::post,
     error::{Context, Error},
+    format_err,
     state::State,
     util::get_follower_inboxes,
 };
@@ -77,11 +78,15 @@ impl ActivityHandler for Delete {
 
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let post_id = self.object.id;
-        post::Entity::delete_many()
+        let res = post::Entity::delete_many()
             .filter(post::Column::Uri.eq(post_id.as_str()))
             .exec(&*data.db)
             .await
             .context_internal_server_error("failed to delete from database")?;
-        Ok(())
+        if res.rows_affected > 0 {
+            Ok(())
+        } else {
+            Err(format_err!(NOT_FOUND, "post not found"))
+        }
     }
 }

@@ -14,6 +14,7 @@ use url::Url;
 
 use crate::{
     error::{Context, Error},
+    format_err,
     state::State,
 };
 
@@ -90,7 +91,7 @@ where
                         .inner
                         .downcast_ref::<activitypub_federation::error::Error>()
                 {
-                    Ok(())
+                    Err(format_err!(NOT_FOUND, "not found"))
                 } else {
                     Err(error)
                 }
