@@ -7,10 +7,7 @@ use activitypub_federation::{
 use axum::{extract, http::Request, middleware::Next, response::Response, routing, Json, Router};
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
-use tower_http::{
-    services::{ServeDir, ServeFile},
-    trace::{DefaultMakeSpan, TraceLayer},
-};
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::Level;
 
 use crate::{
@@ -58,20 +55,10 @@ pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
         .route("/ap/inbox", routing::post(self::ap::post_inbox))
         .route("/.well-known/webfinger", routing::get(get_webfinger))
         .layer(FederationMiddleware::new(federation_config))
-        .layer(
-            TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)),
-        );
+        .layer(TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)))
+        .layer(axum::middleware::from_fn(server_header_middleware));
 
-    let router = if let Some(dir) = &CONFIG.static_files_directory_path {
-        router.nest_service(
-            "/",
-            ServeDir::new(dir).fallback(ServeFile::new(dir.join("index.html"))),
-        )
-    } else {
-        router
-    };
-
-    Ok(router.layer(axum::middleware::from_fn(server_header_middleware)))
+    Ok(router)
 }
 
 #[derive(Deserialize)]

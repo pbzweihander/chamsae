@@ -33,10 +33,6 @@ fn default_database_database() -> String {
     "postgres".to_string()
 }
 
-fn default_static_files_directory_path() -> Option<PathBuf> {
-    Some(PathBuf::from("../frontend/dist"))
-}
-
 #[derive(Clone, Deserialize)]
 pub struct Config {
     pub domain: String,
@@ -54,11 +50,6 @@ pub struct Config {
     pub database_password: String,
     #[serde(default = "default_database_database")]
     pub database_database: String,
-
-    /// Path to the static frontend files directory.
-    /// Set to None if you want to serve frontend in another method (e.g. CDN)
-    #[serde(default = "default_static_files_directory_path")]
-    pub static_files_directory_path: Option<PathBuf>,
 
     /// Handle of the owner of this instance
     pub user_handle: String,
