@@ -21,6 +21,8 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(has_many = "super::local_file::Entity")]
+    LocalFile,
     #[sea_orm(
         belongs_to = "Entity",
         from = "Column::ReplyId",
@@ -41,6 +43,12 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     User,
+}
+
+impl Related<super::local_file::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::LocalFile.def()
+    }
 }
 
 impl Related<super::reaction::Entity> for Entity {

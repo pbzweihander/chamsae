@@ -5,6 +5,7 @@ pub mod prelude;
 pub mod access_key;
 pub mod follow;
 pub mod follower;
+pub mod local_file;
 pub mod post;
 pub mod reaction;
 pub mod remote_file;

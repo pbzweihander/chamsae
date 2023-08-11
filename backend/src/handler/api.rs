@@ -1,16 +1,19 @@
 use axum::{routing, Router};
 
 mod auth;
+mod file;
 mod follow;
 mod post;
 
 pub(super) fn create_router() -> Router {
     let auth = self::auth::create_router();
+    let file = self::file::create_router();
     let follow = self::follow::create_router();
     let post = self::post::create_router();
 
     Router::new()
         .nest("/auth", auth)
+        .nest("/file", file)
         .nest("/follow", follow)
         .nest("/post", post)
         .route("/healthz", routing::get(get_healthz))

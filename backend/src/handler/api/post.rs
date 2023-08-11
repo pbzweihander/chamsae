@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     ap::delete::Delete,
     config::CONFIG,
-    entity::{post, reaction, remote_file, sea_orm_active_enums, user},
+    entity::{local_file, post, reaction, remote_file, sea_orm_active_enums, user},
     error::{Context, Result},
     format_err,
     state::State,
@@ -46,10 +46,21 @@ struct PostPostReq {
     title: Option<String>,
     visibility: Visibility,
     is_sensitive: bool,
+    files: Vec<Uuid>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PostPostResp {
+    id: Uuid,
 }
 
 #[tracing::instrument(skip(data, _access, req))]
-async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostReq>) -> Result<()> {
+async fn post_post(
+    data: Data<State>,
+    _access: Access,
+    Json(req): Json<PostPostReq>,
+) -> Result<Json<PostPostResp>> {
     let tx = data
         .db
         .begin()
@@ -88,15 +99,25 @@ async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostR
         .await
         .context_internal_server_error("failed to insert to database")?;
 
+    for (idx, local_file_id) in req.files.into_iter().enumerate() {
+        let file = local_file::Entity::find_by_id(local_file_id)
+            .one(&tx)
+            .await
+            .context_internal_server_error("failed to query database")?
+            .context_not_found("file not found")?;
+        file.attach_to_post(post.id, idx as u8, &tx).await?;
+    }
+
     tx.commit()
         .await
         .context_internal_server_error("failed to commmit database transaction")?;
 
+    let post_id = post.id;
     let post = post.into_json(&data).await?;
     let create = post.into_create()?;
     create.send(&data).await?;
 
-    Ok(())
+    Ok(Json(PostPostResp { id: post_id }))
 }
 
 #[derive(Serialize)]

@@ -636,6 +636,7 @@ dependencies = [
  "chrono",
  "enum_delegate",
  "envy",
+ "futures-util",
  "migration",
  "mime",
  "mime_serde_shim",

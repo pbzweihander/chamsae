@@ -6,6 +6,7 @@ use activitypub_federation::{
 };
 use async_trait::async_trait;
 use chrono::Utc;
+use futures_util::{stream::FuturesUnordered, TryStreamExt};
 use migration::OnConflict;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
@@ -19,7 +20,7 @@ use crate::{
         note::{Attachment, Note},
         person::LocalPerson,
     },
-    entity::{post, remote_file, sea_orm_active_enums, user},
+    entity::{local_file, post, remote_file, sea_orm_active_enums, user},
     error::{Context, Error},
     format_err,
     state::State,
@@ -78,6 +79,13 @@ impl Object for post::Model {
             .await
             .context_internal_server_error("failed to query database")?;
 
+        let local_files = self
+            .find_related(local_file::Entity)
+            .order_by_asc(local_file::Column::Order)
+            .all(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+
         let attachment = remote_files
             .into_iter()
             .filter_map(|file| {
@@ -88,6 +96,14 @@ impl Object for post::Model {
                     name: file.alt,
                 })
             })
+            .chain(local_files.into_iter().filter_map(|file| {
+                Some(Attachment {
+                    ty: Default::default(),
+                    media_type: file.media_type.parse().ok()?,
+                    url: file.url.parse().ok()?,
+                    name: file.alt,
+                })
+            }))
             .collect::<Vec<_>>();
 
         Ok(Self::Kind {
@@ -193,6 +209,7 @@ impl Object for post::Model {
             .begin()
             .await
             .context_internal_server_error("failed to begin database transaction")?;
+
         let existing_count = post::Entity::find_by_id(self.id)
             .count(&tx)
             .await
@@ -200,12 +217,27 @@ impl Object for post::Model {
         if existing_count == 0 {
             return Err(format_err!(NOT_FOUND, "post not found"));
         }
+
+        let local_files = self
+            .find_related(local_file::Entity)
+            .all(&tx)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        local_files
+            .into_iter()
+            .map(|file| file.delete(&tx))
+            .collect::<FuturesUnordered<_>>()
+            .try_collect()
+            .await?;
+
         ModelTrait::delete(self, &tx)
             .await
             .context_internal_server_error("failed to delete from database")?;
+
         tx.commit()
             .await
             .context_internal_server_error("failed to commit database transaction")?;
+
         Ok(())
     }
 }
