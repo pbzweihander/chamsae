@@ -1,10 +1,12 @@
+use std::str::FromStr;
+
 use activitypub_federation::{config::Data, traits::Object};
 use axum::{extract, routing, Json, Router};
 use chrono::{DateTime, FixedOffset, Utc};
 use mime::Mime;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, EntityTrait, ModelTrait, PaginatorTrait, QueryOrder,
-    TransactionTrait,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -13,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     ap::delete::Delete,
     config::CONFIG,
-    entity::{post, remote_file, sea_orm_active_enums, user},
+    entity::{post, reaction, remote_file, sea_orm_active_enums, user},
     error::{Context, Result},
     format_err,
     state::State,
@@ -100,7 +102,7 @@ async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostR
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GetPostRespUser {
-    handle: Uuid,
+    handle: String,
     host: String,
 }
 
@@ -111,6 +113,22 @@ struct GetPostRespFile {
     media_type: Mime,
     url: Url,
     alt: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPostRespReactionEmoji {
+    #[serde(with = "mime_serde_shim")]
+    media_type: Mime,
+    image_url: Url,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPostRespReaction {
+    user: Option<GetPostRespUser>,
+    content: String,
+    emoji: Option<GetPostRespReactionEmoji>,
 }
 
 #[derive(Serialize)]
@@ -126,6 +144,7 @@ struct GetPostResp {
     is_sensitive: bool,
     uri: Url,
     files: Vec<GetPostRespFile>,
+    reactions: Vec<GetPostRespReaction>,
 }
 
 #[tracing::instrument(skip(data, _access))]
@@ -147,7 +166,7 @@ async fn get_post(
             .context_internal_server_error("failed to query database")?
             .context_internal_server_error("user not found")?;
         Some(GetPostRespUser {
-            handle: user.id,
+            handle: user.handle,
             host: user.host,
         })
     } else {
@@ -172,6 +191,36 @@ async fn get_post(
         })
         .collect::<Vec<_>>();
 
+    let reactions = reaction::Entity::find()
+        .filter(reaction::Column::PostId.eq(post.id))
+        .find_also_related(user::Entity)
+        .all(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+    let reactions = reactions
+        .into_iter()
+        .filter_map(|(reaction, user)| {
+            let emoji = if let (Some(media_type), Some(image_url)) =
+                (reaction.emoji_media_type, reaction.emoji_image_url)
+            {
+                Some(GetPostRespReactionEmoji {
+                    media_type: Mime::from_str(&media_type).ok()?,
+                    image_url: Url::parse(&image_url).ok()?,
+                })
+            } else {
+                None
+            };
+            Some(GetPostRespReaction {
+                user: user.map(|user| GetPostRespUser {
+                    handle: user.handle,
+                    host: user.host,
+                }),
+                content: reaction.content,
+                emoji,
+            })
+        })
+        .collect::<Vec<_>>();
+
     Ok(Json(GetPostResp {
         id: post.id,
         created_at: post.created_at,
@@ -191,6 +240,7 @@ async fn get_post(
             .parse()
             .context_internal_server_error("malformed post URI")?,
         files,
+        reactions,
     }))
 }
 

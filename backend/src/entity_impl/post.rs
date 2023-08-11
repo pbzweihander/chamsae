@@ -21,6 +21,7 @@ use crate::{
     },
     entity::{post, remote_file, sea_orm_active_enums, user},
     error::{Context, Error},
+    format_err,
     state::State,
 };
 
@@ -197,7 +198,7 @@ impl Object for post::Model {
             .await
             .context_internal_server_error("failed to query database")?;
         if existing_count == 0 {
-            return Ok(());
+            return Err(format_err!(NOT_FOUND, "post not found"));
         }
         ModelTrait::delete(self, &tx)
             .await

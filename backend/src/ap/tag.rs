@@ -23,6 +23,12 @@ impl std::fmt::Display for HashtagType {
     }
 }
 
+impl Default for HashtagType {
+    fn default() -> Self {
+        Self::Hashtag
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Hashtag {
@@ -40,6 +46,12 @@ pub enum EmojiType {
 impl std::fmt::Display for EmojiType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Emoji")
+    }
+}
+
+impl Default for EmojiType {
+    fn default() -> Self {
+        Self::Emoji
     }
 }
 

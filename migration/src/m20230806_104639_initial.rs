@@ -218,7 +218,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(Iden)]
-enum User {
+pub enum User {
     Table,
     Id,
     CreatedAt,
@@ -232,7 +232,7 @@ enum User {
 }
 
 #[derive(Iden)]
-enum Post {
+pub enum Post {
     Table,
     Id,
     CreatedAt,

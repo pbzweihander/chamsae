@@ -5,12 +5,13 @@ use uuid::Uuid;
 
 use crate::{
     config::CONFIG,
-    entity::follower,
+    entity::{follower, reaction},
     error::{Context, Error},
 };
 
 pub mod delete;
 pub mod follow;
+pub mod like;
 pub mod note;
 pub mod other_activity;
 pub mod person;
@@ -36,6 +37,8 @@ pub enum Activity {
     UndoFollow(self::undo::Undo<self::follow::Follow, follower::Model>),
     Delete(self::delete::Delete),
     Reject(self::follow::FollowReject),
+    Like(self::like::Like),
+    UndoLike(self::undo::Undo<self::like::Like, reaction::Model>),
     /// Fallback
     Other(self::other_activity::OtherActivity),
 }
