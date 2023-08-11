@@ -38,7 +38,7 @@ pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
         FederationConfig::builder()
             .domain(&crate::config::CONFIG.domain)
             .app_data(state.clone())
-            .debug(true) // TODO: remove
+            .debug(CONFIG.debug)
             .build()
             .await,
         "failed to build federation config",

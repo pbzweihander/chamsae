@@ -45,6 +45,10 @@ async fn main() -> anyhow::Result<()> {
         .with_line_number(true)
         .init();
 
+    if crate::config::CONFIG.debug {
+        tracing::warn!("Enabling debug mode... DO NOT USE IN PRODUCTION!");
+    }
+
     let db = Database::connect(format!(
         "postgresql://{}:{}@{}:{}/{}",
         crate::config::CONFIG.database_user,
