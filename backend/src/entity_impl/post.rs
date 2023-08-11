@@ -162,17 +162,20 @@ impl Object for post::Model {
                 media_type: ActiveValue::Set(attachment.media_type.to_string()),
                 url: ActiveValue::Set(attachment.url.to_string()),
                 alt: ActiveValue::Set(attachment.name),
-            });
+            })
+            .collect::<Vec<_>>();
 
-        remote_file::Entity::insert_many(remote_files)
-            .on_conflict(
-                OnConflict::columns([remote_file::Column::PostId, remote_file::Column::Order])
-                    .do_nothing()
-                    .to_owned(),
-            )
-            .exec(&tx)
-            .await
-            .context_internal_server_error("failed to insert to database")?;
+        if !remote_files.is_empty() {
+            remote_file::Entity::insert_many(remote_files)
+                .on_conflict(
+                    OnConflict::columns([remote_file::Column::PostId, remote_file::Column::Order])
+                        .do_nothing()
+                        .to_owned(),
+                )
+                .exec(&tx)
+                .await
+                .context_internal_server_error("failed to insert to database")?;
+        }
 
         tx.commit()
             .await
