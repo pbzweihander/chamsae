@@ -7,14 +7,14 @@ use activitypub_federation::{
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
-use sea_orm::{EntityTrait, JoinType, QuerySelect, RelationTrait};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    entity::{follower, post, user},
-    error::{Context, Error},
+    entity::{post, user},
+    error::Error,
     state::State,
+    util::get_follower_inboxes,
 };
 
 use super::{generate_object_id, person::LocalPerson};
@@ -69,18 +69,7 @@ impl CreateNote {
     }
 
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
-        let inboxes = follower::Entity::find()
-            .join(JoinType::InnerJoin, follower::Relation::User.def())
-            .select_only()
-            .column(user::Column::Inbox)
-            .into_tuple::<String>()
-            .all(&*data.db)
-            .await
-            .context_internal_server_error("failed to query database")?;
-        let inboxes = inboxes
-            .into_iter()
-            .filter_map(|url| Url::parse(&url).ok())
-            .collect::<Vec<_>>();
+        let inboxes = get_follower_inboxes(&*data.db).await?;
         let with_context = WithContext::new_default(self);
         send_activity(with_context, &LocalPerson, inboxes, data).await
     }
