@@ -1,16 +1,19 @@
 use activitypub_federation::{config::Data, traits::Object};
 use axum::{extract, routing, Json, Router};
 use chrono::{DateTime, FixedOffset, Utc};
+use mime::Mime;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, EntityTrait, ModelTrait, PaginatorTrait, TransactionTrait,
+    ActiveModelTrait, ActiveValue, EntityTrait, ModelTrait, PaginatorTrait, QueryOrder,
+    TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
+use url::Url;
 
 use crate::{
     ap::delete::Delete,
     config::CONFIG,
-    entity::{post, sea_orm_active_enums, user},
+    entity::{post, remote_file, sea_orm_active_enums, user},
     error::{Context, Result},
     format_err,
     state::State,
@@ -40,6 +43,7 @@ struct PostPostReq {
     text: String,
     title: Option<String>,
     visibility: Visibility,
+    is_sensitive: bool,
 }
 
 #[tracing::instrument(skip(data, _access, req))]
@@ -74,6 +78,7 @@ async fn post_post(data: Data<State>, _access: Access, Json(req): Json<PostPostR
             Visibility::Followers => sea_orm_active_enums::Visibility::Followers,
             Visibility::DirectMessage => sea_orm_active_enums::Visibility::DirectMessage,
         }),
+        is_sensitive: ActiveValue::Set(req.is_sensitive),
         uri: ActiveValue::Set(format!("https://{}/ap/post/{}", CONFIG.domain, id)),
     };
     let post = post_activemodel
@@ -101,6 +106,16 @@ struct GetPostRespUser {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+struct GetPostRespFile {
+    id: Ulid,
+    #[serde(with = "mime_serde_shim")]
+    media_type: Mime,
+    url: Url,
+    alt: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct GetPostResp {
     id: Ulid,
     created_at: DateTime<FixedOffset>,
@@ -109,7 +124,9 @@ struct GetPostResp {
     title: Option<String>,
     user: Option<GetPostRespUser>,
     visibility: Visibility,
-    uri: String,
+    is_sensitive: bool,
+    uri: Url,
+    files: Vec<GetPostRespFile>,
 }
 
 #[tracing::instrument(skip(data, _access))]
@@ -123,6 +140,7 @@ async fn get_post(
         .await
         .context_internal_server_error("failed to query database")?
         .context_not_found("post not found")?;
+
     let user = if let Some(user_id) = &post.user_id {
         let user = user::Entity::find_by_id(user_id.to_string())
             .one(&*data.db)
@@ -137,6 +155,25 @@ async fn get_post(
         None
     };
 
+    let remote_files = post
+        .find_related(remote_file::Entity)
+        .order_by_asc(remote_file::Column::Order)
+        .all(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+
+    let files = remote_files
+        .into_iter()
+        .filter_map(|file| {
+            Some(GetPostRespFile {
+                id: Ulid::from_string(&file.id).ok()?,
+                media_type: file.media_type.parse().ok()?,
+                url: file.url.parse().ok()?,
+                alt: file.alt,
+            })
+        })
+        .collect::<Vec<_>>();
+
     Ok(Json(GetPostResp {
         id: Ulid::from_string(&post.id).context_internal_server_error("malformed id")?,
         created_at: post.created_at,
@@ -145,7 +182,7 @@ async fn get_post(
             .as_deref()
             .map(Ulid::from_string)
             .transpose()
-            .context_internal_server_error("malformed id")?,
+            .context_internal_server_error("malformed post ID")?,
         text: post.text,
         title: post.title,
         user,
@@ -155,7 +192,12 @@ async fn get_post(
             sea_orm_active_enums::Visibility::Followers => Visibility::Followers,
             sea_orm_active_enums::Visibility::DirectMessage => Visibility::DirectMessage,
         },
-        uri: post.uri,
+        is_sensitive: post.is_sensitive,
+        uri: post
+            .uri
+            .parse()
+            .context_internal_server_error("malformed post URI")?,
+        files,
     }))
 }
 

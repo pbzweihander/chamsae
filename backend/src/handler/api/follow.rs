@@ -12,6 +12,7 @@ use crate::{
     ap::{follow::Follow, undo::Undo},
     entity::{follow, user},
     error::{Context, Result},
+    format_err,
     state::State,
 };
 
@@ -40,6 +41,15 @@ async fn post_follow(
         .begin()
         .await
         .context_internal_server_error("failed to begin database transaction")?;
+
+    let user_existing_count = user::Entity::find_by_id(req.to_id.to_string())
+        .count(&tx)
+        .await
+        .context_internal_server_error("failed to query database")?;
+
+    if user_existing_count == 0 {
+        return Err(format_err!(NOT_FOUND, "user not found"));
+    }
 
     let existing_count = follow::Entity::find()
         .filter(follow::Column::ToId.eq(req.to_id.to_string()))

@@ -6,5 +6,6 @@ pub mod access_key;
 pub mod follow;
 pub mod follower;
 pub mod post;
+pub mod remote_file;
 pub mod sea_orm_active_enums;
 pub mod user;

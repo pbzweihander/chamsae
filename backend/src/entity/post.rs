@@ -15,6 +15,8 @@ pub struct Model {
     pub user_id: Option<String>,
     pub visibility: Visibility,
     #[sea_orm(unique)]
+    pub is_sensitive: bool,
+    #[sea_orm(unique)]
     pub uri: String,
 }
 
@@ -25,17 +27,25 @@ pub enum Relation {
         from = "Column::ReplyId",
         to = "Column::Id",
         on_update = "NoAction",
-        on_delete = "NoAction"
+        on_delete = "SetNull"
     )]
     SelfRef,
+    #[sea_orm(has_many = "super::remote_file::Entity")]
+    RemoteFile,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::UserId",
         to = "super::user::Column::Id",
         on_update = "NoAction",
-        on_delete = "NoAction"
+        on_delete = "Cascade"
     )]
     User,
+}
+
+impl Related<super::remote_file::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::RemoteFile.def()
+    }
 }
 
 impl Related<super::user::Entity> for Entity {

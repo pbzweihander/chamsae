@@ -6,16 +6,20 @@ use activitypub_federation::{
 };
 use async_trait::async_trait;
 use chrono::Utc;
+use migration::OnConflict;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
-    QuerySelect, TransactionTrait,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
 
 use crate::{
-    ap::{note::Note, person::LocalPerson},
-    entity::{post, sea_orm_active_enums, user},
+    ap::{
+        note::{Attachment, Note},
+        person::LocalPerson,
+    },
+    entity::{post, remote_file, sea_orm_active_enums, user},
     error::{Context, Error},
     state::State,
 };
@@ -51,8 +55,10 @@ impl Object for post::Model {
         } else {
             LocalPerson.id()
         };
+
         let id = Url::parse(&self.uri).context_internal_server_error("malformed post URI")?;
-        let in_reply_to_id = if let Some(reply_id) = self.reply_id {
+
+        let in_reply_to_id = if let Some(reply_id) = &self.reply_id {
             let reply_post = post::Entity::find_by_id(reply_id)
                 .one(&*data.db)
                 .await
@@ -63,6 +69,26 @@ impl Object for post::Model {
         } else {
             None
         };
+
+        let remote_files = self
+            .find_related(remote_file::Entity)
+            .order_by_asc(remote_file::Column::Order)
+            .all(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+
+        let attachment = remote_files
+            .into_iter()
+            .filter_map(|file| {
+                Some(Attachment {
+                    ty: Default::default(),
+                    media_type: file.media_type.parse().ok()?,
+                    url: file.url.parse().ok()?,
+                    name: file.alt,
+                })
+            })
+            .collect::<Vec<_>>();
+
         Ok(Self::Kind {
             ty: Default::default(),
             id: id.into(),
@@ -70,6 +96,8 @@ impl Object for post::Model {
             to: vec![public()],
             content: self.text,
             in_reply_to: in_reply_to_id.map(Into::into),
+            attachment,
+            sensitive: self.is_sensitive,
             tag: vec![],
         })
     }
@@ -95,6 +123,7 @@ impl Object for post::Model {
             title: None,
             user_id: Some(user.id),
             visibility: sea_orm_active_enums::Visibility::Public,
+            is_sensitive: json.sensitive,
             uri: json.id.inner().to_string(),
         };
 
@@ -117,15 +146,38 @@ impl Object for post::Model {
             Self { id, ..this }
         } else {
             let this_activemodel: post::ActiveModel = this.into();
-            let this = this_activemodel
+            this_activemodel
                 .insert(&tx)
                 .await
-                .context_internal_server_error("failed to insert to database")?;
-            tx.commit()
-                .await
-                .context_internal_server_error("failed to commit database transaction")?;
-            this
+                .context_internal_server_error("failed to insert to database")?
         };
+
+        let remote_files = json
+            .attachment
+            .into_iter()
+            .enumerate()
+            .map(|(idx, attachment)| remote_file::ActiveModel {
+                id: ActiveValue::Set(Ulid::new().to_string()),
+                post_id: ActiveValue::Set(this.id.clone()),
+                order: ActiveValue::Set(idx as i16),
+                media_type: ActiveValue::Set(attachment.media_type.to_string()),
+                url: ActiveValue::Set(attachment.url.to_string()),
+                alt: ActiveValue::Set(attachment.name),
+            });
+
+        remote_file::Entity::insert_many(remote_files)
+            .on_conflict(
+                OnConflict::columns([remote_file::Column::PostId, remote_file::Column::Order])
+                    .do_nothing()
+                    .to_owned(),
+            )
+            .exec(&tx)
+            .await
+            .context_internal_server_error("failed to insert to database")?;
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
 
         Ok(this)
     }

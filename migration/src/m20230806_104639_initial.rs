@@ -82,16 +82,24 @@ impl MigrationTrait for Migration {
                             )
                             .not_null(),
                     )
+                    .col(
+                        ColumnDef::new(Post::IsSensitive)
+                            .boolean()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(Post::Uri).string().not_null().unique_key())
                     .foreign_key(
                         ForeignKey::create()
                             .from(Post::Table, Post::ReplyId)
-                            .to(Post::Table, Post::Id),
+                            .to(Post::Table, Post::Id)
+                            .on_delete(ForeignKeyAction::SetNull),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .from(Post::Table, Post::UserId)
-                            .to(User::Table, User::Id),
+                            .to(User::Table, User::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
@@ -138,7 +146,8 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .from(Follow::Table, Follow::ToId)
-                            .to(User::Table, User::Id),
+                            .to(User::Table, User::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
@@ -169,7 +178,8 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .from(Follower::Table, Follower::FromId)
-                            .to(User::Table, User::Id),
+                            .to(User::Table, User::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
@@ -222,7 +232,7 @@ enum User {
 }
 
 #[derive(Iden)]
-enum Post {
+pub enum Post {
     Table,
     Id,
     CreatedAt,
@@ -231,6 +241,7 @@ enum Post {
     Title,
     UserId,
     Visibility,
+    IsSensitive,
     Uri,
 }
 

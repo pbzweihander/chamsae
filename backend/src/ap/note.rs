@@ -2,11 +2,17 @@ use activitypub_federation::{
     activity_queue::send_activity,
     config::Data,
     fetch::object_id::ObjectId,
-    kinds::{activity::CreateType, link::MentionType, object::NoteType, public},
+    kinds::{
+        activity::CreateType,
+        link::MentionType,
+        object::{DocumentType, NoteType},
+        public,
+    },
     protocol::{context::WithContext, helpers::deserialize_one_or_many},
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
+use mime::Mime;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -28,6 +34,18 @@ pub struct Mention {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct Attachment {
+    #[serde(rename = "type")]
+    pub ty: DocumentType,
+    #[serde(with = "mime_serde_shim")]
+    pub media_type: Mime,
+    pub url: Url,
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Note {
     #[serde(rename = "type")]
     pub ty: NoteType,
@@ -36,6 +54,11 @@ pub struct Note {
     pub to: Vec<Url>,
     pub content: String,
     pub in_reply_to: Option<ObjectId<post::Model>>,
+    #[serde(default)]
+    pub attachment: Vec<Attachment>,
+    #[serde(default)]
+    pub sensitive: bool,
+    #[serde(default)]
     pub tag: Vec<Mention>,
 }
 
