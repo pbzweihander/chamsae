@@ -14,6 +14,7 @@ pub mod follow;
 pub mod note;
 pub mod other_activity;
 pub mod person;
+pub mod tag;
 pub mod undo;
 
 pub fn generate_object_id() -> Result<Url, Error> {

@@ -34,6 +34,5 @@ pub(super) async fn get_user(data: Data<State>) -> Result<FederationJson<WithCon
 
 #[tracing::instrument(skip(data, activity_data))]
 pub(super) async fn post_inbox(data: Data<State>, activity_data: ActivityData) -> Result<()> {
-    tracing::info!(?activity_data, "activity data"); // TODO: remove
     receive_activity::<WithContext<Activity>, user::Model, State>(activity_data, &data).await
 }

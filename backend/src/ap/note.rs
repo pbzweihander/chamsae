@@ -4,7 +4,6 @@ use activitypub_federation::{
     fetch::object_id::ObjectId,
     kinds::{
         activity::CreateType,
-        link::MentionType,
         object::{DocumentType, NoteType},
         public,
     },
@@ -23,14 +22,7 @@ use crate::{
     util::get_follower_inboxes,
 };
 
-use super::{generate_object_id, person::LocalPerson};
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Mention {
-    #[serde(rename = "type")]
-    pub ty: MentionType,
-    pub href: Url,
-}
+use super::{generate_object_id, person::LocalPerson, tag::Tag};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -61,7 +53,7 @@ pub struct Note {
     #[serde(default)]
     pub sensitive: bool,
     #[serde(default)]
-    pub tag: Vec<Mention>,
+    pub tag: Vec<Tag>,
 }
 
 impl Note {
