@@ -1,15 +1,14 @@
 use activitypub_federation::config::Data;
 use async_trait::async_trait;
 use axum::{
-    extract::{self, rejection::TypedHeaderRejectionReason, FromRequestParts},
+    extract::{rejection::TypedHeaderRejectionReason, FromRequestParts},
     headers,
-    http::{header, request::Parts, HeaderMap},
-    response::Redirect,
+    http::{header, request::Parts},
     routing, Json, RequestPartsExt, Router, TypedHeader,
 };
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, TransactionTrait};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
 use crate::{
@@ -36,8 +35,8 @@ where
             .extract::<Data<State>>()
             .await
             .map_err(|(code, message)| Error::new(code, message))?;
-        let cookies = parts
-            .extract::<TypedHeader<headers::Cookie>>()
+        let bearer = parts
+            .extract::<TypedHeader<headers::Authorization<headers::authorization::Bearer>>>()
             .await
             .map_err(|e| match *e.name() {
                 header::COOKIE => match e.reason() {
@@ -49,9 +48,7 @@ where
                 _ => format_err!(INTERNAL_SERVER_ERROR, "failed to authorize"),
             })?;
 
-        let access_key_id = cookies
-            .get("ACCESS_KEY")
-            .ok_or(format_err!(UNAUTHORIZED, "user not authorized"))?;
+        let access_key_id = bearer.token();
 
         let tx = data
             .db
@@ -87,22 +84,21 @@ pub(super) fn create_router() -> Router {
 }
 
 #[derive(Deserialize)]
-struct PostLoginQuery {
-    redirect_to: Option<String>,
-}
-
-#[derive(Deserialize)]
 struct PostLoginReq {
     id: String,
     password: String,
     hostname: String,
 }
 
+#[derive(Serialize)]
+struct PostLoginResp {
+    token: String,
+}
+
 async fn post_login(
     data: Data<State>,
-    extract::Query(query): extract::Query<PostLoginQuery>,
     Json(req): Json<PostLoginReq>,
-) -> Result<(HeaderMap, Redirect)> {
+) -> Result<Json<PostLoginResp>> {
     if CONFIG.user_handle == req.id
         && bcrypt::verify(&req.password, &CONFIG.user_password_bcrypt)
             .context_bad_request("failed to authenticate")?
@@ -118,17 +114,9 @@ async fn post_login(
             .await
             .context_internal_server_error("failed to insert to database")?;
 
-        let mut header_map = HeaderMap::new();
-        header_map.insert(
-            header::COOKIE,
-            format!("ACCESS_KEY={}; SameSite=Lax; Path=/", access_key.id)
-                .parse()
-                .context_internal_server_error("failed to generate header value")?,
-        );
-
-        let redirect_to = query.redirect_to.as_deref().unwrap_or("/");
-
-        Ok((header_map, Redirect::to(redirect_to)))
+        Ok(Json(PostLoginResp {
+            token: access_key.id,
+        }))
     } else {
         Err(format_err!(BAD_REQUEST, "failed to authenticate"))
     }
