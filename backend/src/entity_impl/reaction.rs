@@ -30,7 +30,7 @@ use crate::{
 
 impl reaction::Model {
     pub fn ap_id_from_id(id: Uuid) -> Result<Url, Error> {
-        Url::parse(&format!("https://{}/ap/reaction/{}", CONFIG.domain, id))
+        Url::parse(&format!("https://{}/ap/like/{}", CONFIG.domain, id))
             .context_internal_server_error("failed to construct follow URL ID")
     }
 

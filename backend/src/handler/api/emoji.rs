@@ -20,19 +20,20 @@ pub(super) fn create_router() -> Router {
     Router::new().route("/", routing::post(post_emoji))
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostEmojiReq {
     file_id: Uuid,
     name: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PostEmojiResp {
     id: Uuid,
 }
 
+#[tracing::instrument(skip(data, _access))]
 async fn post_emoji(
     data: Data<State>,
     _access: Access,

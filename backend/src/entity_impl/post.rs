@@ -19,11 +19,23 @@ use crate::{
         note::{Attachment, Note},
         person::LocalPerson,
     },
+    config::CONFIG,
     entity::{local_file, post, remote_file, sea_orm_active_enums, user},
     error::{Context, Error},
     format_err,
     state::State,
 };
+
+impl post::Model {
+    pub fn ap_id_from_id(id: Uuid) -> Result<Url, Error> {
+        Url::parse(&format!("https://{}/ap/note/{}", CONFIG.domain, id))
+            .context_internal_server_error("failed to construct follow URL ID")
+    }
+
+    pub fn ap_id(&self) -> Result<Url, Error> {
+        Self::ap_id_from_id(self.id)
+    }
+}
 
 #[async_trait]
 impl Object for post::Model {

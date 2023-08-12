@@ -3,6 +3,7 @@ use std::sync::Arc;
 use activitypub_federation::{
     config::{Data, FederationConfig, FederationMiddleware},
     fetch::webfinger::{build_webfinger_response, extract_webfinger_name, Webfinger},
+    traits::Actor,
 };
 use axum::{extract, http::Request, middleware::Next, response::Response, routing, Json, Router};
 use sea_orm::DatabaseConnection;
@@ -11,6 +12,7 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::Level;
 
 use crate::{
+    ap::person::LocalPerson,
     config::CONFIG,
     error::{Context, Result},
     format_err,
@@ -44,14 +46,13 @@ pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
         "failed to build federation config",
     )?;
 
-    // let ap = self::ap::create_router();
+    let ap = self::ap::create_router();
     let api = self::api::create_router();
 
     let router = Router::new()
         .nest("/api", api)
-        // .nest("/ap", ap)
+        .nest("/ap", ap)
         // TODO: We cannot use nested router because of https://github.com/LemmyNet/activitypub-federation-rust/issues/73
-        .route("/ap/user", routing::get(self::ap::get_user))
         .route("/ap/inbox", routing::post(self::ap::post_inbox))
         .route("/.well-known/webfinger", routing::get(get_webfinger))
         .layer(FederationMiddleware::new(federation_config))
@@ -74,12 +75,7 @@ async fn get_webfinger(
     let name = extract_webfinger_name(&query.resource, &data)
         .context_bad_request("failed to extract resource name")?;
     if name == CONFIG.user_handle {
-        let resp = build_webfinger_response(
-            name,
-            format!("https://{}/ap/user", CONFIG.domain)
-                .parse()
-                .context_internal_server_error("failed to construct URL")?,
-        );
+        let resp = build_webfinger_response(name, LocalPerson.id());
         Ok(Json(resp))
     } else {
         Err(format_err!(NOT_FOUND, "user not found"))

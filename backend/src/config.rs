@@ -126,7 +126,7 @@ impl Config {
         let mut config: Config =
             envy::from_env().context("failed to parse config fro environment variables")?;
 
-        let user_id = Url::parse(&format!("https://{}/ap/user", config.domain))
+        let user_id = Url::parse(&format!("https://{}/ap/person", config.domain))
             .context("failed to construct ID URL")?;
         let inbox_url = Url::parse(&format!("https://{}/ap/inbox", config.domain))
             .context("failed to construct inbox URL")?;

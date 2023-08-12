@@ -23,7 +23,7 @@ impl follow::Model {
             .context_internal_server_error("failed to construct follow URL ID")
     }
 
-    pub fn parse_id_from_ap_id(url: &str) -> Option<Uuid> {
+    pub fn parse_ap_id(url: &str) -> Option<Uuid> {
         url.strip_prefix(&format!("https://{}/ap/follow/", CONFIG.domain))
             .and_then(|id| Uuid::parse_str(id).ok())
     }
@@ -41,7 +41,7 @@ impl Object for follow::Model {
         data: &Data<Self::DataType>,
     ) -> Result<Option<Self>, Self::Error> {
         let object_id = object_id.to_string();
-        if let Some(id) = follow::Model::parse_id_from_ap_id(object_id.as_str()) {
+        if let Some(id) = follow::Model::parse_ap_id(object_id.as_str()) {
             follow::Entity::find_by_id(id)
                 .one(&*data.db)
                 .await

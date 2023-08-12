@@ -14,7 +14,6 @@ use uuid::Uuid;
 
 use crate::{
     ap::delete::Delete,
-    config::CONFIG,
     entity::{emoji, local_file, post, reaction, remote_file, sea_orm_active_enums, user},
     error::{Context, Result},
     format_err,
@@ -93,7 +92,7 @@ async fn post_post(
             Visibility::DirectMessage => sea_orm_active_enums::Visibility::DirectMessage,
         }),
         is_sensitive: ActiveValue::Set(req.is_sensitive),
-        uri: ActiveValue::Set(format!("https://{}/ap/post/{}", CONFIG.domain, id)),
+        uri: ActiveValue::Set(post::Model::ap_id_from_id(id)?.to_string()),
     };
     let post = post_activemodel
         .insert(&tx)
@@ -306,25 +305,26 @@ async fn delete_post(
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostReactionReqContent {
     content: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostReactionReqEmoji {
     emoji_id: Uuid,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum PostReactionReq {
     Content(PostReactionReqContent),
     Emoji(PostReactionReqEmoji),
 }
 
+#[tracing::instrument(skip(data, _access))]
 async fn post_reaction(
     data: Data<State>,
     _access: Access,
