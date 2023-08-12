@@ -52,7 +52,7 @@ struct Mention {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct GetPostQuery {
+struct GetPostsQuery {
     #[serde(default)]
     after: Option<Ulid>,
 }
@@ -248,15 +248,15 @@ impl GetPostResp {
 async fn get_posts(
     data: Data<State>,
     _access: Access,
-    extract::Query(query): extract::Query<GetPostQuery>,
+    extract::Query(query): extract::Query<GetPostsQuery>,
 ) -> Result<Json<Vec<GetPostResp>>> {
-    let post_query = post::Entity::find();
-    let post_query = if let Some(after) = query.after {
-        post_query.filter(post::Column::Id.lt(uuid::Uuid::from(after)))
+    let pagination_query = post::Entity::find();
+    let pagination_query = if let Some(after) = query.after {
+        pagination_query.filter(post::Column::Id.lt(uuid::Uuid::from(after)))
     } else {
-        post_query
+        pagination_query
     };
-    let posts = post_query
+    let posts = pagination_query
         .order_by_desc(post::Column::Id)
         .limit(100)
         .all(&*data.db)
