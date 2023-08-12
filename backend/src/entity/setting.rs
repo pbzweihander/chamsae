@@ -17,6 +17,7 @@ pub struct Model {
     pub maintainer_name: Option<String>,
     pub maintainer_email: Option<String>,
     pub theme_color: Option<String>,
+    pub user_description: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

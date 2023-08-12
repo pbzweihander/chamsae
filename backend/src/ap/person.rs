@@ -55,6 +55,8 @@ pub struct Person {
     #[serde(default)]
     pub name: Option<String>,
     #[serde(default)]
+    pub summary: Option<String>,
+    #[serde(default)]
     pub icon: Option<PersonImage>,
     #[serde(default)]
     pub image: Option<PersonImage>,
@@ -145,6 +147,7 @@ impl Object for LocalPerson {
             id: id.clone().into(),
             preferred_username: CONFIG.user_handle.clone(),
             name: setting.user_name,
+            summary: setting.user_description,
             icon: avatar_url.map(|url| PersonImage {
                 ty: Default::default(),
                 url,

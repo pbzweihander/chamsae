@@ -53,6 +53,7 @@ impl Object for user::Model {
             id: id.clone().into(),
             preferred_username: self.handle,
             name: self.name,
+            summary: self.description,
             icon: self.avatar_url.and_then(|url| {
                 Some(PersonImage {
                     ty: Default::default(),
@@ -100,6 +101,7 @@ impl Object for user::Model {
             last_fetched_at: Utc::now().fixed_offset(),
             handle: json.preferred_username,
             name: json.name,
+            description: json.summary,
             host: json
                 .id
                 .inner()

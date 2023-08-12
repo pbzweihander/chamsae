@@ -70,4 +70,5 @@ pub enum Setting {
     MaintainerName,
     MaintainerEmail,
     ThemeColor,
+    UserDescription,
 }

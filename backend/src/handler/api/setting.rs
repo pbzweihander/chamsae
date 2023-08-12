@@ -33,6 +33,9 @@ async fn put_setting(
     if let Some(v) = req.user_name {
         setting_activemodel.user_name = ActiveValue::Set(Some(v));
     }
+    if let Some(v) = req.user_description {
+        setting_activemodel.user_description = ActiveValue::Set(Some(v));
+    }
     if let Some(v) = req.instance_name {
         setting_activemodel.instance_name = ActiveValue::Set(Some(v));
     }

@@ -20,6 +20,7 @@ pub struct Model {
     pub shared_inbox: Option<String>,
     pub manually_approves_followers: bool,
     pub is_bot: bool,
+    pub description: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
