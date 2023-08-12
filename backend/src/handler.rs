@@ -51,6 +51,7 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         self::api::follow::post_follow,
         self::api::follow::delete_follow,
         self::api::follower::get_followers,
+        self::api::follower::delete_follower,
         self::api::hashtag::get_hashtag_posts,
         self::api::post::get_posts,
         self::api::post::post_post,

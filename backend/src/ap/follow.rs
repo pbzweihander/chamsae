@@ -12,9 +12,11 @@ use sea_orm::{
     TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
+use ulid::Ulid;
 use url::Url;
 
 use crate::{
+    config::CONFIG,
     entity::{follow, follower, user},
     error::{Context, Error},
     format_err,
@@ -139,6 +141,32 @@ pub struct FollowReject {
     pub id: Url,
     pub actor: Url,
     pub object: Follow,
+}
+
+impl FollowReject {
+    pub fn new(user_id: Ulid, user_uri: Url) -> Result<Self, Error> {
+        Ok(Self {
+            ty: Default::default(),
+            id: generate_object_id()?,
+            actor: LocalPerson::id(),
+            object: Follow {
+                ty: Default::default(),
+                id: Url::parse(&format!(
+                    "https://{}/ap/follower/{}",
+                    CONFIG.domain, user_id
+                ))
+                .context_internal_server_error("failed to construct URL")?,
+                actor: user_uri,
+                object: LocalPerson::id(),
+            },
+        })
+    }
+
+    pub async fn send(self, data: &Data<State>, inbox: Url) -> Result<(), Error> {
+        let me = LocalPerson::get(&*data.db).await?;
+        let with_context = WithContext::new_default(self);
+        send_activity(with_context, &me, vec![inbox], data).await
+    }
 }
 
 #[async_trait]

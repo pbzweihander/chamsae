@@ -1,8 +1,12 @@
 use activitypub_federation::config::Data;
 use axum::{extract, routing, Json, Router};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
+use sea_orm::{
+    ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
+};
+use ulid::Ulid;
 
 use crate::{
+    ap::follow::FollowReject,
     dto::{IdPaginationQuery, User},
     entity::{follower, user},
     error::{Context, Result},
@@ -12,7 +16,9 @@ use crate::{
 use super::auth::Access;
 
 pub(super) fn create_router() -> Router {
-    Router::new().route("/", routing::get(get_followers))
+    Router::new()
+        .route("/", routing::get(get_followers))
+        .route("/:id", routing::delete(delete_follower))
 }
 
 #[utoipa::path(
@@ -50,4 +56,64 @@ async fn get_followers(
         .filter_map(|user| User::from_model(user).ok())
         .collect::<Vec<_>>();
     Ok(Json(followers))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/follower/{id}",
+    params(
+        ("id" = String, format = "ulid"),
+    ),
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
+#[tracing::instrument(skip(data, _access))]
+async fn delete_follower(
+    data: Data<State>,
+    extract::Path(id): extract::Path<Ulid>,
+    _access: Access,
+) -> Result<()> {
+    let tx = data
+        .db
+        .begin()
+        .await
+        .context_internal_server_error("failed to begin database transaction")?;
+
+    let (follower, user) = follower::Entity::find_by_id(id)
+        .find_also_related(user::Entity)
+        .one(&tx)
+        .await
+        .context_internal_server_error("failed to query database")?
+        .context_bad_request("follower not found")?;
+    let user = user.context_internal_server_error("user not found")?;
+
+    follower
+        .delete(&tx)
+        .await
+        .context_internal_server_error("failed to delete from database")?;
+
+    tx.commit()
+        .await
+        .context_internal_server_error("failed to commit database transaction")?;
+
+    let reject = FollowReject::new(
+        user.id.into(),
+        user.uri
+            .parse()
+            .context_internal_server_error("malformed user URI")?,
+    )?;
+    reject
+        .send(
+            &data,
+            user.inbox
+                .parse()
+                .context_internal_server_error("malformed user inbox URL")?,
+        )
+        .await?;
+
+    Ok(())
 }
