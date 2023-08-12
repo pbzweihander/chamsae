@@ -1,14 +1,10 @@
 use activitypub_federation::{
-    config::Data,
-    kinds::public,
-    protocol::verification::verify_domains_match,
-    traits::{Actor, Object},
+    config::Data, kinds::public, protocol::verification::verify_domains_match, traits::Object,
 };
 use async_trait::async_trait;
-use migration::OnConflict;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
-    QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
+    sea_query::OnConflict, ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
@@ -69,7 +65,7 @@ impl Object for post::Model {
 
             Url::parse(&user.uri).context_internal_server_error("malformed user URI")?
         } else {
-            LocalPerson.id()
+            LocalPerson::id()
         };
 
         let id = Url::parse(&self.uri).context_internal_server_error("malformed post URI")?;
@@ -116,14 +112,14 @@ impl Object for post::Model {
             }
             sea_orm_active_enums::Visibility::Home
             | sea_orm_active_enums::Visibility::Followers => {
-                vec![LocalPerson.followers()?]
+                vec![LocalPerson::followers()?]
             }
             sea_orm_active_enums::Visibility::DirectMessage => mention_user_uris.clone(),
         };
         let cc = match self.visibility {
             sea_orm_active_enums::Visibility::Public => {
                 let mut cc = mention_user_uris.clone();
-                cc.push(LocalPerson.followers()?);
+                cc.push(LocalPerson::followers()?);
                 cc
             }
             sea_orm_active_enums::Visibility::Home => {

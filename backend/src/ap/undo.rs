@@ -6,7 +6,7 @@ use activitypub_federation::{
     fetch::object_id::ObjectId,
     kinds::activity::UndoType,
     protocol::{context::WithContext, verification::verify_domains_match},
-    traits::{ActivityHandler, Actor, Object},
+    traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -42,7 +42,7 @@ where
         Ok(Self {
             ty: Default::default(),
             id: generate_object_id()?,
-            actor: LocalPerson.id(),
+            actor: LocalPerson::id(),
             object,
             m: Default::default(),
         })
@@ -50,8 +50,9 @@ where
 
     #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>, inboxes: Vec<Url>) -> Result<(), Error> {
+        let me = LocalPerson::get(&*data.db).await?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &LocalPerson, inboxes, data).await
+        send_activity(with_context, &me, inboxes, data).await
     }
 }
 

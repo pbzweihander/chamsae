@@ -15,6 +15,7 @@ pub(super) fn create_router() -> Router {
 
 #[tracing::instrument(skip(data))]
 async fn get_person(data: Data<State>) -> Result<FederationJson<WithContext<Person>>> {
-    let this = LocalPerson.into_json(&data).await?;
-    Ok(FederationJson(WithContext::new_default(this)))
+    let me = LocalPerson::get(&*data.db).await?;
+    let me = me.into_json(&data).await?;
+    Ok(FederationJson(WithContext::new_default(me)))
 }

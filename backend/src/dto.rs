@@ -1,9 +1,10 @@
 use std::str::FromStr;
 
 use chrono::{DateTime, FixedOffset};
-use migration::ConnectionTrait;
 use mime::Mime;
-use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder, QuerySelect};
+use sea_orm::{
+    ColumnTrait, ConnectionTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder, QuerySelect,
+};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
@@ -11,7 +12,7 @@ use url::Url;
 use crate::{
     entity::{
         emoji, follow, hashtag, local_file, mention, post, post_emoji, reaction, remote_file,
-        sea_orm_active_enums, user,
+        sea_orm_active_enums, setting, user,
     },
     error::{Context, Result},
 };
@@ -402,4 +403,24 @@ impl Follow {
 #[serde(rename_all = "camelCase")]
 pub struct CreateFollow {
     pub to_id: Ulid,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Setting {
+    pub user_name: Option<String>,
+    pub instance_name: Option<String>,
+    pub avatar_file_id: Option<Ulid>,
+    pub banner_file_id: Option<Ulid>,
+}
+
+impl Setting {
+    pub fn from_model(setting: setting::Model) -> Self {
+        Self {
+            user_name: setting.user_name,
+            instance_name: setting.instance_name,
+            avatar_file_id: setting.avatar_file_id.map(Into::into),
+            banner_file_id: setting.banner_file_id.map(Into::into),
+        }
+    }
 }

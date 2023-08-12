@@ -3,7 +3,7 @@ use activitypub_federation::{
     config::Data,
     kinds::{activity::DeleteType, object::TombstoneType},
     protocol::{context::WithContext, verification::verify_domains_match},
-    traits::{ActivityHandler, Actor},
+    traits::ActivityHandler,
 };
 use async_trait::async_trait;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
@@ -43,7 +43,7 @@ impl Delete {
         Ok(Self {
             ty: Default::default(),
             id: generate_object_id()?,
-            actor: LocalPerson.id(),
+            actor: LocalPerson::id(),
             object: Tombstone {
                 ty: Default::default(),
                 id,
@@ -53,9 +53,10 @@ impl Delete {
 
     #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
+        let me = LocalPerson::get(&*data.db).await?;
         let inboxes = get_follower_inboxes(&*data.db).await?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &LocalPerson, inboxes, data).await
+        send_activity(with_context, &me, inboxes, data).await
     }
 }
 

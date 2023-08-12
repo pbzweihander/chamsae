@@ -1,10 +1,8 @@
 use std::str::FromStr;
 
 use activitypub_federation::{
-    config::Data,
-    fetch::object_id::ObjectId,
-    protocol::verification::verify_domains_match,
-    traits::{Actor, Object},
+    config::Data, fetch::object_id::ObjectId, protocol::verification::verify_domains_match,
+    traits::Object,
 };
 use async_trait::async_trait;
 use mime::Mime;
@@ -73,7 +71,7 @@ impl Object for reaction::Model {
                 .parse()
                 .context_internal_server_error("malformed user URI")?
         } else {
-            LocalPerson.id()
+            LocalPerson::id()
         };
 
         let post_id: Url = self

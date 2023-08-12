@@ -11,4 +11,5 @@ pub use super::post::Entity as Post;
 pub use super::post_emoji::Entity as PostEmoji;
 pub use super::reaction::Entity as Reaction;
 pub use super::remote_file::Entity as RemoteFile;
+pub use super::setting::Entity as Setting;
 pub use super::user::Entity as User;

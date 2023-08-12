@@ -3,7 +3,6 @@ use std::sync::Arc;
 use activitypub_federation::{
     config::{Data, FederationConfig, FederationMiddleware},
     fetch::webfinger::{build_webfinger_response, extract_webfinger_name, Webfinger},
-    traits::Actor,
 };
 use axum::{extract, http::Request, middleware::Next, response::Response, routing, Json, Router};
 use sea_orm::DatabaseConnection;
@@ -75,7 +74,7 @@ async fn get_webfinger(
     let name = extract_webfinger_name(&query.resource, &data)
         .context_bad_request("failed to extract resource name")?;
     if name == CONFIG.user_handle {
-        let resp = build_webfinger_response(name, LocalPerson.id());
+        let resp = build_webfinger_response(name, LocalPerson::id());
         Ok(Json(resp))
     } else {
         Err(format_err!(NOT_FOUND, "user not found"))

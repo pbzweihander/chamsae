@@ -7,6 +7,7 @@ mod follow;
 mod follower;
 mod hashtag;
 mod post;
+mod setting;
 
 pub(super) fn create_router() -> Router {
     let auth = self::auth::create_router();
@@ -16,6 +17,7 @@ pub(super) fn create_router() -> Router {
     let follower = self::follower::create_router();
     let hashtag = self::hashtag::create_router();
     let post = self::post::create_router();
+    let setting = self::setting::create_router();
 
     Router::new()
         .nest("/auth", auth)
@@ -25,6 +27,7 @@ pub(super) fn create_router() -> Router {
         .nest("/follower", follower)
         .nest("/hashtag", hashtag)
         .nest("/post", post)
+        .nest("/setting", setting)
         .route("/healthz", routing::get(get_healthz))
 }
 

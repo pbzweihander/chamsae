@@ -4,7 +4,7 @@ use activitypub_federation::{
     fetch::object_id::ObjectId,
     kinds::activity::{AcceptType, FollowType, RejectType},
     protocol::{context::WithContext, verification::verify_domains_match},
-    traits::{ActivityHandler, Actor, Object},
+    traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
 use sea_orm::{
@@ -35,11 +35,12 @@ pub struct Follow {
 
 impl Follow {
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
+        let me = LocalPerson::get(&*data.db).await?;
         let object: ObjectId<user::Model> = self.object.clone().into();
         let inbox = object.dereference(data).await?.inbox;
         let inbox = Url::parse(&inbox).context_internal_server_error("malformed user inbox URL")?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &LocalPerson, vec![inbox], data).await
+        send_activity(with_context, &me, vec![inbox], data).await
     }
 }
 
@@ -67,7 +68,7 @@ impl ActivityHandler for Follow {
         let accept = FollowAccept {
             ty: Default::default(),
             id: generate_object_id()?,
-            actor: LocalPerson.id(),
+            actor: LocalPerson::id(),
             object: self,
         };
         accept.send(data).await?;
@@ -88,11 +89,12 @@ pub struct FollowAccept {
 impl FollowAccept {
     #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
+        let me = LocalPerson::get(&*data.db).await?;
         let actor: ObjectId<user::Model> = self.object.actor.clone().into();
         let inbox = actor.dereference(data).await?.inbox;
         let inbox = Url::parse(&inbox).context_internal_server_error("malformed user inbox URL")?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &LocalPerson, vec![inbox], data).await
+        send_activity(with_context, &me, vec![inbox], data).await
     }
 }
 

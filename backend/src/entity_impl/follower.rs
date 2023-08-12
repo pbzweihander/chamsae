@@ -1,8 +1,6 @@
 use activitypub_federation::{
-    config::Data,
-    fetch::object_id::ObjectId,
-    protocol::verification::verify_domains_match,
-    traits::{Actor, Object},
+    config::Data, fetch::object_id::ObjectId, protocol::verification::verify_domains_match,
+    traits::Object,
 };
 use async_trait::async_trait;
 use sea_orm::{
@@ -53,7 +51,7 @@ impl Object for follower::Model {
             ty: Default::default(),
             id: Url::parse(&self.uri).context_internal_server_error("malformed follower URI")?,
             actor: from_user_id,
-            object: LocalPerson.id(),
+            object: LocalPerson::id(),
         })
     }
 

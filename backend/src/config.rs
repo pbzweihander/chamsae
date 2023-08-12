@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -42,7 +40,9 @@ pub struct Config {
     #[serde(default = "default_debug")]
     pub debug: bool,
 
-    /// Domain of the instance. DO NOT CHANGE! e.g. `example.com`
+    /// Domain of the instance.
+    /// DO NOT CHANGE!
+    /// e.g. `example.com`
     pub domain: String,
 
     #[serde(default = "default_listen_addr")]
@@ -59,7 +59,9 @@ pub struct Config {
     #[serde(default = "default_database_database")]
     pub database_database: String,
 
-    /// Handle of the owner of this instance. e.g. `admin`
+    /// Handle of the owner of this instance.
+    /// DO NOT CHANGE!
+    /// e.g. `admin`
     pub user_handle: String,
     /// Password bcrypt hash of the owner user of this instance
     pub user_password_bcrypt: String,
@@ -68,16 +70,6 @@ pub struct Config {
     pub user_id: Option<Url>,
     #[serde(skip)]
     pub inbox_url: Option<Url>,
-
-    /// Public key PEM file path for the owner user of this instance
-    pub user_public_key_path: PathBuf,
-    /// Private key PEM file path for the owner user of this instance
-    pub user_private_key_path: PathBuf,
-
-    #[serde(skip)]
-    pub user_public_key: String,
-    #[serde(skip)]
-    pub user_private_key: String,
 
     /// Region of the S3 compatible object storage.
     /// e.g. `ap-northeast-1` for AWS, `nyc3` for DigitalOcean, or `auto`
@@ -132,11 +124,6 @@ impl Config {
         let inbox_url = Url::parse(&format!("https://{}/ap/inbox", config.domain))
             .context("failed to construct inbox URL")?;
 
-        let user_public_key = std::fs::read_to_string(&config.user_public_key_path)
-            .context("failed to read public key file")?;
-        let user_private_key = std::fs::read_to_string(&config.user_private_key_path)
-            .context("failed to read private key file")?;
-
         let object_storage_creds = s3::creds::Credentials::new(
             config.object_storage_access_key.as_deref(),
             config.object_storage_secret_key.as_deref(),
@@ -147,8 +134,6 @@ impl Config {
         .context("failed to initialize object storage credential")?;
         config.user_id = Some(user_id);
         config.inbox_url = Some(inbox_url);
-        config.user_public_key = user_public_key;
-        config.user_private_key = user_private_key;
         config.object_storage_creds = Some(object_storage_creds);
 
         Ok(config)

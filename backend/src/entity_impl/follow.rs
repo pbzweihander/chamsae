@@ -1,7 +1,5 @@
 use activitypub_federation::{
-    config::Data,
-    protocol::verification::verify_domains_match,
-    traits::{Actor, Object},
+    config::Data, protocol::verification::verify_domains_match, traits::Object,
 };
 use async_trait::async_trait;
 use sea_orm::{EntityTrait, ModelTrait, QuerySelect};
@@ -71,7 +69,7 @@ impl Object for follow::Model {
         Ok(Self::Kind {
             ty: Default::default(),
             id: self.ap_id()?,
-            actor: LocalPerson.id(),
+            actor: LocalPerson::id(),
             object: to_user_id,
         })
     }

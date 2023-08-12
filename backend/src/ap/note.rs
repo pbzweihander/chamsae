@@ -95,9 +95,10 @@ impl CreateNote {
 
     #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
+        let me = LocalPerson::get(&*data.db).await?;
         let inboxes = get_follower_inboxes(&*data.db).await?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &LocalPerson, inboxes, data).await
+        send_activity(with_context, &me, inboxes, data).await
     }
 }
 

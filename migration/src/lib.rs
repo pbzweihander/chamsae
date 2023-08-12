@@ -11,6 +11,7 @@ mod m20230812_123019_avatar_and_banner;
 mod m20230812_130217_shared_inbox;
 mod m20230812_132921_manually_approves_followers;
 mod m20230812_134054_is_bot;
+mod m20230812_135017_setting;
 
 pub struct Migrator;
 
@@ -29,6 +30,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20230812_130217_shared_inbox::Migration),
             Box::new(m20230812_132921_manually_approves_followers::Migration),
             Box::new(m20230812_134054_is_bot::Migration),
+            Box::new(m20230812_135017_setting::Migration),
         ]
     }
 }

@@ -1,7 +1,6 @@
 use axum::body::Bytes;
-use migration::ConnectionTrait;
 use mime::Mime;
-use sea_orm::{ActiveModelTrait, ActiveValue, ModelTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue, ConnectionTrait, ModelTrait};
 use ulid::Ulid;
 
 use crate::{

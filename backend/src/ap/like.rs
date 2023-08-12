@@ -36,6 +36,7 @@ pub struct Like {
 impl Like {
     #[tracing::instrument(skip(data))]
     pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
+        let me = LocalPerson::get(&*data.db).await?;
         let post = self.object.dereference(data).await?;
         let user = post
             .find_related(user::Entity)
@@ -46,7 +47,7 @@ impl Like {
         let inbox =
             Url::parse(&user.inbox).context_internal_server_error("malformed user inbox URL")?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &LocalPerson, vec![inbox], data).await
+        send_activity(with_context, &me, vec![inbox], data).await
     }
 }
 
