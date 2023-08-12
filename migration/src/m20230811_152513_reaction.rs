@@ -12,7 +12,6 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Reaction::Table)
-                    .if_not_exists()
                     .col(ColumnDef::new(Reaction::Id).uuid().not_null().primary_key())
                     .col(ColumnDef::new(Reaction::UserId).uuid())
                     .col(ColumnDef::new(Reaction::PostId).uuid().not_null())

@@ -58,8 +58,9 @@ impl Object for post::Model {
 
     #[tracing::instrument(skip(data))]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        let user_id = if let Some(user_id) = &self.user_id {
-            let user = user::Entity::find_by_id(*user_id)
+        let user_id = if self.user_id.is_some() {
+            let user = self
+                .find_related(user::Entity)
                 .one(&*data.db)
                 .await
                 .context_internal_server_error("failed to query database")?
@@ -319,7 +320,6 @@ impl Object for post::Model {
             .filter_map(|tag| {
                 if let Tag::Emoji(emoji) = tag {
                     Some(post_emoji::ActiveModel {
-                        id: ActiveValue::Set(Uuid::new_v4()),
                         post_id: ActiveValue::Set(this.id),
                         name: ActiveValue::Set(emoji.name.clone()),
                         uri: ActiveValue::Set(emoji.id.to_string()),

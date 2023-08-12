@@ -6,8 +6,8 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "post_emoji")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: Uuid,
     pub post_id: Uuid,
+    #[sea_orm(primary_key, auto_increment = false)]
     pub name: String,
     pub uri: String,
     pub media_type: String,

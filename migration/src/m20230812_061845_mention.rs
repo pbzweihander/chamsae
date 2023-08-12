@@ -12,7 +12,6 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Mention::Table)
-                    .if_not_exists()
                     .col(ColumnDef::new(Mention::PostId).uuid().not_null())
                     .col(ColumnDef::new(Mention::UserUri).string().not_null())
                     .col(ColumnDef::new(Mention::Name).string().not_null())

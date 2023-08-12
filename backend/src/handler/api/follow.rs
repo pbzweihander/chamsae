@@ -62,7 +62,6 @@ async fn post_follow(
     }
 
     let follow_activemodel = follow::ActiveModel {
-        id: ActiveValue::Set(Uuid::new_v4()),
         to_id: ActiveValue::Set(req.to_id),
         accepted: ActiveValue::Set(false),
     };

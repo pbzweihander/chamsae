@@ -4,7 +4,6 @@ use activitypub_federation::{
 use async_trait::async_trait;
 use sea_orm::{EntityTrait, ModelTrait};
 use url::Url;
-use uuid::Uuid;
 
 use crate::{
     ap::tag::{Emoji, EmojiIcon},
@@ -17,13 +16,13 @@ use crate::{
 
 impl emoji::Model {
     pub fn ap_id(&self) -> Result<Url, Error> {
-        Url::parse(&format!("https://{}/ap/emoji/{}", CONFIG.domain, self.id))
+        Url::parse(&format!("https://{}/ap/emoji/{}", CONFIG.domain, self.name))
             .context_internal_server_error("failed to construct follow URL ID")
     }
 
-    pub fn parse_ap_id(url: &str) -> Option<Uuid> {
+    pub fn parse_ap_id(url: &str) -> Option<String> {
         url.strip_prefix(&format!("https://{}/ap/emoji/", CONFIG.domain))
-            .and_then(|id| Uuid::parse_str(id).ok())
+            .map(str::to_string)
     }
 }
 

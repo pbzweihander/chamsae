@@ -4,7 +4,7 @@ use activitypub_federation::{
     traits::{Actor, Object},
 };
 use async_trait::async_trait;
-use sea_orm::{EntityTrait, QuerySelect};
+use sea_orm::{EntityTrait, ModelTrait, QuerySelect};
 use url::Url;
 use uuid::Uuid;
 
@@ -19,8 +19,11 @@ use crate::{
 
 impl follow::Model {
     pub fn ap_id(&self) -> Result<Url, Error> {
-        Url::parse(&format!("https://{}/ap/follow/{}", CONFIG.domain, self.id))
-            .context_internal_server_error("failed to construct follow URL ID")
+        Url::parse(&format!(
+            "https://{}/ap/follow/{}",
+            CONFIG.domain, self.to_id
+        ))
+        .context_internal_server_error("failed to construct follow URL ID")
     }
 
     pub fn parse_ap_id(url: &str) -> Option<Uuid> {
@@ -53,7 +56,8 @@ impl Object for follow::Model {
 
     #[tracing::instrument(skip(data))]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        let to_user_id = user::Entity::find_by_id(self.to_id)
+        let to_user_id = self
+            .find_related(user::Entity)
             .select_only()
             .column(user::Column::Uri)
             .into_tuple::<String>()

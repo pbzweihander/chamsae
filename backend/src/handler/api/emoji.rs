@@ -1,9 +1,6 @@
 use activitypub_federation::config::Data;
 use axum::{routing, Json, Router};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter,
-    TransactionTrait,
-};
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, PaginatorTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -30,7 +27,7 @@ struct PostEmojiReq {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PostEmojiResp {
-    id: Uuid,
+    name: String,
 }
 
 #[tracing::instrument(skip(data, _access))]
@@ -45,8 +42,7 @@ async fn post_emoji(
         .await
         .context_internal_server_error("failed to begin database transaction")?;
 
-    let existing_count = emoji::Entity::find()
-        .filter(emoji::Column::Name.eq(&req.name))
+    let existing_count = emoji::Entity::find_by_id(&req.name)
         .count(&tx)
         .await
         .context_internal_server_error("failed to query database")?;
@@ -62,7 +58,6 @@ async fn post_emoji(
         .context_not_found("file not found")?;
 
     let emoji_activemodel = emoji::ActiveModel {
-        id: ActiveValue::Set(Uuid::new_v4()),
         name: ActiveValue::Set(req.name),
     };
 
@@ -71,11 +66,11 @@ async fn post_emoji(
         .await
         .context_internal_server_error("failed to insert to database")?;
 
-    file.attach_to_emoji(emoji.id, &tx).await?;
+    file.attach_to_emoji(emoji.name.clone(), &tx).await?;
 
     tx.commit()
         .await
         .context_internal_server_error("failed to commit database transaction")?;
 
-    Ok(Json(PostEmojiResp { id: emoji.id }))
+    Ok(Json(PostEmojiResp { name: emoji.name }))
 }

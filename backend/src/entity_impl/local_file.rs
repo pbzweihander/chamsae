@@ -51,7 +51,7 @@ impl local_file::Model {
         let this = Self {
             id,
             post_id: None,
-            emoji_id: None,
+            emoji_name: None,
             order: None,
             object_storage_key,
             media_type: media_type.to_string(),
@@ -88,10 +88,14 @@ impl local_file::Model {
     }
 
     #[tracing::instrument(skip(db))]
-    pub async fn attach_to_emoji(&self, emoji_id: Uuid, db: &impl ConnectionTrait) -> Result<()> {
+    pub async fn attach_to_emoji(
+        &self,
+        emoji_name: String,
+        db: &impl ConnectionTrait,
+    ) -> Result<()> {
         let this_activemodel = local_file::ActiveModel {
             id: ActiveValue::Unchanged(self.id),
-            emoji_id: ActiveValue::Set(Some(emoji_id)),
+            emoji_name: ActiveValue::Set(Some(emoji_name)),
             ..Default::default()
         };
         this_activemodel

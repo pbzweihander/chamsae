@@ -173,7 +173,7 @@ impl ActivityHandler for FollowReject {
             .filter(user::Column::Uri.eq(follow_user_id.as_str()))
             .inner_join(follow::Entity)
             .select_only()
-            .column(follow::Column::Id)
+            .column(follow::Column::ToId)
             .into_tuple::<Uuid>()
             .one(&tx)
             .await

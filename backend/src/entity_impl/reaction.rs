@@ -61,8 +61,8 @@ impl Object for reaction::Model {
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = self.ap_id()?;
 
-        let user_id: Url = if let Some(user_id) = self.user_id {
-            user::Entity::find_by_id(user_id)
+        let user_id: Url = if self.user_id.is_some() {
+            self.find_related(user::Entity)
                 .select_only()
                 .column(user::Column::Uri)
                 .into_tuple::<String>()
@@ -76,7 +76,8 @@ impl Object for reaction::Model {
             LocalPerson.id()
         };
 
-        let post_id: Url = post::Entity::find_by_id(self.post_id)
+        let post_id: Url = self
+            .find_related(post::Entity)
             .select_only()
             .column(post::Column::Uri)
             .into_tuple::<String>()

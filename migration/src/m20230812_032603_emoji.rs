@@ -12,9 +12,12 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Emoji::Table)
-                    .if_not_exists()
-                    .col(ColumnDef::new(Emoji::Id).uuid().not_null().primary_key())
-                    .col(ColumnDef::new(Emoji::Name).string().not_null().unique_key())
+                    .col(
+                        ColumnDef::new(Emoji::Name)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -23,12 +26,11 @@ impl MigrationTrait for Migration {
             .alter_table(
                 Table::alter()
                     .table(LocalFile::Table)
-                    .add_column(ColumnDef::new(LocalFile::EmojiId).uuid())
+                    .add_column(ColumnDef::new(LocalFile::EmojiName).string())
                     .add_foreign_key(
                         ForeignKey::create()
-                            .name("local_file_emoji_id_fk")
-                            .from(LocalFile::Table, LocalFile::EmojiId)
-                            .to(Emoji::Table, Emoji::Id)
+                            .from(LocalFile::Table, LocalFile::EmojiName)
+                            .to(Emoji::Table, Emoji::Name)
                             .get_foreign_key(),
                     )
                     .to_owned(),
@@ -43,8 +45,7 @@ impl MigrationTrait for Migration {
             .alter_table(
                 Table::alter()
                     .table(LocalFile::Table)
-                    .drop_column(LocalFile::EmojiId)
-                    .drop_foreign_key(Alias::new("local_file_emoji_id_fk"))
+                    .drop_column(LocalFile::EmojiName)
                     .to_owned(),
             )
             .await?;
@@ -60,6 +61,5 @@ impl MigrationTrait for Migration {
 #[derive(Iden)]
 enum Emoji {
     Table,
-    Id,
     Name,
 }

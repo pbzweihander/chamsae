@@ -38,7 +38,8 @@ impl Object for follower::Model {
 
     #[tracing::instrument(skip(data))]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        let from_user_id = user::Entity::find_by_id(self.from_id)
+        let from_user_id = self
+            .find_related(user::Entity)
             .select_only()
             .column(user::Column::Uri)
             .into_tuple::<String>()

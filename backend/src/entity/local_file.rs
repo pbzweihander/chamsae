@@ -13,15 +13,15 @@ pub struct Model {
     pub media_type: String,
     pub url: String,
     pub alt: Option<String>,
-    pub emoji_id: Option<Uuid>,
+    pub emoji_name: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::emoji::Entity",
-        from = "Column::EmojiId",
-        to = "super::emoji::Column::Id",
+        from = "Column::EmojiName",
+        to = "super::emoji::Column::Name",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]

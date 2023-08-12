@@ -12,7 +12,6 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(LocalFile::Table)
-                    .if_not_exists()
                     .col(
                         ColumnDef::new(LocalFile::Id)
                             .uuid()
@@ -63,7 +62,7 @@ pub enum LocalFile {
     Table,
     Id,
     PostId,
-    EmojiId,
+    EmojiName,
     Order,
     ObjectStorageKey,
     MediaType,

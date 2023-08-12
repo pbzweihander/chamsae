@@ -115,8 +115,7 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Follow::Table)
-                    .col(ColumnDef::new(Follow::Id).uuid().not_null().primary_key())
-                    .col(ColumnDef::new(Follow::ToId).uuid().not_null().unique_key())
+                    .col(ColumnDef::new(Follow::ToId).uuid().not_null().primary_key())
                     .col(ColumnDef::new(Follow::Accepted).boolean().not_null())
                     .foreign_key(
                         ForeignKey::create()
@@ -158,7 +157,6 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(RemoteFile::Table)
-                    .if_not_exists()
                     .col(ColumnDef::new(RemoteFile::PostId).uuid().not_null())
                     .col(ColumnDef::new(RemoteFile::Order).tiny_unsigned().not_null())
                     .col(ColumnDef::new(RemoteFile::MediaType).string().not_null())
@@ -266,7 +264,6 @@ enum AccessKey {
 #[derive(Iden)]
 enum Follow {
     Table,
-    Id,
     ToId,
     Accepted,
 }

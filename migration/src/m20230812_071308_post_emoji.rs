@@ -12,13 +12,6 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(PostEmoji::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(PostEmoji::Id)
-                            .uuid()
-                            .not_null()
-                            .primary_key(),
-                    )
                     .col(ColumnDef::new(PostEmoji::PostId).uuid().not_null())
                     .col(ColumnDef::new(PostEmoji::Name).string().not_null())
                     .col(ColumnDef::new(PostEmoji::Uri).string().not_null())
@@ -33,7 +26,7 @@ impl MigrationTrait for Migration {
                         Index::create()
                             .col(PostEmoji::PostId)
                             .col(PostEmoji::Name)
-                            .unique(),
+                            .primary(),
                     )
                     .to_owned(),
             )
@@ -55,7 +48,6 @@ impl MigrationTrait for Migration {
 #[derive(Iden)]
 enum PostEmoji {
     Table,
-    Id,
     PostId,
     Name,
     Uri,

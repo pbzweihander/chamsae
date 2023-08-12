@@ -63,7 +63,7 @@ struct PostPostReq {
     #[serde(default)]
     mentions: Vec<Mention>,
     #[serde(default)]
-    emojis: Vec<Uuid>,
+    emojis: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -95,7 +95,7 @@ async fn post_post(
     }
 
     let emojis = emoji::Entity::find()
-        .filter(emoji::Column::Id.is_in(req.emojis))
+        .filter(emoji::Column::Name.is_in(req.emojis))
         .find_also_related(local_file::Entity)
         .all(&tx)
         .await
@@ -137,7 +137,6 @@ async fn post_post(
         .filter_map(|(emoji, file)| file.map(|file| (emoji, file)))
         .filter_map(|(emoji, file)| {
             Some(post_emoji::ActiveModel {
-                id: ActiveValue::Set(Uuid::new_v4()),
                 post_id: ActiveValue::Set(post.id),
                 uri: ActiveValue::Set(emoji.ap_id().ok()?.to_string()),
                 name: ActiveValue::Set(emoji.name),
@@ -245,8 +244,9 @@ async fn get_post(
         .context_internal_server_error("failed to query database")?
         .context_not_found("post not found")?;
 
-    let user = if let Some(user_id) = &post.user_id {
-        let user = user::Entity::find_by_id(*user_id)
+    let user = if post.user_id.is_some() {
+        let user = post
+            .find_related(user::Entity)
             .one(&*data.db)
             .await
             .context_internal_server_error("failed to query database")?
@@ -425,7 +425,7 @@ struct PostReactionReqContent {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostReactionReqEmoji {
-    emoji_id: Uuid,
+    emoji_name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -473,7 +473,7 @@ async fn post_reaction(
 
     let (content, emoji_uri, emoji_media_type, emoji_image_url) = match req {
         PostReactionReq::Emoji(req) => {
-            let (emoji, file) = emoji::Entity::find_by_id(req.emoji_id)
+            let (emoji, file) = emoji::Entity::find_by_id(req.emoji_name)
                 .find_also_related(local_file::Entity)
                 .one(&tx)
                 .await
