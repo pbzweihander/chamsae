@@ -28,12 +28,14 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .from(Reaction::Table, Reaction::UserId)
-                            .to(User::Table, User::Id),
+                            .to(User::Table, User::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .from(Reaction::Table, Reaction::PostId)
-                            .to(Post::Table, Post::Id),
+                            .to(Post::Table, Post::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )

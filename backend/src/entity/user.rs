@@ -16,6 +16,8 @@ pub struct Model {
     pub public_key: String,
     #[sea_orm(unique)]
     pub uri: String,
+    pub avatar_url: Option<String>,
+    pub banner_url: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

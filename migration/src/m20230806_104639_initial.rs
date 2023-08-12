@@ -222,6 +222,8 @@ pub enum User {
     Inbox,
     PublicKey,
     Uri,
+    AvatarUrl,
+    BannerUrl,
 }
 
 #[derive(Iden)]

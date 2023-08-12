@@ -47,6 +47,8 @@ pub struct User {
     pub name: Option<String>,
     pub host: String,
     pub uri: Url,
+    pub avatar_url: Option<Url>,
+    pub banner_url: Option<Url>,
 }
 
 impl User {
@@ -60,6 +62,8 @@ impl User {
                 .uri
                 .parse()
                 .context_internal_server_error("malformed user URI")?,
+            avatar_url: user.avatar_url.and_then(|url| url.parse().ok()),
+            banner_url: user.banner_url.and_then(|url| url.parse().ok()),
         })
     }
 }
@@ -153,16 +157,7 @@ impl Post {
                 .await
                 .context_internal_server_error("failed to query database")?
                 .context_internal_server_error("user not found")?;
-            Some(User {
-                id: user.id.into(),
-                handle: user.handle,
-                name: user.name,
-                host: user.host,
-                uri: user
-                    .uri
-                    .parse()
-                    .context_internal_server_error("malformed user URI")?,
-            })
+            Some(User::from_model(user)?)
         } else {
             None
         };
@@ -207,13 +202,7 @@ impl Post {
                 };
 
                 let user = if let Some(user) = user {
-                    Some(User {
-                        id: user.id.into(),
-                        handle: user.handle,
-                        name: user.name,
-                        host: user.host,
-                        uri: user.uri.parse().ok()?,
-                    })
+                    Some(User::from_model(user).ok()?)
                 } else {
                     None
                 };

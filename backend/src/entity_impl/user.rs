@@ -12,7 +12,7 @@ use ulid::Ulid;
 use url::Url;
 
 use crate::{
-    ap::person::Person,
+    ap::person::{Person, PersonImage},
     entity::user,
     error::{Context, Error},
     state::State,
@@ -48,6 +48,18 @@ impl Object for user::Model {
             id: id.clone().into(),
             preferred_username: self.handle,
             name: self.name,
+            icon: self.avatar_url.and_then(|url| {
+                Some(PersonImage {
+                    ty: Default::default(),
+                    url: url.parse().ok()?,
+                })
+            }),
+            image: self.banner_url.and_then(|url| {
+                Some(PersonImage {
+                    ty: Default::default(),
+                    url: url.parse().ok()?,
+                })
+            }),
             inbox: self
                 .inbox
                 .parse()
@@ -87,6 +99,8 @@ impl Object for user::Model {
             inbox: json.inbox.to_string(),
             public_key: json.public_key.public_key_pem,
             uri: json.id.inner().to_string(),
+            avatar_url: json.icon.map(|image| image.url.to_string()),
+            banner_url: json.image.map(|image| image.url.to_string()),
         };
 
         let tx = data

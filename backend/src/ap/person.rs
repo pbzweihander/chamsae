@@ -1,7 +1,7 @@
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
-    kinds::actor::PersonType,
+    kinds::{actor::PersonType, object::ImageType},
     protocol::{public_key::PublicKey, verification::verify_domains_match},
     traits::{Actor, Object},
 };
@@ -19,12 +19,25 @@ use crate::{
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PersonImage {
+    #[serde(rename = "type")]
+    pub ty: ImageType,
+    pub url: Url,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Person {
     #[serde(rename = "type")]
     pub ty: PersonType,
     pub id: ObjectId<user::Model>,
     pub preferred_username: String,
+    #[serde(default)]
     pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<PersonImage>,
+    #[serde(default)]
+    pub image: Option<PersonImage>,
     pub inbox: Url,
     pub public_key: PublicKey,
 }
@@ -65,6 +78,8 @@ impl Object for LocalPerson {
             id: id.clone().into(),
             preferred_username: CONFIG.user_handle.clone(),
             name: None,
+            icon: None,
+            image: None,
             inbox: Self.inbox(),
             public_key: PublicKey {
                 id: format!("{}#main-key", id),
