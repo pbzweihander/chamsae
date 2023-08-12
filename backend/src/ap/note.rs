@@ -7,17 +7,18 @@ use activitypub_federation::{
         object::{DocumentType, NoteType},
         public,
     },
-    protocol::{context::WithContext, helpers::deserialize_one_or_many},
+    protocol::context::WithContext,
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
 use mime::Mime;
+use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    entity::{post, user},
-    error::Error,
+    entity::{follow, post, user},
+    error::{Context, Error},
     state::State,
     util::get_follower_inboxes,
 };
@@ -69,7 +70,6 @@ pub struct CreateNote {
     pub ty: CreateType,
     pub id: Url,
     pub actor: ObjectId<user::Model>,
-    #[serde(deserialize_with = "deserialize_one_or_many")]
     pub to: Vec<Url>,
     pub object: Note,
 }
@@ -111,7 +111,16 @@ impl ActivityHandler for CreateNote {
     }
 
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        post::Model::from_json(self.object, data).await?;
+        let existing_following_user_count = user::Entity::find()
+            .filter(user::Column::Uri.eq(self.actor.inner().to_string()))
+            .inner_join(follow::Entity)
+            .count(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        // if zero, the note was from not following user. ignore.
+        if existing_following_user_count != 0 {
+            post::Model::from_json(self.object, data).await?;
+        }
         Ok(())
     }
 }
