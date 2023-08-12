@@ -219,6 +219,7 @@ pub enum User {
     AvatarUrl,
     BannerUrl,
     SharedInbox,
+    ManuallyApprovesFollowers,
 }
 
 #[derive(Iden)]

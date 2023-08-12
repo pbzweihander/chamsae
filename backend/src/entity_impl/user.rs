@@ -75,6 +75,7 @@ impl Object for user::Model {
                 owner: id,
                 public_key_pem: self.public_key,
             },
+            manually_approves_followers: self.manually_approves_followers,
         })
     }
 
@@ -107,6 +108,7 @@ impl Object for user::Model {
             uri: json.id.inner().to_string(),
             avatar_url: json.icon.map(|image| image.url.to_string()),
             banner_url: json.image.map(|image| image.url.to_string()),
+            manually_approves_followers: json.manually_approves_followers,
         };
 
         let tx = data

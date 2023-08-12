@@ -41,6 +41,8 @@ pub struct Person {
     pub inbox: Url,
     #[serde(default)]
     pub shared_inbox: Option<Url>,
+    #[serde(default)]
+    pub manually_approves_followers: bool,
     pub public_key: PublicKey,
 }
 
@@ -89,6 +91,7 @@ impl Object for LocalPerson {
                 owner: id,
                 public_key_pem: Self.public_key_pem().to_string(),
             },
+            manually_approves_followers: false,
         })
     }
 

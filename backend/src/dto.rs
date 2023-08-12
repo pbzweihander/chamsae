@@ -49,6 +49,7 @@ pub struct User {
     pub uri: Url,
     pub avatar_url: Option<Url>,
     pub banner_url: Option<Url>,
+    pub manually_approves_followers: bool,
 }
 
 impl User {
@@ -64,6 +65,7 @@ impl User {
                 .context_internal_server_error("malformed user URI")?,
             avatar_url: user.avatar_url.and_then(|url| url.parse().ok()),
             banner_url: user.banner_url.and_then(|url| url.parse().ok()),
+            manually_approves_followers: user.manually_approves_followers,
         })
     }
 }
@@ -291,6 +293,7 @@ pub struct CreatePost {
     #[serde(default)]
     pub title: Option<String>,
     pub visibility: Visibility,
+    #[serde(default)]
     pub is_sensitive: bool,
     #[serde(default)]
     pub files: Vec<Ulid>,

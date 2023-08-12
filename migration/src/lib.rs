@@ -9,6 +9,7 @@ mod m20230812_071308_post_emoji;
 mod m20230812_114735_hashtag;
 mod m20230812_123019_avatar_and_banner;
 mod m20230812_130217_shared_inbox;
+mod m20230812_132921_manually_approves_followers;
 
 pub struct Migrator;
 
@@ -25,6 +26,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20230812_114735_hashtag::Migration),
             Box::new(m20230812_123019_avatar_and_banner::Migration),
             Box::new(m20230812_130217_shared_inbox::Migration),
+            Box::new(m20230812_132921_manually_approves_followers::Migration),
         ]
     }
 }
