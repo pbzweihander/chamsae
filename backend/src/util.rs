@@ -1,5 +1,7 @@
-use migration::ConnectionTrait;
-use sea_orm::{EntityTrait, QuerySelect};
+use sea_orm::{
+    sea_query::{Expr, Func},
+    ConnectionTrait, EntityTrait, QuerySelect,
+};
 use url::Url;
 
 use crate::{
@@ -11,7 +13,11 @@ pub async fn get_follower_inboxes(db: &impl ConnectionTrait) -> Result<Vec<Url>>
     let inboxes = follower::Entity::find()
         .inner_join(user::Entity)
         .select_only()
-        .column(user::Column::Inbox)
+        .expr(Func::coalesce([
+            Expr::col(user::Column::SharedInbox).into(),
+            Expr::col(user::Column::Inbox).into(),
+        ]))
+        .distinct()
         .into_tuple::<String>()
         .all(db)
         .await

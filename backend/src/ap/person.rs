@@ -39,6 +39,8 @@ pub struct Person {
     #[serde(default)]
     pub image: Option<PersonImage>,
     pub inbox: Url,
+    #[serde(default)]
+    pub shared_inbox: Option<Url>,
     pub public_key: PublicKey,
 }
 
@@ -81,6 +83,7 @@ impl Object for LocalPerson {
             icon: None,
             image: None,
             inbox: Self.inbox(),
+            shared_inbox: Some(Self.inbox()),
             public_key: PublicKey {
                 id: format!("{}#main-key", id),
                 owner: id,

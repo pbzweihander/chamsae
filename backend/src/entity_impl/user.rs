@@ -64,7 +64,12 @@ impl Object for user::Model {
             inbox: self
                 .inbox
                 .parse()
-                .context_internal_server_error("failed to parse inbox URL")?,
+                .context_internal_server_error("malformed user inbox URL")?,
+            shared_inbox: self
+                .shared_inbox
+                .map(|inbox| Url::parse(&inbox))
+                .transpose()
+                .context_internal_server_error("malformed user shared inbox URL")?,
             public_key: PublicKey {
                 id: format!("{}#main-key", id),
                 owner: id,
@@ -97,6 +102,7 @@ impl Object for user::Model {
                 .context_bad_request("invalid host")?
                 .to_string(),
             inbox: json.inbox.to_string(),
+            shared_inbox: json.shared_inbox.as_ref().map(Url::to_string),
             public_key: json.public_key.public_key_pem,
             uri: json.id.inner().to_string(),
             avatar_url: json.icon.map(|image| image.url.to_string()),

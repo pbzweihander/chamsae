@@ -17,6 +17,7 @@ pub struct Model {
     pub uri: String,
     pub avatar_url: Option<String>,
     pub banner_url: Option<String>,
+    pub shared_inbox: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

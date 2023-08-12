@@ -39,7 +39,7 @@ pub enum Activity {
     RejectFollow(self::follow::FollowReject),
     UndoFollow(self::undo::Undo<self::follow::Follow, follower::Model>),
     UndoLike(self::undo::Undo<self::like::Like, reaction::Model>),
-    UpdatePerson(self::person::PersonUpdate),
+    UpdatePerson(Box<self::person::PersonUpdate>),
     /// Fallback
     Other(self::other_activity::OtherActivity),
 }
