@@ -4,6 +4,7 @@ mod auth;
 mod emoji;
 mod file;
 mod follow;
+mod follower;
 mod post;
 
 pub(super) fn create_router() -> Router {
@@ -11,6 +12,7 @@ pub(super) fn create_router() -> Router {
     let emoji = self::emoji::create_router();
     let file = self::file::create_router();
     let follow = self::follow::create_router();
+    let follower = self::follower::create_router();
     let post = self::post::create_router();
 
     Router::new()
@@ -18,6 +20,7 @@ pub(super) fn create_router() -> Router {
         .nest("/emoji", emoji)
         .nest("/file", file)
         .nest("/follow", follow)
+        .nest("/follower", follower)
         .nest("/post", post)
         .route("/healthz", routing::get(get_healthz))
 }

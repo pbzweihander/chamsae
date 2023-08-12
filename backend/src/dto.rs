@@ -42,6 +42,7 @@ pub struct NameResponse {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
+    pub id: Ulid,
     pub handle: String,
     pub name: Option<String>,
     pub host: String,
@@ -51,6 +52,7 @@ pub struct User {
 impl User {
     pub fn from_model(user: user::Model) -> Result<Self> {
         Ok(Self {
+            id: user.id.into(),
             handle: user.handle,
             name: user.name,
             host: user.host,
@@ -151,6 +153,7 @@ impl Post {
                 .context_internal_server_error("failed to query database")?
                 .context_internal_server_error("user not found")?;
             Some(User {
+                id: user.id.into(),
                 handle: user.handle,
                 name: user.name,
                 host: user.host,
@@ -204,6 +207,7 @@ impl Post {
 
                 let user = if let Some(user) = user {
                     Some(User {
+                        id: user.id.into(),
                         handle: user.handle,
                         name: user.name,
                         host: user.host,
