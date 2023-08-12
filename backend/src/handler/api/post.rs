@@ -9,8 +9,8 @@ use sea_orm::{
     QueryFilter, QueryOrder, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
+use ulid::Ulid;
 use url::Url;
-use uuid::Uuid;
 
 use crate::{
     ap::delete::Delete,
@@ -52,14 +52,14 @@ struct Mention {
 #[serde(rename_all = "camelCase")]
 struct PostPostReq {
     #[serde(default)]
-    reply_id: Option<Uuid>,
+    reply_id: Option<Ulid>,
     text: String,
     #[serde(default)]
     title: Option<String>,
     visibility: Visibility,
     is_sensitive: bool,
     #[serde(default)]
-    files: Vec<Uuid>,
+    files: Vec<Ulid>,
     #[serde(default)]
     mentions: Vec<Mention>,
     #[serde(default)]
@@ -69,7 +69,7 @@ struct PostPostReq {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PostPostResp {
-    id: Uuid,
+    id: Ulid,
 }
 
 #[tracing::instrument(skip(data, _access, req))]
@@ -84,8 +84,8 @@ async fn post_post(
         .await
         .context_internal_server_error("failed to begin database transaction")?;
 
-    if let Some(reply_id) = &req.reply_id {
-        let reply_post_count = post::Entity::find_by_id(*reply_id)
+    if let Some(reply_id) = req.reply_id {
+        let reply_post_count = post::Entity::find_by_id(reply_id)
             .count(&tx)
             .await
             .context_internal_server_error("failed to request database")?;
@@ -101,11 +101,11 @@ async fn post_post(
         .await
         .context_internal_server_error("failed to query database")?;
 
-    let id = Uuid::new_v4();
+    let id = Ulid::new();
     let post_activemodel = post::ActiveModel {
-        id: ActiveValue::Set(id),
+        id: ActiveValue::Set(id.into()),
         created_at: ActiveValue::Set(Utc::now().fixed_offset()),
-        reply_id: ActiveValue::Set(req.reply_id),
+        reply_id: ActiveValue::Set(req.reply_id.map(Into::into)),
         text: ActiveValue::Set(req.text),
         title: ActiveValue::Set(req.title),
         user_id: ActiveValue::Set(None),
@@ -129,7 +129,7 @@ async fn post_post(
             .await
             .context_internal_server_error("failed to query database")?
             .context_not_found("file not found")?;
-        file.attach_to_post(post.id, idx as u8, &tx).await?;
+        file.attach_to_post(post.id.into(), idx as u8, &tx).await?;
     }
 
     let emojis = emojis
@@ -172,7 +172,7 @@ async fn post_post(
         .await
         .context_internal_server_error("failed to commmit database transaction")?;
 
-    let post_id = post.id;
+    let post_id = post.id.into();
     let post = post.into_json(&data).await?;
     let create = post.into_create()?;
     create.send(&data).await?;
@@ -217,9 +217,9 @@ struct GetPostRespReaction {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GetPostResp {
-    id: Uuid,
+    id: Ulid,
     created_at: DateTime<FixedOffset>,
-    reply_id: Option<Uuid>,
+    reply_id: Option<Ulid>,
     text: String,
     title: Option<String>,
     user: Option<GetPostRespUser>,
@@ -235,7 +235,7 @@ struct GetPostResp {
 #[tracing::instrument(skip(data, _access))]
 async fn get_post(
     data: Data<State>,
-    extract::Path(id): extract::Path<Uuid>,
+    extract::Path(id): extract::Path<Ulid>,
     _access: Access,
 ) -> Result<Json<GetPostResp>> {
     let post = post::Entity::find_by_id(id)
@@ -352,9 +352,9 @@ async fn get_post(
         .collect::<Vec<_>>();
 
     Ok(Json(GetPostResp {
-        id: post.id,
+        id: post.id.into(),
         created_at: post.created_at,
-        reply_id: post.reply_id,
+        reply_id: post.reply_id.map(Into::into),
         text: post.text,
         title: post.title,
         user,
@@ -379,7 +379,7 @@ async fn get_post(
 #[tracing::instrument(skip(data, _access))]
 async fn delete_post(
     data: Data<State>,
-    extract::Path(id): extract::Path<Uuid>,
+    extract::Path(id): extract::Path<Ulid>,
     _access: Access,
 ) -> Result<()> {
     let tx = data
@@ -439,7 +439,7 @@ enum PostReactionReq {
 async fn post_reaction(
     data: Data<State>,
     _access: Access,
-    extract::Path(id): extract::Path<Uuid>,
+    extract::Path(id): extract::Path<Ulid>,
     Json(req): Json<PostReactionReq>,
 ) -> Result<()> {
     let tx = data
@@ -460,7 +460,7 @@ async fn post_reaction(
     let existing_reaction_count = reaction::Entity::find()
         .filter(
             reaction::Column::PostId
-                .eq(id)
+                .eq(uuid::Uuid::from(id))
                 .and(reaction::Column::UserId.is_null()),
         )
         .count(&tx)
@@ -490,11 +490,11 @@ async fn post_reaction(
         PostReactionReq::Content(req) => (req.content, None, None, None),
     };
 
-    let reaction_id = Uuid::new_v4();
+    let reaction_id = Ulid::new();
     let reaction_activemodel = reaction::ActiveModel {
-        id: ActiveValue::Set(reaction_id),
+        id: ActiveValue::Set(reaction_id.into()),
         user_id: ActiveValue::Set(None),
-        post_id: ActiveValue::Set(id),
+        post_id: ActiveValue::Set(id.into()),
         content: ActiveValue::Set(content),
         uri: ActiveValue::Set(reaction::Model::ap_id_from_id(reaction_id)?.to_string()),
         emoji_uri: ActiveValue::Set(emoji_uri),

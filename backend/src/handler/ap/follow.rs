@@ -3,7 +3,7 @@ use activitypub_federation::{
 };
 use axum::{extract, routing, Router};
 use sea_orm::EntityTrait;
-use uuid::Uuid;
+use ulid::Ulid;
 
 use crate::{
     ap::follow::Follow,
@@ -19,7 +19,7 @@ pub(super) fn create_router() -> Router {
 #[tracing::instrument(skip(data))]
 async fn get_follow(
     data: Data<State>,
-    extract::Path(id): extract::Path<Uuid>,
+    extract::Path(id): extract::Path<Ulid>,
 ) -> Result<FederationJson<WithContext<Follow>>> {
     let this = follow::Entity::find_by_id(id)
         .one(&*data.db)

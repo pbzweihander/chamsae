@@ -2,7 +2,7 @@ use activitypub_federation::config::Data;
 use axum::{body::Bytes, extract, routing, Json, Router};
 use mime::Mime;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use ulid::Ulid;
 
 use crate::{entity::local_file, error::Result, state::State};
 
@@ -24,7 +24,7 @@ struct PostFileQuery {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PostFileResp {
-    id: Uuid,
+    id: Ulid,
 }
 
 #[tracing::instrument(skip(data, _access, req))]
@@ -35,5 +35,5 @@ async fn post_file(
     req: Bytes,
 ) -> Result<Json<PostFileResp>> {
     let file = local_file::Model::new(req, query.media_type, query.alt, &*data.db).await?;
-    Ok(Json(PostFileResp { id: file.id }))
+    Ok(Json(PostFileResp { id: file.id.into() }))
 }

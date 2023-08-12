@@ -12,8 +12,8 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
     QuerySelect, TransactionTrait,
 };
+use ulid::Ulid;
 use url::Url;
-use uuid::Uuid;
 
 use crate::{
     ap::{
@@ -29,13 +29,13 @@ use crate::{
 };
 
 impl reaction::Model {
-    pub fn ap_id_from_id(id: Uuid) -> Result<Url, Error> {
+    pub fn ap_id_from_id(id: Ulid) -> Result<Url, Error> {
         Url::parse(&format!("https://{}/ap/like/{}", CONFIG.domain, id))
             .context_internal_server_error("failed to construct follow URL ID")
     }
 
     pub fn ap_id(&self) -> Result<Url, Error> {
-        Self::ap_id_from_id(self.id)
+        Self::ap_id_from_id(self.id.into())
     }
 }
 
@@ -150,7 +150,7 @@ impl Object for reaction::Model {
             };
 
         let this = Self {
-            id: Uuid::new_v4(),
+            id: Ulid::new().into(),
             user_id: Some(user.id),
             post_id: post.id,
             content: json.content.unwrap_or_else(|| "❤️".to_string()),
@@ -170,7 +170,7 @@ impl Object for reaction::Model {
             .filter(reaction::Column::Uri.eq(json.id.inner().to_string()))
             .select_only()
             .column(reaction::Column::Id)
-            .into_tuple::<Uuid>()
+            .into_tuple::<uuid::Uuid>()
             .one(&tx)
             .await
             .context_internal_server_error("failed to query database")?;

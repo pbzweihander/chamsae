@@ -1,7 +1,7 @@
 use activitypub_federation::{config::Data, traits::ActivityHandler};
 use serde::{Deserialize, Serialize};
+use ulid::Ulid;
 use url::Url;
-use uuid::Uuid;
 
 use crate::{
     config::CONFIG,
@@ -22,7 +22,7 @@ pub fn generate_object_id() -> Result<Url, Error> {
     Url::parse(&format!(
         "https://{}/ap/object/{}",
         CONFIG.domain,
-        Uuid::new_v4()
+        Ulid::new(),
     ))
     .context_internal_server_error("failed to construct object URL")
 }

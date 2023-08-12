@@ -9,7 +9,7 @@ use axum::{
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use ulid::Ulid;
 
 use crate::{
     config::CONFIG,
@@ -50,7 +50,7 @@ where
             })?;
 
         let access_key_id =
-            Uuid::parse_str(bearer.token()).context_unauthorized("user not authorized")?;
+            Ulid::from_string(bearer.token()).context_unauthorized("user not authorized")?;
 
         let tx = data
             .db
@@ -94,7 +94,7 @@ struct PostLoginReq {
 
 #[derive(Serialize)]
 struct PostLoginResp {
-    token: Uuid,
+    token: Ulid,
 }
 
 #[tracing::instrument(skip(data, req))]
@@ -107,7 +107,7 @@ async fn post_login(
             .context_bad_request("failed to authenticate")?
     {
         let access_key_activemodel = access_key::ActiveModel {
-            id: ActiveValue::Set(Uuid::new_v4()),
+            id: ActiveValue::Set(Ulid::new().into()),
             name: ActiveValue::Set(req.hostname),
             created_at: ActiveValue::Set(Utc::now().fixed_offset()),
             last_used_at: ActiveValue::NotSet,
@@ -118,7 +118,7 @@ async fn post_login(
             .context_internal_server_error("failed to insert to database")?;
 
         Ok(Json(PostLoginResp {
-            token: access_key.id,
+            token: access_key.id.into(),
         }))
     } else {
         Err(format_err!(BAD_REQUEST, "failed to authenticate"))

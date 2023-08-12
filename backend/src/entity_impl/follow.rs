@@ -5,8 +5,8 @@ use activitypub_federation::{
 };
 use async_trait::async_trait;
 use sea_orm::{EntityTrait, ModelTrait, QuerySelect};
+use ulid::Ulid;
 use url::Url;
-use uuid::Uuid;
 
 use crate::{
     ap::{follow::Follow, person::LocalPerson},
@@ -26,9 +26,9 @@ impl follow::Model {
         .context_internal_server_error("failed to construct follow URL ID")
     }
 
-    pub fn parse_ap_id(url: &str) -> Option<Uuid> {
+    pub fn parse_ap_id(url: &str) -> Option<Ulid> {
         url.strip_prefix(&format!("https://{}/ap/follow/", CONFIG.domain))
-            .and_then(|id| Uuid::parse_str(id).ok())
+            .and_then(|id| Ulid::from_string(id).ok())
     }
 }
 

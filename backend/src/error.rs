@@ -6,11 +6,11 @@ use axum::{
     Json,
 };
 use serde::Serialize;
-use uuid::Uuid;
+use ulid::Ulid;
 
 #[derive(Debug)]
 pub struct Error {
-    pub id: Uuid,
+    pub id: Ulid,
     pub inner: anyhow::Error,
     pub status_code: StatusCode,
 }
@@ -20,7 +20,7 @@ impl Error {
     where
         M: fmt::Display + fmt::Debug + Send + Sync + 'static,
     {
-        let id = Uuid::new_v4();
+        let id = Ulid::new();
         let inner = anyhow::Error::msg(message);
         if status_code.is_server_error() {
             tracing::error!(%id, error = ?inner, "server error constructed");
@@ -35,7 +35,7 @@ impl Error {
     }
 
     pub fn from_anyhow(status_code: StatusCode, inner: anyhow::Error) -> Self {
-        let id = Uuid::new_v4();
+        let id = Ulid::new();
         if status_code.is_server_error() {
             tracing::error!(%id, error = ?inner, "server error constructed");
         } else {
@@ -51,7 +51,7 @@ impl Error {
 
 #[derive(Serialize)]
 struct ResponseError {
-    id: Uuid,
+    id: Ulid,
     error: String,
 }
 
@@ -76,7 +76,7 @@ where
 {
     fn from(value: E) -> Self {
         Self {
-            id: Uuid::new_v4(),
+            id: Ulid::new(),
             inner: value.into(),
             status_code: StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -179,7 +179,7 @@ where
         match self {
             Ok(ok) => Ok(ok),
             Err(error) => {
-                let id = Uuid::new_v4();
+                let id = Ulid::new();
                 let inner = anyhow::Error::new(error).context(context);
                 if status_code.is_server_error() {
                     tracing::error!(%id, error = ?inner, "server error constructed");
@@ -204,7 +204,7 @@ where
             Ok(ok) => Ok(ok),
             Err(error) => {
                 let (context, status_code) = f();
-                let id = Uuid::new_v4();
+                let id = Ulid::new();
                 let inner = anyhow::Error::new(error).context(context);
                 if status_code.is_server_error() {
                     tracing::error!(%id, error = ?inner, "server error constructed");
@@ -229,7 +229,7 @@ impl<T> Context<T> for std::option::Option<T> {
         match self {
             Some(ok) => Ok(ok),
             None => {
-                let id = Uuid::new_v4();
+                let id = Ulid::new();
                 let inner = anyhow::format_err!("{}", context);
                 if status_code.is_server_error() {
                     tracing::error!(%id, error = ?inner, "server error constructed");
@@ -254,7 +254,7 @@ impl<T> Context<T> for std::option::Option<T> {
             Some(ok) => Ok(ok),
             None => {
                 let (context, status_code) = f();
-                let id = Uuid::new_v4();
+                let id = Ulid::new();
                 let inner = anyhow::format_err!("{}", context);
                 if status_code.is_server_error() {
                     tracing::error!(%id, error = ?inner, "server error constructed");

@@ -2,7 +2,7 @@ use activitypub_federation::config::Data;
 use axum::{routing, Json, Router};
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, PaginatorTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use ulid::Ulid;
 
 use crate::{
     entity::{emoji, local_file},
@@ -20,7 +20,7 @@ pub(super) fn create_router() -> Router {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostEmojiReq {
-    file_id: Uuid,
+    file_id: Ulid,
     name: String,
 }
 

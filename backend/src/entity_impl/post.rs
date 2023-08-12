@@ -10,8 +10,8 @@ use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
     QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
+use ulid::Ulid;
 use url::Url;
-use uuid::Uuid;
 
 use crate::{
     ap::{
@@ -27,13 +27,13 @@ use crate::{
 };
 
 impl post::Model {
-    pub fn ap_id_from_id(id: Uuid) -> Result<Url, Error> {
+    pub fn ap_id_from_id(id: Ulid) -> Result<Url, Error> {
         Url::parse(&format!("https://{}/ap/note/{}", CONFIG.domain, id))
             .context_internal_server_error("failed to construct follow URL ID")
     }
 
     pub fn ap_id(&self) -> Result<Url, Error> {
-        Self::ap_id_from_id(self.id)
+        Self::ap_id_from_id(self.id.into())
     }
 }
 
@@ -227,7 +227,7 @@ impl Object for post::Model {
         };
 
         let this = Self {
-            id: Uuid::new_v4(),
+            id: Ulid::new().into(),
             created_at: json.published,
             reply_id: None,
             text: json.content,
@@ -248,7 +248,7 @@ impl Object for post::Model {
             .filter(post::Column::Uri.eq(json.id.inner().to_string()))
             .select_only()
             .column(post::Column::Id)
-            .into_tuple::<Uuid>()
+            .into_tuple::<uuid::Uuid>()
             .one(&tx)
             .await
             .context_internal_server_error("failed to query database")?;

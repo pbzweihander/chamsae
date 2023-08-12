@@ -2,7 +2,7 @@ use axum::body::Bytes;
 use migration::ConnectionTrait;
 use mime::Mime;
 use sea_orm::{ActiveModelTrait, ActiveValue, ModelTrait};
-use uuid::Uuid;
+use ulid::Ulid;
 
 use crate::{
     config::CONFIG,
@@ -19,7 +19,7 @@ impl local_file::Model {
         alt: Option<String>,
         db: &impl ConnectionTrait,
     ) -> Result<Self> {
-        let id = Uuid::new_v4();
+        let id = Ulid::new();
 
         let bucket = CONFIG.object_storage_bucket()?;
         let object_storage_key = id.to_string();
@@ -49,7 +49,7 @@ impl local_file::Model {
             .context_internal_server_error("failed to construct object public URL")?;
 
         let this = Self {
-            id,
+            id: id.into(),
             post_id: None,
             emoji_name: None,
             order: None,
@@ -70,13 +70,13 @@ impl local_file::Model {
     #[tracing::instrument(skip(db))]
     pub async fn attach_to_post(
         &self,
-        post_id: Uuid,
+        post_id: Ulid,
         order: u8,
         db: &impl ConnectionTrait,
     ) -> Result<()> {
         let this_activemodel = local_file::ActiveModel {
             id: ActiveValue::Unchanged(self.id),
-            post_id: ActiveValue::Set(Some(post_id)),
+            post_id: ActiveValue::Set(Some(post_id.into())),
             order: ActiveValue::Set(Some(order as i16)),
             ..Default::default()
         };
