@@ -90,6 +90,7 @@ pub struct Config {
     /// Public endpoint Base URL of the S3 compatible object storage.
     /// If the bucket is connected to a domain, this value should be that domain.
     /// If the bucket is connected to a CDN, this value should be the CDN domain.
+    /// Note: trailing slash is mandatory.
     /// e.g. `https://example.com`
     pub object_storage_public_url_base: Url,
     /// Whether to enable path style for the object storage

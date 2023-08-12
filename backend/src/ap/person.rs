@@ -34,8 +34,7 @@ pub struct LocalPerson;
 
 impl LocalPerson {
     pub fn followers(&self) -> Result<Url, Error> {
-        self.id()
-            .join("followers")
+        Url::parse(&format!("{}/followers", self.id()))
             .context_internal_server_error("failed to construct followers URL")
     }
 }
