@@ -1,14 +1,15 @@
 use activitypub_federation::{config::Data, fetch::object_id::ObjectId, traits::Object};
 use axum::{extract, routing, Json, Router};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, EntityTrait, ModelTrait, PaginatorTrait, TransactionTrait,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
 
 use crate::{
     ap::{follow::Follow, undo::Undo},
-    dto::CreateFollow,
+    dto::{CreateFollow, Follow as DtoFollow, IdPaginationQuery},
     entity::{follow, user},
     error::{Context, Result},
     format_err,
@@ -19,8 +20,33 @@ use super::auth::Access;
 
 pub(super) fn create_router() -> Router {
     Router::new()
-        .route("/", routing::post(post_follow))
+        .route("/", routing::get(get_follows).post(post_follow))
         .route("/:id", routing::delete(delete_follow))
+}
+
+async fn get_follows(
+    data: Data<State>,
+    _access: Access,
+    extract::Query(query): extract::Query<IdPaginationQuery>,
+) -> Result<Json<Vec<DtoFollow>>> {
+    let pagination_query = follow::Entity::find().find_also_related(user::Entity);
+    let pagination_query = if let Some(after) = query.after {
+        pagination_query.filter(user::Column::Id.lt(uuid::Uuid::from(after)))
+    } else {
+        pagination_query
+    };
+    let follows = pagination_query
+        .order_by_desc(user::Column::Id)
+        .limit(100)
+        .all(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+    let follows = follows
+        .into_iter()
+        .filter_map(|(follow, user)| user.map(|user| (follow, user)))
+        .filter_map(|(follow, user)| DtoFollow::from_model(follow, user).ok())
+        .collect::<Vec<_>>();
+    Ok(Json(follows))
 }
 
 #[tracing::instrument(skip(data, _access))]

@@ -10,8 +10,8 @@ use url::Url;
 
 use crate::{
     entity::{
-        emoji, local_file, mention, post, post_emoji, reaction, remote_file, sea_orm_active_enums,
-        user,
+        emoji, follow, local_file, mention, post, post_emoji, reaction, remote_file,
+        sea_orm_active_enums, user,
     },
     error::{Context, Result},
 };
@@ -372,6 +372,23 @@ impl LocalEmoji {
 pub struct CreateEmoji {
     pub file_id: Ulid,
     pub name: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Follow {
+    #[serde(flatten)]
+    pub user: User,
+    pub accepted: bool,
+}
+
+impl Follow {
+    pub fn from_model(follow: follow::Model, user: user::Model) -> Result<Self> {
+        Ok(Self {
+            user: User::from_model(user)?,
+            accepted: follow.accepted,
+        })
+    }
 }
 
 #[derive(Debug, Deserialize)]
