@@ -12,11 +12,6 @@ impl MigrationTrait for Migration {
                     .table(User::Table)
                     .col(ColumnDef::new(User::Id).uuid().not_null().primary_key())
                     .col(
-                        ColumnDef::new(User::CreatedAt)
-                            .timestamp_with_time_zone()
-                            .not_null(),
-                    )
-                    .col(
                         ColumnDef::new(User::LastFetchedAt)
                             .timestamp_with_time_zone()
                             .not_null(),
@@ -214,7 +209,6 @@ impl MigrationTrait for Migration {
 pub enum User {
     Table,
     Id,
-    CreatedAt,
     LastFetchedAt,
     Handle,
     Name,

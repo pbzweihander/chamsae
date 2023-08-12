@@ -31,14 +31,15 @@ pub fn generate_object_id() -> Result<Url, Error> {
 #[serde(untagged)]
 #[enum_delegate::implement(ActivityHandler)]
 pub enum Activity {
-    CreateNote(self::note::CreateNote),
+    AcceptFollow(self::follow::FollowAccept),
     CreateFollow(self::follow::Follow),
-    Accept(self::follow::FollowAccept),
-    UndoFollow(self::undo::Undo<self::follow::Follow, follower::Model>),
+    CreateNote(self::note::CreateNote),
     Delete(self::delete::Delete),
-    Reject(self::follow::FollowReject),
     Like(self::like::Like),
+    RejectFollow(self::follow::FollowReject),
+    UndoFollow(self::undo::Undo<self::follow::Follow, follower::Model>),
     UndoLike(self::undo::Undo<self::like::Like, reaction::Model>),
+    UpdatePerson(self::person::PersonUpdate),
     /// Fallback
     Other(self::other_activity::OtherActivity),
 }

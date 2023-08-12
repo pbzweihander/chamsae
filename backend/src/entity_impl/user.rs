@@ -6,7 +6,8 @@ use activitypub_federation::{
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, Utc};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QuerySelect, TransactionTrait,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, QueryFilter, QuerySelect,
+    TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
@@ -86,7 +87,6 @@ impl Object for user::Model {
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let this = Self {
             id: Ulid::new().into(),
-            created_at: Utc::now().fixed_offset(),
             last_fetched_at: Utc::now().fixed_offset(),
             handle: json.preferred_username,
             name: json.name,
@@ -119,18 +119,24 @@ impl Object for user::Model {
             .context_internal_server_error("failed to query database")?;
 
         let this = if let Some(id) = existing_id {
-            Self { id, ..this }
+            let this_activemodel: user::ActiveModel = this.into();
+            let mut this_activemodel = this_activemodel.reset_all();
+            this_activemodel.id = ActiveValue::Unchanged(id);
+            this_activemodel
+                .update(&tx)
+                .await
+                .context_internal_server_error("failed to update database")?
         } else {
             let this_activemodel: user::ActiveModel = this.into();
-            let this = this_activemodel
+            this_activemodel
                 .insert(&tx)
                 .await
-                .context_internal_server_error("failed to insert to database")?;
-            tx.commit()
-                .await
-                .context_internal_server_error("failed to commit database transaction")?;
-            this
+                .context_internal_server_error("failed to insert to database")?
         };
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
 
         Ok(this)
     }

@@ -1,9 +1,9 @@
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
-    kinds::{actor::PersonType, object::ImageType},
+    kinds::{activity::UpdateType, actor::PersonType, object::ImageType},
     protocol::{public_key::PublicKey, verification::verify_domains_match},
-    traits::{Actor, Object},
+    traits::{ActivityHandler, Actor, Object},
 };
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -123,5 +123,43 @@ impl Actor for LocalPerson {
 
     fn inbox(&self) -> Url {
         CONFIG.inbox_url.clone().unwrap()
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonUpdate {
+    #[serde(rename = "type")]
+    pub ty: UpdateType,
+    pub id: Url,
+    pub actor: ObjectId<user::Model>,
+    #[serde(default)]
+    pub to: Vec<Url>,
+    pub object: Person,
+}
+
+#[async_trait]
+impl ActivityHandler for PersonUpdate {
+    type DataType = State;
+    type Error = Error;
+
+    fn id(&self) -> &Url {
+        &self.id
+    }
+
+    fn actor(&self) -> &Url {
+        self.actor.inner()
+    }
+
+    #[tracing::instrument(skip(_data))]
+    async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        verify_domains_match(&self.id, self.object.id.inner())
+            .context_bad_request("failed to verify domain")
+    }
+
+    #[tracing::instrument(skip(data))]
+    async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        user::Model::from_json(self.object, data).await?;
+        Ok(())
     }
 }
