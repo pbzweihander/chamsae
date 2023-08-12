@@ -18,9 +18,10 @@ use crate::{
     ap::{
         note::{Attachment, Note},
         person::LocalPerson,
+        tag::{Mention, Tag},
     },
     config::CONFIG,
-    entity::{local_file, post, remote_file, sea_orm_active_enums, user},
+    entity::{local_file, mention, post, remote_file, sea_orm_active_enums, user},
     error::{Context, Error},
     format_err,
     state::State,
@@ -83,6 +84,41 @@ impl Object for post::Model {
             None
         };
 
+        let mentions = self
+            .find_related(mention::Entity)
+            .all(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        let mention_user_uris = mentions
+            .iter()
+            .filter_map(|mention| Url::parse(&mention.user_uri).ok())
+            .collect::<Vec<_>>();
+
+        let to = match self.visibility {
+            sea_orm_active_enums::Visibility::Public => {
+                vec![public()]
+            }
+            sea_orm_active_enums::Visibility::Home
+            | sea_orm_active_enums::Visibility::Followers => {
+                vec![LocalPerson.followers()?]
+            }
+            sea_orm_active_enums::Visibility::DirectMessage => mention_user_uris.clone(),
+        };
+        let cc = match self.visibility {
+            sea_orm_active_enums::Visibility::Public => {
+                let mut cc = mention_user_uris.clone();
+                cc.push(LocalPerson.followers()?);
+                cc
+            }
+            sea_orm_active_enums::Visibility::Home => {
+                let mut cc = mention_user_uris.clone();
+                cc.push(public());
+                cc
+            }
+            sea_orm_active_enums::Visibility::Followers => mention_user_uris,
+            sea_orm_active_enums::Visibility::DirectMessage => Vec::new(),
+        };
+
         let remote_files = self
             .find_related(remote_file::Entity)
             .order_by_asc(remote_file::Column::Order)
@@ -117,17 +153,29 @@ impl Object for post::Model {
             }))
             .collect::<Vec<_>>();
 
+        let tag = mentions
+            .into_iter()
+            .filter_map(|mention| {
+                Some(Tag::Mention(Mention {
+                    ty: Default::default(),
+                    href: mention.user_uri.parse().ok()?,
+                    name: mention.name,
+                }))
+            })
+            .collect::<Vec<_>>();
+
         Ok(Self::Kind {
             ty: Default::default(),
             id: id.into(),
             attributed_to: user_id.into(),
-            to: vec![public()],
+            to,
+            cc,
             summary: self.title,
             content: self.text,
             in_reply_to: in_reply_to_id.map(Into::into),
             attachment,
             sensitive: self.is_sensitive,
-            tag: vec![],
+            tag,
         })
     }
 
@@ -144,6 +192,21 @@ impl Object for post::Model {
     #[tracing::instrument(skip(data))]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let user = json.attributed_to.dereference(data).await?;
+
+        let visibility = if json.to.contains(&public()) {
+            sea_orm_active_enums::Visibility::Public
+        } else if json.cc.contains(&public()) {
+            sea_orm_active_enums::Visibility::Home
+        } else if json
+            .to
+            .iter()
+            .any(|to| to.to_string().ends_with("/followers"))
+        {
+            sea_orm_active_enums::Visibility::Followers
+        } else {
+            sea_orm_active_enums::Visibility::DirectMessage
+        };
+
         let this = Self {
             id: Uuid::new_v4(),
             created_at: Utc::now().fixed_offset(),
@@ -151,7 +214,7 @@ impl Object for post::Model {
             text: json.content,
             title: json.summary,
             user_id: Some(user.id),
-            visibility: sea_orm_active_enums::Visibility::Public,
+            visibility,
             is_sensitive: json.sensitive,
             uri: json.id.inner().to_string(),
         };
@@ -198,6 +261,34 @@ impl Object for post::Model {
             remote_file::Entity::insert_many(remote_files)
                 .on_conflict(
                     OnConflict::columns([remote_file::Column::PostId, remote_file::Column::Order])
+                        .do_nothing()
+                        .to_owned(),
+                )
+                .exec(&tx)
+                .await
+                .context_internal_server_error("failed to insert to database")?;
+        }
+
+        let mentions = json
+            .tag
+            .into_iter()
+            .filter_map(|tag| {
+                if let Tag::Mention(mention) = tag {
+                    Some(mention::ActiveModel {
+                        post_id: ActiveValue::Set(this.id),
+                        user_uri: ActiveValue::Set(mention.href.to_string()),
+                        name: ActiveValue::Set(mention.name),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if !mentions.is_empty() {
+            mention::Entity::insert_many(mentions)
+                .on_conflict(
+                    OnConflict::columns([mention::Column::PostId, mention::Column::UserUri])
                         .do_nothing()
                         .to_owned(),
                 )

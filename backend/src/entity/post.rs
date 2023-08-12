@@ -23,6 +23,8 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::local_file::Entity")]
     LocalFile,
+    #[sea_orm(has_many = "super::mention::Entity")]
+    Mention,
     #[sea_orm(
         belongs_to = "Entity",
         from = "Column::ReplyId",
@@ -48,6 +50,12 @@ pub enum Relation {
 impl Related<super::local_file::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::LocalFile.def()
+    }
+}
+
+impl Related<super::mention::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Mention.def()
     }
 }
 

@@ -7,6 +7,7 @@ pub mod emoji;
 pub mod follow;
 pub mod follower;
 pub mod local_file;
+pub mod mention;
 pub mod post;
 pub mod reaction;
 pub mod remote_file;

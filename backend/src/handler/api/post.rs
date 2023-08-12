@@ -3,6 +3,7 @@ use std::str::FromStr;
 use activitypub_federation::{config::Data, traits::Object};
 use axum::{extract, routing, Json, Router};
 use chrono::{DateTime, FixedOffset, Utc};
+use futures_util::{stream::FuturesUnordered, TryFutureExt, TryStreamExt};
 use mime::Mime;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
@@ -14,7 +15,7 @@ use uuid::Uuid;
 
 use crate::{
     ap::delete::Delete,
-    entity::{emoji, local_file, post, reaction, remote_file, sea_orm_active_enums, user},
+    entity::{emoji, local_file, mention, post, reaction, remote_file, sea_orm_active_enums, user},
     error::{Context, Result},
     format_err,
     state::State,
@@ -38,6 +39,13 @@ enum Visibility {
     DirectMessage,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Mention {
+    user_uri: Url,
+    name: String,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostPostReq {
@@ -47,6 +55,7 @@ struct PostPostReq {
     visibility: Visibility,
     is_sensitive: bool,
     files: Vec<Uuid>,
+    mentions: Vec<Mention>,
 }
 
 #[derive(Serialize)]
@@ -108,6 +117,21 @@ async fn post_post(
         file.attach_to_post(post.id, idx as u8, &tx).await?;
     }
 
+    req.mentions
+        .into_iter()
+        .map(|mention| {
+            let mention_activemodel = mention::ActiveModel {
+                post_id: ActiveValue::Set(post.id),
+                user_uri: ActiveValue::Set(mention.user_uri.to_string()),
+                name: ActiveValue::Set(mention.name),
+            };
+            mention_activemodel.insert(&tx).map_ok(|_| ())
+        })
+        .collect::<FuturesUnordered<_>>()
+        .try_collect::<()>()
+        .await
+        .context_internal_server_error("failed to insert to database")?;
+
     tx.commit()
         .await
         .context_internal_server_error("failed to commmit database transaction")?;
@@ -125,6 +149,7 @@ async fn post_post(
 struct GetPostRespUser {
     handle: String,
     host: String,
+    uri: Url,
 }
 
 #[derive(Serialize)]
@@ -166,6 +191,7 @@ struct GetPostResp {
     uri: Url,
     files: Vec<GetPostRespFile>,
     reactions: Vec<GetPostRespReaction>,
+    mentions: Vec<Mention>,
 }
 
 #[tracing::instrument(skip(data, _access))]
@@ -189,6 +215,10 @@ async fn get_post(
         Some(GetPostRespUser {
             handle: user.handle,
             host: user.host,
+            uri: user
+                .uri
+                .parse()
+                .context_internal_server_error("malformed user URI")?,
         })
     } else {
         None
@@ -231,13 +261,36 @@ async fn get_post(
             } else {
                 None
             };
-            Some(GetPostRespReaction {
-                user: user.map(|user| GetPostRespUser {
+
+            let user = if let Some(user) = user {
+                Some(GetPostRespUser {
                     handle: user.handle,
                     host: user.host,
-                }),
+                    uri: user.uri.parse().ok()?,
+                })
+            } else {
+                None
+            };
+
+            Some(GetPostRespReaction {
+                user,
                 content: reaction.content,
                 emoji,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let mentions = post
+        .find_related(mention::Entity)
+        .all(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+    let mentions = mentions
+        .into_iter()
+        .filter_map(|mention| {
+            Some(Mention {
+                user_uri: mention.user_uri.parse().ok()?,
+                name: mention.name,
             })
         })
         .collect::<Vec<_>>();
@@ -262,6 +315,7 @@ async fn get_post(
             .context_internal_server_error("malformed post URI")?,
         files,
         reactions,
+        mentions,
     }))
 }
 

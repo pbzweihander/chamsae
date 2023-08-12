@@ -5,7 +5,6 @@ use activitypub_federation::{
     kinds::{
         activity::CreateType,
         object::{DocumentType, NoteType},
-        public,
     },
     protocol::context::WithContext,
     traits::{ActivityHandler, Object},
@@ -44,7 +43,10 @@ pub struct Note {
     pub ty: NoteType,
     pub id: ObjectId<post::Model>,
     pub attributed_to: ObjectId<user::Model>,
+    #[serde(default)]
     pub to: Vec<Url>,
+    #[serde(default)]
+    pub cc: Vec<Url>,
     #[serde(default)]
     pub summary: Option<String>,
     pub content: String,
@@ -70,7 +72,10 @@ pub struct CreateNote {
     pub ty: CreateType,
     pub id: Url,
     pub actor: ObjectId<user::Model>,
+    #[serde(default)]
     pub to: Vec<Url>,
+    #[serde(default)]
+    pub cc: Vec<Url>,
     pub object: Note,
 }
 
@@ -80,7 +85,8 @@ impl CreateNote {
             ty: Default::default(),
             id: generate_object_id()?,
             actor: note.attributed_to.clone(),
-            to: vec![public()],
+            to: note.to.clone(),
+            cc: note.cc.clone(),
             object: note,
         })
     }

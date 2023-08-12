@@ -32,6 +32,14 @@ pub struct Person {
 #[derive(Debug)]
 pub struct LocalPerson;
 
+impl LocalPerson {
+    pub fn followers(&self) -> Result<Url, Error> {
+        self.id()
+            .join("followers")
+            .context_internal_server_error("failed to construct followers URL")
+    }
+}
+
 #[async_trait]
 impl Object for LocalPerson {
     type DataType = State;
