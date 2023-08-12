@@ -17,10 +17,12 @@ use crate::{
     ap::{
         note::{Attachment, Note},
         person::LocalPerson,
-        tag::{Emoji, EmojiIcon, Mention, Tag},
+        tag::{Emoji, EmojiIcon, Hashtag, Mention, Tag},
     },
     config::CONFIG,
-    entity::{local_file, mention, post, post_emoji, remote_file, sea_orm_active_enums, user},
+    entity::{
+        hashtag, local_file, mention, post, post_emoji, remote_file, sea_orm_active_enums, user,
+    },
     error::{Context, Error},
     format_err,
     state::State,
@@ -91,6 +93,14 @@ impl Object for post::Model {
             .context_internal_server_error("failed to query database")?;
         let emojis = self
             .find_related(post_emoji::Entity)
+            .all(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        let hashtags = self
+            .find_related(hashtag::Entity)
+            .select_only()
+            .column(hashtag::Column::Name)
+            .into_tuple::<String>()
             .all(&*data.db)
             .await
             .context_internal_server_error("failed to query database")?;
@@ -179,6 +189,12 @@ impl Object for post::Model {
                         url: emoji.image_url.parse().ok()?,
                     },
                 }))
+            }))
+            .chain(hashtags.into_iter().map(|hashtag| {
+                Tag::Hashtag(Hashtag {
+                    ty: Default::default(),
+                    name: hashtag,
+                })
             }))
             .collect::<Vec<_>>();
 
@@ -287,21 +303,43 @@ impl Object for post::Model {
                 .context_internal_server_error("failed to insert to database")?;
         }
 
-        let mentions = json
-            .tag
-            .iter()
-            .filter_map(|tag| {
-                if let Tag::Mention(mention) = tag {
-                    Some(mention::ActiveModel {
+        let mut mentions = Vec::new();
+        let mut emojis = Vec::new();
+        let mut hashtags = Vec::new();
+
+        for tag in json.tag {
+            match tag {
+                Tag::Mention(mention) => {
+                    mentions.push(mention::ActiveModel {
                         post_id: ActiveValue::Set(this.id),
                         user_uri: ActiveValue::Set(mention.href.to_string()),
                         name: ActiveValue::Set(mention.name.clone()),
-                    })
-                } else {
-                    None
+                    });
                 }
-            })
-            .collect::<Vec<_>>();
+                Tag::Emoji(emoji) => {
+                    emojis.push(post_emoji::ActiveModel {
+                        post_id: ActiveValue::Set(this.id),
+                        name: ActiveValue::Set(emoji.name.clone()),
+                        uri: ActiveValue::Set(emoji.id.to_string()),
+                        media_type: ActiveValue::Set(emoji.icon.media_type.to_string()),
+                        image_url: ActiveValue::Set(emoji.icon.url.to_string()),
+                    });
+                }
+                Tag::Hashtag(hashtag) => {
+                    hashtags.push(hashtag::ActiveModel {
+                        post_id: ActiveValue::Set(this.id),
+                        name: ActiveValue::Set(
+                            hashtag
+                                .name
+                                .strip_prefix('#')
+                                .unwrap_or(&hashtag.name)
+                                .to_string(),
+                        ),
+                    });
+                }
+            }
+        }
+
         if !mentions.is_empty() {
             mention::Entity::insert_many(mentions)
                 .on_conflict(
@@ -313,28 +351,21 @@ impl Object for post::Model {
                 .await
                 .context_internal_server_error("failed to insert to database")?;
         }
-
-        let emojis = json
-            .tag
-            .iter()
-            .filter_map(|tag| {
-                if let Tag::Emoji(emoji) = tag {
-                    Some(post_emoji::ActiveModel {
-                        post_id: ActiveValue::Set(this.id),
-                        name: ActiveValue::Set(emoji.name.clone()),
-                        uri: ActiveValue::Set(emoji.id.to_string()),
-                        media_type: ActiveValue::Set(emoji.icon.media_type.to_string()),
-                        image_url: ActiveValue::Set(emoji.icon.url.to_string()),
-                    })
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
         if !emojis.is_empty() {
             post_emoji::Entity::insert_many(emojis)
                 .on_conflict(
                     OnConflict::columns([post_emoji::Column::PostId, post_emoji::Column::Name])
+                        .do_nothing()
+                        .to_owned(),
+                )
+                .exec(&tx)
+                .await
+                .context_internal_server_error("failed to insert to database")?;
+        }
+        if !hashtags.is_empty() {
+            hashtag::Entity::insert_many(hashtags)
+                .on_conflict(
+                    OnConflict::columns([hashtag::Column::PostId, hashtag::Column::Name])
                         .do_nothing()
                         .to_owned(),
                 )

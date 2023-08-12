@@ -12,7 +12,9 @@ use url::Url;
 use crate::{
     ap::{delete::Delete, like::Like, undo::Undo},
     dto::{CreatePost, CreateReaction, IdPaginationQuery, IdResponse, Post, Visibility},
-    entity::{emoji, local_file, mention, post, post_emoji, reaction, sea_orm_active_enums, user},
+    entity::{
+        emoji, hashtag, local_file, mention, post, post_emoji, reaction, sea_orm_active_enums, user,
+    },
     error::{Context, Result},
     format_err,
     state::State,
@@ -148,6 +150,21 @@ async fn post_post(
         .collect::<Vec<_>>();
     if !mentions.is_empty() {
         mention::Entity::insert_many(mentions)
+            .exec(&tx)
+            .await
+            .context_internal_server_error("failed to insert to database")?;
+    }
+
+    let hashtags = req
+        .hashtags
+        .into_iter()
+        .map(|hashtag| hashtag::ActiveModel {
+            post_id: ActiveValue::Set(post.id),
+            name: ActiveValue::Set(hashtag),
+        })
+        .collect::<Vec<_>>();
+    if !hashtags.is_empty() {
+        hashtag::Entity::insert_many(hashtags)
             .exec(&tx)
             .await
             .context_internal_server_error("failed to insert to database")?;

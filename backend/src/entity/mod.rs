@@ -6,6 +6,7 @@ pub mod access_key;
 pub mod emoji;
 pub mod follow;
 pub mod follower;
+pub mod hashtag;
 pub mod local_file;
 pub mod mention;
 pub mod post;

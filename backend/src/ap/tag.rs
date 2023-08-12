@@ -34,7 +34,6 @@ impl Default for HashtagType {
 pub struct Hashtag {
     #[serde(rename = "type")]
     pub ty: HashtagType,
-    pub href: Url,
     pub name: String,
 }
 

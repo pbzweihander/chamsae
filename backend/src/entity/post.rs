@@ -21,6 +21,8 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(has_many = "super::hashtag::Entity")]
+    Hashtag,
     #[sea_orm(has_many = "super::local_file::Entity")]
     LocalFile,
     #[sea_orm(has_many = "super::mention::Entity")]
@@ -47,6 +49,12 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     User,
+}
+
+impl Related<super::hashtag::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Hashtag.def()
+    }
 }
 
 impl Related<super::local_file::Entity> for Entity {

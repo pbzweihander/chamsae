@@ -3,14 +3,14 @@ use std::str::FromStr;
 use chrono::{DateTime, FixedOffset};
 use migration::ConnectionTrait;
 use mime::Mime;
-use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder};
+use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder, QuerySelect};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
 
 use crate::{
     entity::{
-        emoji, follow, local_file, mention, post, post_emoji, reaction, remote_file,
+        emoji, follow, hashtag, local_file, mention, post, post_emoji, reaction, remote_file,
         sea_orm_active_enums, user,
     },
     error::{Context, Result},
@@ -141,6 +141,7 @@ pub struct Post {
     pub reactions: Vec<Reaction>,
     pub mentions: Vec<Mention>,
     pub emojis: Vec<Emoji>,
+    pub hashtags: Vec<String>,
 }
 
 impl Post {
@@ -256,6 +257,15 @@ impl Post {
             })
             .collect::<Vec<_>>();
 
+        let hashtags = post
+            .find_related(hashtag::Entity)
+            .select_only()
+            .column(hashtag::Column::Name)
+            .into_tuple::<String>()
+            .all(db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+
         Ok(Self {
             id: post.id.into(),
             created_at: post.created_at,
@@ -278,6 +288,7 @@ impl Post {
             reactions,
             mentions,
             emojis,
+            hashtags,
         })
     }
 }
@@ -298,6 +309,8 @@ pub struct CreatePost {
     pub mentions: Vec<Mention>,
     #[serde(default)]
     pub emojis: Vec<String>,
+    #[serde(default)]
+    pub hashtags: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
