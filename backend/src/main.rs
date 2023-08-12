@@ -5,6 +5,7 @@ use tracing_subscriber::EnvFilter;
 
 mod ap;
 mod config;
+mod dto;
 mod entity;
 mod entity_impl;
 mod error;

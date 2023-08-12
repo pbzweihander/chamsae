@@ -3,12 +3,12 @@ use axum::{extract, routing, Json, Router};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, EntityTrait, ModelTrait, PaginatorTrait, TransactionTrait,
 };
-use serde::Deserialize;
 use ulid::Ulid;
 use url::Url;
 
 use crate::{
     ap::{follow::Follow, undo::Undo},
+    dto::CreateFollow,
     entity::{follow, user},
     error::{Context, Result},
     format_err,
@@ -23,17 +23,11 @@ pub(super) fn create_router() -> Router {
         .route("/:id", routing::delete(delete_follow))
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PostFollowReq {
-    to_id: Ulid,
-}
-
 #[tracing::instrument(skip(data, _access))]
 async fn post_follow(
     data: Data<State>,
     _access: Access,
-    Json(req): Json<PostFollowReq>,
+    Json(req): Json<CreateFollow>,
 ) -> Result<()> {
     let tx = data
         .db

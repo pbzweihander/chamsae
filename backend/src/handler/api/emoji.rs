@@ -1,16 +1,14 @@
 use activitypub_federation::config::Data;
 use axum::{extract, routing, Json, Router};
-use chrono::{DateTime, FixedOffset, Utc};
-use mime::Mime;
+use chrono::Utc;
+
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
     QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
-use serde::{Deserialize, Serialize};
-use ulid::Ulid;
-use url::Url;
 
 use crate::{
+    dto::{CreateEmoji, LocalEmoji, NameResponse, TimestampPaginationQuery},
     entity::{emoji, local_file},
     error::{Context, Result},
     format_err,
@@ -25,46 +23,12 @@ pub(super) fn create_router() -> Router {
         .route("/:name", routing::get(get_emoji).delete(delete_emoji))
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct GetEmojisQuery {
-    #[serde(default)]
-    after: Option<DateTime<FixedOffset>>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct GetEmojiResp {
-    name: String,
-    created_at: DateTime<FixedOffset>,
-    #[serde(with = "mime_serde_shim")]
-    media_type: Mime,
-    image_url: Url,
-}
-
-impl GetEmojiResp {
-    fn from_model(emoji: emoji::Model, file: local_file::Model) -> Result<Self> {
-        Ok(Self {
-            name: emoji.name,
-            created_at: emoji.created_at,
-            media_type: file
-                .media_type
-                .parse()
-                .context_internal_server_error("malformed media type")?,
-            image_url: file
-                .url
-                .parse()
-                .context_internal_server_error("malformed file URL")?,
-        })
-    }
-}
-
 #[tracing::instrument(skip(data, _access))]
 async fn get_emojis(
     data: Data<State>,
     _access: Access,
-    extract::Query(query): extract::Query<GetEmojisQuery>,
-) -> Result<Json<Vec<GetEmojiResp>>> {
+    extract::Query(query): extract::Query<TimestampPaginationQuery>,
+) -> Result<Json<Vec<LocalEmoji>>> {
     let pagination_query = emoji::Entity::find();
     let pagination_query = if let Some(after) = query.after {
         pagination_query.filter(emoji::Column::CreatedAt.lt(after))
@@ -81,30 +45,17 @@ async fn get_emojis(
     let emojis = emojis
         .into_iter()
         .filter_map(|(emoji, file)| file.map(|file| (emoji, file)))
-        .filter_map(|(emoji, file)| GetEmojiResp::from_model(emoji, file).ok())
+        .filter_map(|(emoji, file)| LocalEmoji::from_model(emoji, file).ok())
         .collect::<Vec<_>>();
     Ok(Json(emojis))
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PostEmojiReq {
-    file_id: Ulid,
-    name: String,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PostEmojiResp {
-    name: String,
 }
 
 #[tracing::instrument(skip(data, _access))]
 async fn post_emoji(
     data: Data<State>,
     _access: Access,
-    Json(req): Json<PostEmojiReq>,
-) -> Result<Json<PostEmojiResp>> {
+    Json(req): Json<CreateEmoji>,
+) -> Result<Json<NameResponse>> {
     let tx = data
         .db
         .begin()
@@ -142,7 +93,7 @@ async fn post_emoji(
         .await
         .context_internal_server_error("failed to commit database transaction")?;
 
-    Ok(Json(PostEmojiResp { name: emoji.name }))
+    Ok(Json(NameResponse { name: emoji.name }))
 }
 
 #[tracing::instrument(skip(data, _access))]
@@ -150,7 +101,7 @@ async fn get_emoji(
     data: Data<State>,
     _access: Access,
     extract::Path(name): extract::Path<String>,
-) -> Result<Json<GetEmojiResp>> {
+) -> Result<Json<LocalEmoji>> {
     let (emoji, file) = emoji::Entity::find_by_id(name)
         .find_also_related(local_file::Entity)
         .order_by_desc(emoji::Column::CreatedAt)
@@ -159,7 +110,7 @@ async fn get_emoji(
         .context_internal_server_error("failed to query database")?
         .context_not_found("emoji not found")?;
     let file = file.context_internal_server_error("file not found")?;
-    Ok(Json(GetEmojiResp::from_model(emoji, file)?))
+    Ok(Json(LocalEmoji::from_model(emoji, file)?))
 }
 
 #[tracing::instrument(skip(data, _access))]
