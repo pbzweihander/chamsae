@@ -116,7 +116,7 @@ impl Object for reaction::Model {
             id: id.into(),
             actor: user_id,
             object: post_id.into(),
-            content: self.content,
+            content: Some(self.content),
             tag,
         })
     }
@@ -152,7 +152,7 @@ impl Object for reaction::Model {
             id: Uuid::new_v4(),
             user_id: Some(user.id),
             post_id: post.id,
-            content: json.content,
+            content: json.content.unwrap_or_else(|| "❤️".to_string()),
             uri: json.id.inner().to_string(),
             emoji_uri,
             emoji_media_type,

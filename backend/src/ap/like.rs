@@ -27,7 +27,8 @@ pub struct Like {
     pub id: ObjectId<reaction::Model>,
     pub actor: Url,
     pub object: ObjectId<post::Model>,
-    pub content: String,
+    #[serde(default)]
+    pub content: Option<String>,
     #[serde(default)]
     pub tag: Vec<Tag>,
 }
