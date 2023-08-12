@@ -154,8 +154,7 @@ impl ActivityHandler for FollowReject {
 
     #[tracing::instrument(skip(_data))]
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        verify_domains_match(&self.id, &self.object.id)
-            .context_bad_request("failed to verify domain")
+        verify_domains_match(&self.id, &self.actor).context_bad_request("failed to verify domain")
     }
 
     #[tracing::instrument(skip(data))]
