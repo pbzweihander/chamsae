@@ -19,11 +19,12 @@ use crate::{
 
 impl follow::Model {
     pub fn ap_id(&self) -> Result<Url, Error> {
-        Url::parse(&format!(
-            "https://{}/ap/follow/{}",
-            CONFIG.domain, self.to_id
-        ))
-        .context_internal_server_error("failed to construct follow URL ID")
+        Self::ap_id_from_id(self.to_id.into())
+    }
+
+    pub fn ap_id_from_id(id: Ulid) -> Result<Url, Error> {
+        Url::parse(&format!("https://{}/ap/follow/{}", CONFIG.domain, id))
+            .context_internal_server_error("failed to construct follow URL ID")
     }
 
     pub fn parse_ap_id(url: &str) -> Option<Ulid> {
