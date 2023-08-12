@@ -10,6 +10,7 @@ use activitypub_federation::{
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
+use chrono::{DateTime, FixedOffset};
 use mime::Mime;
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
@@ -43,6 +44,7 @@ pub struct Note {
     pub ty: NoteType,
     pub id: ObjectId<post::Model>,
     pub attributed_to: ObjectId<user::Model>,
+    pub published: DateTime<FixedOffset>,
     #[serde(default)]
     pub to: Vec<Url>,
     #[serde(default)]

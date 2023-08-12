@@ -5,7 +5,6 @@ use activitypub_federation::{
     traits::{Actor, Object},
 };
 use async_trait::async_trait;
-use chrono::Utc;
 use migration::OnConflict;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
@@ -187,6 +186,7 @@ impl Object for post::Model {
             ty: Default::default(),
             id: id.into(),
             attributed_to: user_id.into(),
+            published: self.created_at,
             to,
             cc,
             summary: self.title,
@@ -228,7 +228,7 @@ impl Object for post::Model {
 
         let this = Self {
             id: Uuid::new_v4(),
-            created_at: Utc::now().fixed_offset(),
+            created_at: json.published,
             reply_id: None,
             text: json.content,
             title: json.summary,
