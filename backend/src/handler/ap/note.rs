@@ -7,8 +7,9 @@ use uuid::Uuid;
 
 use crate::{
     ap::note::Note,
-    entity::post,
+    entity::{post, sea_orm_active_enums},
     error::{Context, Result},
+    format_err,
     state::State,
 };
 
@@ -26,6 +27,12 @@ async fn get_note(
         .await
         .context_internal_server_error("failed to query database")?
         .context_not_found("post not found")?;
-    let this = this.into_json(&data).await?;
-    Ok(FederationJson(WithContext::new_default(this)))
+    if this.visibility == sea_orm_active_enums::Visibility::Followers
+        || this.visibility == sea_orm_active_enums::Visibility::DirectMessage
+    {
+        Err(format_err!(NOT_FOUND, "post not found"))
+    } else {
+        let this = this.into_json(&data).await?;
+        Ok(FederationJson(WithContext::new_default(this)))
+    }
 }
