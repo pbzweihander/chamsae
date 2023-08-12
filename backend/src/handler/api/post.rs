@@ -3,7 +3,6 @@ use std::str::FromStr;
 use activitypub_federation::{config::Data, traits::Object};
 use axum::{extract, routing, Json, Router};
 use chrono::{DateTime, FixedOffset, Utc};
-use futures_util::{stream::FuturesUnordered, TryFutureExt, TryStreamExt};
 use mime::Mime;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
@@ -15,7 +14,10 @@ use uuid::Uuid;
 
 use crate::{
     ap::delete::Delete,
-    entity::{emoji, local_file, mention, post, reaction, remote_file, sea_orm_active_enums, user},
+    entity::{
+        emoji, local_file, mention, post, post_emoji, reaction, remote_file, sea_orm_active_enums,
+        user,
+    },
     error::{Context, Result},
     format_err,
     state::State,
@@ -49,13 +51,19 @@ struct Mention {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PostPostReq {
+    #[serde(default)]
     reply_id: Option<Uuid>,
     text: String,
+    #[serde(default)]
     title: Option<String>,
     visibility: Visibility,
     is_sensitive: bool,
+    #[serde(default)]
     files: Vec<Uuid>,
+    #[serde(default)]
     mentions: Vec<Mention>,
+    #[serde(default)]
+    emojis: Vec<Uuid>,
 }
 
 #[derive(Serialize)]
@@ -85,6 +93,13 @@ async fn post_post(
             return Err(format_err!(NOT_FOUND, "reply target post not found"));
         }
     }
+
+    let emojis = emoji::Entity::find()
+        .filter(emoji::Column::Id.is_in(req.emojis))
+        .find_also_related(local_file::Entity)
+        .all(&tx)
+        .await
+        .context_internal_server_error("failed to query database")?;
 
     let id = Uuid::new_v4();
     let post_activemodel = post::ActiveModel {
@@ -117,20 +132,42 @@ async fn post_post(
         file.attach_to_post(post.id, idx as u8, &tx).await?;
     }
 
-    req.mentions
+    let emojis = emojis
         .into_iter()
-        .map(|mention| {
-            let mention_activemodel = mention::ActiveModel {
+        .filter_map(|(emoji, file)| file.map(|file| (emoji, file)))
+        .filter_map(|(emoji, file)| {
+            Some(post_emoji::ActiveModel {
+                id: ActiveValue::Set(Uuid::new_v4()),
                 post_id: ActiveValue::Set(post.id),
-                user_uri: ActiveValue::Set(mention.user_uri.to_string()),
-                name: ActiveValue::Set(mention.name),
-            };
-            mention_activemodel.insert(&tx).map_ok(|_| ())
+                uri: ActiveValue::Set(emoji.ap_id().ok()?.to_string()),
+                name: ActiveValue::Set(emoji.name),
+                media_type: ActiveValue::Set(file.media_type),
+                image_url: ActiveValue::Set(file.url),
+            })
         })
-        .collect::<FuturesUnordered<_>>()
-        .try_collect::<()>()
-        .await
-        .context_internal_server_error("failed to insert to database")?;
+        .collect::<Vec<_>>();
+    if !emojis.is_empty() {
+        post_emoji::Entity::insert_many(emojis)
+            .exec(&tx)
+            .await
+            .context_internal_server_error("failed to insert to database")?;
+    }
+
+    let mentions = req
+        .mentions
+        .into_iter()
+        .map(|mention| mention::ActiveModel {
+            post_id: ActiveValue::Set(post.id),
+            user_uri: ActiveValue::Set(mention.user_uri.to_string()),
+            name: ActiveValue::Set(mention.name),
+        })
+        .collect::<Vec<_>>();
+    if !mentions.is_empty() {
+        mention::Entity::insert_many(mentions)
+            .exec(&tx)
+            .await
+            .context_internal_server_error("failed to insert to database")?;
+    }
 
     tx.commit()
         .await
@@ -163,7 +200,8 @@ struct GetPostRespFile {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct GetPostRespReactionEmoji {
+struct GetPostRespEmoji {
+    name: String,
     #[serde(with = "mime_serde_shim")]
     media_type: Mime,
     image_url: Url,
@@ -174,7 +212,7 @@ struct GetPostRespReactionEmoji {
 struct GetPostRespReaction {
     user: Option<GetPostRespUser>,
     content: String,
-    emoji: Option<GetPostRespReactionEmoji>,
+    emoji: Option<GetPostRespEmoji>,
 }
 
 #[derive(Serialize)]
@@ -192,6 +230,7 @@ struct GetPostResp {
     files: Vec<GetPostRespFile>,
     reactions: Vec<GetPostRespReaction>,
     mentions: Vec<Mention>,
+    emojis: Vec<GetPostRespEmoji>,
 }
 
 #[tracing::instrument(skip(data, _access))]
@@ -254,7 +293,8 @@ async fn get_post(
             let emoji = if let (Some(media_type), Some(image_url)) =
                 (reaction.emoji_media_type, reaction.emoji_image_url)
             {
-                Some(GetPostRespReactionEmoji {
+                Some(GetPostRespEmoji {
+                    name: reaction.content.clone(),
                     media_type: Mime::from_str(&media_type).ok()?,
                     image_url: Url::parse(&image_url).ok()?,
                 })
@@ -295,6 +335,22 @@ async fn get_post(
         })
         .collect::<Vec<_>>();
 
+    let emojis = post
+        .find_related(post_emoji::Entity)
+        .all(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+    let emojis = emojis
+        .into_iter()
+        .filter_map(|emoji| {
+            Some(GetPostRespEmoji {
+                name: emoji.name,
+                media_type: emoji.media_type.parse().ok()?,
+                image_url: emoji.image_url.parse().ok()?,
+            })
+        })
+        .collect::<Vec<_>>();
+
     Ok(Json(GetPostResp {
         id: post.id,
         created_at: post.created_at,
@@ -316,6 +372,7 @@ async fn get_post(
         files,
         reactions,
         mentions,
+        emojis,
     }))
 }
 

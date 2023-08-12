@@ -18,10 +18,10 @@ use crate::{
     ap::{
         note::{Attachment, Note},
         person::LocalPerson,
-        tag::{Mention, Tag},
+        tag::{Emoji, EmojiIcon, Mention, Tag},
     },
     config::CONFIG,
-    entity::{local_file, mention, post, remote_file, sea_orm_active_enums, user},
+    entity::{local_file, mention, post, post_emoji, remote_file, sea_orm_active_enums, user},
     error::{Context, Error},
     format_err,
     state::State,
@@ -89,6 +89,12 @@ impl Object for post::Model {
             .all(&*data.db)
             .await
             .context_internal_server_error("failed to query database")?;
+        let emojis = self
+            .find_related(post_emoji::Entity)
+            .all(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+
         let mention_user_uris = mentions
             .iter()
             .filter_map(|mention| Url::parse(&mention.user_uri).ok())
@@ -162,6 +168,18 @@ impl Object for post::Model {
                     name: mention.name,
                 }))
             })
+            .chain(emojis.into_iter().filter_map(|emoji| {
+                Some(Tag::Emoji(Emoji {
+                    ty: Default::default(),
+                    id: emoji.uri.parse().ok()?,
+                    name: emoji.name,
+                    icon: EmojiIcon {
+                        ty: Default::default(),
+                        media_type: emoji.media_type.parse().ok()?,
+                        url: emoji.image_url.parse().ok()?,
+                    },
+                }))
+            }))
             .collect::<Vec<_>>();
 
         Ok(Self::Kind {
@@ -256,7 +274,6 @@ impl Object for post::Model {
                 alt: ActiveValue::Set(attachment.name),
             })
             .collect::<Vec<_>>();
-
         if !remote_files.is_empty() {
             remote_file::Entity::insert_many(remote_files)
                 .on_conflict(
@@ -271,24 +288,53 @@ impl Object for post::Model {
 
         let mentions = json
             .tag
-            .into_iter()
+            .iter()
             .filter_map(|tag| {
                 if let Tag::Mention(mention) = tag {
                     Some(mention::ActiveModel {
                         post_id: ActiveValue::Set(this.id),
                         user_uri: ActiveValue::Set(mention.href.to_string()),
-                        name: ActiveValue::Set(mention.name),
+                        name: ActiveValue::Set(mention.name.clone()),
                     })
                 } else {
                     None
                 }
             })
             .collect::<Vec<_>>();
-
         if !mentions.is_empty() {
             mention::Entity::insert_many(mentions)
                 .on_conflict(
                     OnConflict::columns([mention::Column::PostId, mention::Column::UserUri])
+                        .do_nothing()
+                        .to_owned(),
+                )
+                .exec(&tx)
+                .await
+                .context_internal_server_error("failed to insert to database")?;
+        }
+
+        let emojis = json
+            .tag
+            .iter()
+            .filter_map(|tag| {
+                if let Tag::Emoji(emoji) = tag {
+                    Some(post_emoji::ActiveModel {
+                        id: ActiveValue::Set(Uuid::new_v4()),
+                        post_id: ActiveValue::Set(this.id),
+                        name: ActiveValue::Set(emoji.name.clone()),
+                        uri: ActiveValue::Set(emoji.id.to_string()),
+                        media_type: ActiveValue::Set(emoji.icon.media_type.to_string()),
+                        image_url: ActiveValue::Set(emoji.icon.url.to_string()),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        if !emojis.is_empty() {
+            post_emoji::Entity::insert_many(emojis)
+                .on_conflict(
+                    OnConflict::columns([post_emoji::Column::PostId, post_emoji::Column::Name])
                         .do_nothing()
                         .to_owned(),
                 )

@@ -9,6 +9,7 @@ pub mod follower;
 pub mod local_file;
 pub mod mention;
 pub mod post;
+pub mod post_emoji;
 pub mod reaction;
 pub mod remote_file;
 pub mod sea_orm_active_enums;

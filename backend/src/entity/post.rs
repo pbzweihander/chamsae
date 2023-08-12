@@ -33,6 +33,8 @@ pub enum Relation {
         on_delete = "SetNull"
     )]
     SelfRef,
+    #[sea_orm(has_many = "super::post_emoji::Entity")]
+    PostEmoji,
     #[sea_orm(has_many = "super::reaction::Entity")]
     Reaction,
     #[sea_orm(has_many = "super::remote_file::Entity")]
@@ -56,6 +58,12 @@ impl Related<super::local_file::Entity> for Entity {
 impl Related<super::mention::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Mention.def()
+    }
+}
+
+impl Related<super::post_emoji::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PostEmoji.def()
     }
 }
 

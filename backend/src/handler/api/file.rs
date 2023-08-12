@@ -17,6 +17,7 @@ pub(super) fn create_router() -> Router {
 struct PostFileQuery {
     #[serde(with = "mime_serde_shim")]
     media_type: Mime,
+    #[serde(default)]
     alt: Option<String>,
 }
 

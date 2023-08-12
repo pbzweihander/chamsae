@@ -7,6 +7,7 @@ pub use super::follower::Entity as Follower;
 pub use super::local_file::Entity as LocalFile;
 pub use super::mention::Entity as Mention;
 pub use super::post::Entity as Post;
+pub use super::post_emoji::Entity as PostEmoji;
 pub use super::reaction::Entity as Reaction;
 pub use super::remote_file::Entity as RemoteFile;
 pub use super::user::Entity as User;
