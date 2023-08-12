@@ -18,6 +18,7 @@ use crate::{
     error::{Context, Result},
     format_err,
     state::State,
+    util::get_follower_inboxes,
 };
 
 use super::auth::Access;
@@ -141,11 +142,11 @@ async fn post_post(
 
     let mentions = req
         .mentions
-        .into_iter()
+        .iter()
         .map(|mention| mention::ActiveModel {
             post_id: ActiveValue::Set(post.id),
             user_uri: ActiveValue::Set(mention.user_uri.to_string()),
-            name: ActiveValue::Set(mention.name),
+            name: ActiveValue::Set(mention.name.clone()),
         })
         .collect::<Vec<_>>();
     if !mentions.is_empty() {
@@ -175,9 +176,23 @@ async fn post_post(
         .context_internal_server_error("failed to commmit database transaction")?;
 
     let post_id = post.id.into();
+    let visibility = post.visibility.clone();
+
     let post = post.into_json(&data).await?;
+
+    let inboxes = match visibility {
+        sea_orm_active_enums::Visibility::Public
+        | sea_orm_active_enums::Visibility::Home
+        | sea_orm_active_enums::Visibility::Followers => get_follower_inboxes(&*data.db).await?,
+        sea_orm_active_enums::Visibility::DirectMessage => req
+            .mentions
+            .into_iter()
+            .map(|mention| mention.user_uri)
+            .collect::<Vec<_>>(),
+    };
+
     let create = post.into_create()?;
-    create.send(&data).await?;
+    create.send(&data, inboxes).await?;
 
     Ok(Json(IdResponse { id: post_id }))
 }
@@ -215,6 +230,19 @@ async fn delete_post(
 
     if let Some(existing) = existing {
         let was_mine = existing.user_id.is_none();
+        let visibility = existing.visibility.clone();
+        let mention_user_uris = existing
+            .find_related(mention::Entity)
+            .select_only()
+            .column(mention::Column::UserUri)
+            .into_tuple::<String>()
+            .all(&tx)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        let mention_user_uris = mention_user_uris
+            .into_iter()
+            .filter_map(|uri| Url::parse(&uri).ok())
+            .collect::<Vec<_>>();
         let uri = existing.uri.clone();
 
         ModelTrait::delete(existing, &tx)
@@ -226,11 +254,20 @@ async fn delete_post(
             .context_internal_server_error("failed to commit database transaction")?;
 
         if was_mine {
+            let inboxes = match visibility {
+                sea_orm_active_enums::Visibility::Public
+                | sea_orm_active_enums::Visibility::Home
+                | sea_orm_active_enums::Visibility::Followers => {
+                    get_follower_inboxes(&*data.db).await?
+                }
+                sea_orm_active_enums::Visibility::DirectMessage => mention_user_uris,
+            };
+
             let delete = Delete::new(
                 uri.parse()
                     .context_internal_server_error("malformed post URI")?,
             )?;
-            delete.send(&data).await?;
+            delete.send(&data, inboxes).await?;
         }
 
         Ok(())

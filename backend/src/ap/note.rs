@@ -20,7 +20,6 @@ use crate::{
     entity::{follow, post, user},
     error::{Context, Error},
     state::State,
-    util::get_follower_inboxes,
 };
 
 use super::{generate_object_id, person::LocalPerson, tag::Tag};
@@ -94,9 +93,8 @@ impl CreateNote {
     }
 
     #[tracing::instrument(skip(data))]
-    pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
+    pub async fn send(self, data: &Data<State>, inboxes: Vec<Url>) -> Result<(), Error> {
         let me = LocalPerson::get(&*data.db).await?;
-        let inboxes = get_follower_inboxes(&*data.db).await?;
         let with_context = WithContext::new_default(self);
         send_activity(with_context, &me, inboxes, data).await
     }
