@@ -42,6 +42,23 @@ struct GetEmojiResp {
     image_url: Url,
 }
 
+impl GetEmojiResp {
+    fn from_model(emoji: emoji::Model, file: local_file::Model) -> Result<Self> {
+        Ok(Self {
+            name: emoji.name,
+            created_at: emoji.created_at,
+            media_type: file
+                .media_type
+                .parse()
+                .context_internal_server_error("malformed media type")?,
+            image_url: file
+                .url
+                .parse()
+                .context_internal_server_error("malformed file URL")?,
+        })
+    }
+}
+
 #[tracing::instrument(skip(data, _access))]
 async fn get_emojis(
     data: Data<State>,
@@ -64,14 +81,7 @@ async fn get_emojis(
     let emojis = emojis
         .into_iter()
         .filter_map(|(emoji, file)| file.map(|file| (emoji, file)))
-        .filter_map(|(emoji, file)| {
-            Some(GetEmojiResp {
-                name: emoji.name,
-                created_at: emoji.created_at,
-                media_type: file.media_type.parse().ok()?,
-                image_url: file.url.parse().ok()?,
-            })
-        })
+        .filter_map(|(emoji, file)| GetEmojiResp::from_model(emoji, file).ok())
         .collect::<Vec<_>>();
     Ok(Json(emojis))
 }
@@ -149,18 +159,7 @@ async fn get_emoji(
         .context_internal_server_error("failed to query database")?
         .context_not_found("emoji not found")?;
     let file = file.context_internal_server_error("file not found")?;
-    Ok(Json(GetEmojiResp {
-        name: emoji.name,
-        created_at: emoji.created_at,
-        media_type: file
-            .media_type
-            .parse()
-            .context_internal_server_error("malformed media type")?,
-        image_url: file
-            .url
-            .parse()
-            .context_internal_server_error("malformed file URL")?,
-    }))
+    Ok(Json(GetEmojiResp::from_model(emoji, file)?))
 }
 
 #[tracing::instrument(skip(data, _access))]

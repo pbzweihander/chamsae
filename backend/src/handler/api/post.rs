@@ -218,7 +218,7 @@ impl GetPostResp {
             })
             .collect::<Vec<_>>();
 
-        Ok(GetPostResp {
+        Ok(Self {
             id: post.id.into(),
             created_at: post.created_at,
             reply_id: post.reply_id.map(Into::into),
@@ -435,6 +435,7 @@ async fn delete_post(
         .context_internal_server_error("failed to query database")?;
 
     if let Some(existing) = existing {
+        let was_mine = existing.user_id.is_none();
         let uri = existing.uri.clone();
 
         ModelTrait::delete(existing, &tx)
@@ -445,11 +446,13 @@ async fn delete_post(
             .await
             .context_internal_server_error("failed to commit database transaction")?;
 
-        let delete = Delete::new(
-            uri.parse()
-                .context_internal_server_error("malformed post URI")?,
-        )?;
-        delete.send(&data).await?;
+        if was_mine {
+            let delete = Delete::new(
+                uri.parse()
+                    .context_internal_server_error("malformed post URI")?,
+            )?;
+            delete.send(&data).await?;
+        }
 
         Ok(())
     } else {
