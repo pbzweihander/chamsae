@@ -13,7 +13,7 @@ use ulid::Ulid;
 use url::Url;
 
 use crate::{
-    ap::person::{Person, PersonImage},
+    ap::person::{Person, PersonImage, PersonOrServiceType},
     entity::user,
     error::{Context, Error},
     state::State,
@@ -45,7 +45,11 @@ impl Object for user::Model {
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = Url::parse(&self.uri).context_internal_server_error("malformed user URI")?;
         Ok(Self::Kind {
-            ty: Default::default(),
+            ty: if self.is_bot {
+                PersonOrServiceType::Service
+            } else {
+                PersonOrServiceType::Person
+            },
             id: id.clone().into(),
             preferred_username: self.handle,
             name: self.name,
@@ -109,6 +113,10 @@ impl Object for user::Model {
             avatar_url: json.icon.map(|image| image.url.to_string()),
             banner_url: json.image.map(|image| image.url.to_string()),
             manually_approves_followers: json.manually_approves_followers,
+            is_bot: match json.ty {
+                PersonOrServiceType::Person => false,
+                PersonOrServiceType::Service => true,
+            },
         };
 
         let tx = data

@@ -50,6 +50,7 @@ pub struct User {
     pub avatar_url: Option<Url>,
     pub banner_url: Option<Url>,
     pub manually_approves_followers: bool,
+    pub is_bot: bool,
 }
 
 impl User {
@@ -66,6 +67,7 @@ impl User {
             avatar_url: user.avatar_url.and_then(|url| url.parse().ok()),
             banner_url: user.banner_url.and_then(|url| url.parse().ok()),
             manually_approves_followers: user.manually_approves_followers,
+            is_bot: user.is_bot,
         })
     }
 }

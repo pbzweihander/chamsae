@@ -1,7 +1,7 @@
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
-    kinds::{activity::UpdateType, actor::PersonType, object::ImageType},
+    kinds::{activity::UpdateType, object::ImageType},
     protocol::{public_key::PublicKey, verification::verify_domains_match},
     traits::{ActivityHandler, Actor, Object},
 };
@@ -25,11 +25,26 @@ pub struct PersonImage {
     pub url: Url,
 }
 
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
+pub enum PersonOrServiceType {
+    Person,
+    Service,
+}
+
+impl std::fmt::Display for PersonOrServiceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Person => write!(f, "Person"),
+            Self::Service => write!(f, "Service"),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Person {
     #[serde(rename = "type")]
-    pub ty: PersonType,
+    pub ty: PersonOrServiceType,
     pub id: ObjectId<user::Model>,
     pub preferred_username: String,
     #[serde(default)]
@@ -78,7 +93,7 @@ impl Object for LocalPerson {
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = Self.id();
         Ok(Self::Kind {
-            ty: Default::default(),
+            ty: PersonOrServiceType::Person,
             id: id.clone().into(),
             preferred_username: CONFIG.user_handle.clone(),
             name: None,

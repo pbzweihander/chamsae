@@ -220,6 +220,7 @@ pub enum User {
     BannerUrl,
     SharedInbox,
     ManuallyApprovesFollowers,
+    IsBot,
 }
 
 #[derive(Iden)]
