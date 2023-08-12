@@ -20,6 +20,11 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 > This is not optional.
 > For development, [Caddy](https://caddyserver.com/) is helpful.
 
+### Requirements
+
+- PostgreSQL
+- Public accessible S3 compatible object storage
+
 ### Backend
 
 ```
@@ -27,6 +32,11 @@ RUST_LOG=info \
   DEBUG=true \
   DOMAIN=localhost \
   USER_HANDLE=admin \
+  DATABASE_HOST={host} \
+  DATABASE_PORT={port} \
+  DATABASE_USER={user} \
+  DATABASE_PASSWORD={password} \
+  DATABASE_DATABASE={db} \
   USER_PASSWORD_BCRYPT={your_password_hash} \
   OBJECT_STORAGE_REGION={region} \
   OBJECT_STORAGE_ENDPOINT={endpoint} \
