@@ -11,6 +11,43 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 
 ## Usage
 
+> **NOTE**
+> You need a public accessible S3 compatible object storage.
+> This is not optional.
+
+> **NOTE**
+> You have to serve chamsae with HTTPS.
+> This is not optional.
+> For development, [Caddy](https://caddyserver.com/) is helpful.
+
+### Backend
+
+```
+RUST_LOG=info \
+  DEBUG=true \
+  DOMAIN=localhost \
+  USER_HANDLE=admin \
+  USER_PASSWORD_BCRYPT={your_password_hash} \
+  OBJECT_STORAGE_REGION={region} \
+  OBJECT_STORAGE_ENDPOINT={endpoint} \
+  OBJECT_STORAGE_BUCKET={bucket} \
+  OBJECT_STORAGE_PUBLIC_URL_BASE={base_url} \
+  OBJECT_STORAGE_PATH_STYLE={true|false} \
+  OBJECT_STORAGE_ACCESS_KEY={access_key} \
+  OBJECT_STORAGE_SECRET_KEY={secret_key} \
+  cargo run --bin chamsae
+```
+
+To serve HTTPS with caddy:
+
+```
+caddy reverse-proxy --to :3000
+```
+
+You may need to run `sudo setcap cap_net_bind_service=+ep $(which caddy)` first.
+
+### Frontend
+
 TODO
 
 ## License
