@@ -326,17 +326,7 @@ async fn delete_reaction(
         .context_internal_server_error("failed to query database")?;
 
     if let Some(existing) = existing {
-        let this = existing.clone();
-
-        ModelTrait::delete(existing, &tx)
-            .await
-            .context_internal_server_error("failed to delete from database")?;
-
-        tx.commit()
-            .await
-            .context_internal_server_error("failed to commit database transaction")?;
-
-        let inbox = this
+        let inbox = existing
             .find_related(post::Entity)
             .inner_join(user::Entity)
             .select_only()
@@ -346,8 +336,17 @@ async fn delete_reaction(
             .await
             .context_internal_server_error("failed to query database")?
             .context_internal_server_error("user not found")?;
+        let like = existing.clone().into_json(&data).await?;
+
+        ModelTrait::delete(existing, &tx)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
+
         let inbox = Url::parse(&inbox).context_internal_server_error("malformed user inbox URL")?;
-        let like = this.into_json(&data).await?;
         let undo = Undo::<Like, reaction::Model>::new(like)?;
         undo.send(&data, vec![inbox]).await?;
     }
