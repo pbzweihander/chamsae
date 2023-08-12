@@ -33,7 +33,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .from(LocalFile::Table, LocalFile::PostId)
                             .to(Post::Table, Post::Id)
-                            .on_delete(ForeignKeyAction::Restrict),
+                            .on_delete(ForeignKeyAction::SetNull),
                     )
                     .index(
                         Index::create()

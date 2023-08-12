@@ -5,8 +5,10 @@ use sea_orm::{ActiveModelTrait, ActiveValue, ModelTrait};
 use uuid::Uuid;
 
 use crate::{
+    config::CONFIG,
     entity::local_file,
     error::{Context, Result},
+    format_err,
 };
 
 impl local_file::Model {
@@ -19,10 +21,32 @@ impl local_file::Model {
     ) -> Result<Self> {
         let id = Uuid::new_v4();
 
-        // TODO: upload to object storage
-        let _ = data;
-        let object_storage_key = "example/example.png".to_string();
-        let url = "https://fastly.picsum.photos/id/472/200/200.jpg?hmac=PScxKeNxgxcauarhbWIWesyo4VsouCtfdX8fNTy9HRI".to_string();
+        let bucket = CONFIG.object_storage_bucket()?;
+        let object_storage_key = id.to_string();
+        let res = bucket
+            .put_object_with_content_type(&object_storage_key, &data, media_type.as_ref())
+            .await
+            .context_internal_server_error("failed to put object to object storage")?;
+        if res.status_code() >= 400 {
+            if let Ok(res_str) = res.to_string() {
+                return Err(format_err!(
+                    INTERNAL_SERVER_ERROR,
+                    "failed to put object to object storage, status code: {}, message: {}",
+                    res.status_code(),
+                    res_str
+                ));
+            } else {
+                return Err(format_err!(
+                    INTERNAL_SERVER_ERROR,
+                    "failed to put object to object storage, status code: {}",
+                    res.status_code()
+                ));
+            }
+        }
+        let url = CONFIG
+            .object_storage_public_url_base
+            .join(&object_storage_key)
+            .context_internal_server_error("failed to construct object public URL")?;
 
         let this = Self {
             id,
@@ -30,7 +54,7 @@ impl local_file::Model {
             order: None,
             object_storage_key,
             media_type: media_type.to_string(),
-            url,
+            url: url.to_string(),
             alt,
         };
         let this_activemodel: local_file::ActiveModel = this.into();
@@ -64,7 +88,27 @@ impl local_file::Model {
 
     #[tracing::instrument(skip(db))]
     pub async fn delete(self, db: &impl ConnectionTrait) -> Result<()> {
-        // TODO: delete from object storage
+        let bucket = CONFIG.object_storage_bucket()?;
+        let res = bucket
+            .delete_object(&self.object_storage_key)
+            .await
+            .context_internal_server_error("failed to delete object from object storage")?;
+        if res.status_code() >= 500 {
+            if let Ok(res_str) = res.to_string() {
+                return Err(format_err!(
+                    INTERNAL_SERVER_ERROR,
+                    "failed to delete object from object storage, status code: {}, message: {}",
+                    res.status_code(),
+                    res_str
+                ));
+            } else {
+                return Err(format_err!(
+                    INTERNAL_SERVER_ERROR,
+                    "failed to delete object from object storage, status code: {}",
+                    res.status_code()
+                ));
+            }
+        }
 
         ModelTrait::delete(self, db)
             .await

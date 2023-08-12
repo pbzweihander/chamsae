@@ -33,6 +33,20 @@ impl Error {
             status_code,
         }
     }
+
+    pub fn from_anyhow(status_code: StatusCode, inner: anyhow::Error) -> Self {
+        let id = Uuid::new_v4();
+        if status_code.is_server_error() {
+            tracing::error!(%id, error = ?inner, "server error constructed");
+        } else {
+            tracing::warn!(%id, error = ?inner, "client error constructed");
+        }
+        Self {
+            id,
+            inner,
+            status_code,
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -262,7 +276,7 @@ macro_rules! format_err {
     ($status_code:ident, $msg:literal $(,)?) => {
         $crate::error::Error::new(::axum::http::StatusCode::$status_code, $msg)
     };
-    ($status_code:expr, $fmt:expr, $($arg:tt)*) => {
-        $crate::error::Error::new(::axum::http::StatusCode::$status_code, format!($fmt, $($arg,)*))
+    ($status_code:ident, $fmt:expr, $($arg:tt)*) => {
+        $crate::error::Error::from_anyhow(::axum::http::StatusCode::$status_code, ::anyhow::format_err!($fmt, $($arg)*))
     };
 }

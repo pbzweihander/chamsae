@@ -6,7 +6,6 @@ use activitypub_federation::{
 };
 use async_trait::async_trait;
 use chrono::Utc;
-use futures_util::{stream::FuturesUnordered, TryStreamExt};
 use migration::OnConflict;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
@@ -217,18 +216,6 @@ impl Object for post::Model {
         if existing_count == 0 {
             return Err(format_err!(NOT_FOUND, "post not found"));
         }
-
-        let local_files = self
-            .find_related(local_file::Entity)
-            .all(&tx)
-            .await
-            .context_internal_server_error("failed to query database")?;
-        local_files
-            .into_iter()
-            .map(|file| file.delete(&tx))
-            .collect::<FuturesUnordered<_>>()
-            .try_collect()
-            .await?;
 
         ModelTrait::delete(self, &tx)
             .await
