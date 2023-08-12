@@ -3,10 +3,12 @@ use std::str::FromStr;
 use activitypub_federation::{config::Data, traits::Object};
 use axum::{extract, routing, Json, Router};
 use chrono::{DateTime, FixedOffset, Utc};
+use futures_util::{stream::FuturesOrdered, TryStreamExt};
+use migration::ConnectionTrait;
 use mime::Mime;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
-    QueryFilter, QueryOrder, TransactionTrait,
+    QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
@@ -27,7 +29,7 @@ use super::auth::Access;
 
 pub(super) fn create_router() -> Router {
     Router::new()
-        .route("/", routing::post(post_post))
+        .route("/", routing::get(get_posts).post(post_post))
         .route("/:id", routing::get(get_post).delete(delete_post))
         .route("/:id/reaction", routing::post(post_reaction))
 }
@@ -46,6 +48,227 @@ enum Visibility {
 struct Mention {
     user_uri: Url,
     name: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPostQuery {
+    #[serde(default)]
+    after: Option<Ulid>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPostRespUser {
+    handle: String,
+    host: String,
+    uri: Url,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPostRespFile {
+    #[serde(with = "mime_serde_shim")]
+    media_type: Mime,
+    url: Url,
+    alt: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPostRespEmoji {
+    name: String,
+    #[serde(with = "mime_serde_shim")]
+    media_type: Mime,
+    image_url: Url,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPostRespReaction {
+    user: Option<GetPostRespUser>,
+    content: String,
+    emoji: Option<GetPostRespEmoji>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetPostResp {
+    id: Ulid,
+    created_at: DateTime<FixedOffset>,
+    reply_id: Option<Ulid>,
+    text: String,
+    title: Option<String>,
+    user: Option<GetPostRespUser>,
+    visibility: Visibility,
+    is_sensitive: bool,
+    uri: Url,
+    files: Vec<GetPostRespFile>,
+    reactions: Vec<GetPostRespReaction>,
+    mentions: Vec<Mention>,
+    emojis: Vec<GetPostRespEmoji>,
+}
+
+impl GetPostResp {
+    async fn from_model(post: post::Model, db: &impl ConnectionTrait) -> Result<Self> {
+        let user = if post.user_id.is_some() {
+            let user = post
+                .find_related(user::Entity)
+                .one(db)
+                .await
+                .context_internal_server_error("failed to query database")?
+                .context_internal_server_error("user not found")?;
+            Some(GetPostRespUser {
+                handle: user.handle,
+                host: user.host,
+                uri: user
+                    .uri
+                    .parse()
+                    .context_internal_server_error("malformed user URI")?,
+            })
+        } else {
+            None
+        };
+
+        let remote_files = post
+            .find_related(remote_file::Entity)
+            .order_by_asc(remote_file::Column::Order)
+            .all(db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+
+        let files = remote_files
+            .into_iter()
+            .filter_map(|file| {
+                Some(GetPostRespFile {
+                    media_type: file.media_type.parse().ok()?,
+                    url: file.url.parse().ok()?,
+                    alt: file.alt,
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let reactions = reaction::Entity::find()
+            .filter(reaction::Column::PostId.eq(post.id))
+            .find_also_related(user::Entity)
+            .all(db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        let reactions = reactions
+            .into_iter()
+            .filter_map(|(reaction, user)| {
+                let emoji = if let (Some(media_type), Some(image_url)) =
+                    (reaction.emoji_media_type, reaction.emoji_image_url)
+                {
+                    Some(GetPostRespEmoji {
+                        name: reaction.content.clone(),
+                        media_type: Mime::from_str(&media_type).ok()?,
+                        image_url: Url::parse(&image_url).ok()?,
+                    })
+                } else {
+                    None
+                };
+
+                let user = if let Some(user) = user {
+                    Some(GetPostRespUser {
+                        handle: user.handle,
+                        host: user.host,
+                        uri: user.uri.parse().ok()?,
+                    })
+                } else {
+                    None
+                };
+
+                Some(GetPostRespReaction {
+                    user,
+                    content: reaction.content,
+                    emoji,
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let mentions = post
+            .find_related(mention::Entity)
+            .all(db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        let mentions = mentions
+            .into_iter()
+            .filter_map(|mention| {
+                Some(Mention {
+                    user_uri: mention.user_uri.parse().ok()?,
+                    name: mention.name,
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let emojis = post
+            .find_related(post_emoji::Entity)
+            .all(db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        let emojis = emojis
+            .into_iter()
+            .filter_map(|emoji| {
+                Some(GetPostRespEmoji {
+                    name: emoji.name,
+                    media_type: emoji.media_type.parse().ok()?,
+                    image_url: emoji.image_url.parse().ok()?,
+                })
+            })
+            .collect::<Vec<_>>();
+
+        Ok(GetPostResp {
+            id: post.id.into(),
+            created_at: post.created_at,
+            reply_id: post.reply_id.map(Into::into),
+            text: post.text,
+            title: post.title,
+            user,
+            visibility: match post.visibility {
+                sea_orm_active_enums::Visibility::Public => Visibility::Public,
+                sea_orm_active_enums::Visibility::Home => Visibility::Home,
+                sea_orm_active_enums::Visibility::Followers => Visibility::Followers,
+                sea_orm_active_enums::Visibility::DirectMessage => Visibility::DirectMessage,
+            },
+            is_sensitive: post.is_sensitive,
+            uri: post
+                .uri
+                .parse()
+                .context_internal_server_error("malformed post URI")?,
+            files,
+            reactions,
+            mentions,
+            emojis,
+        })
+    }
+}
+
+#[tracing::instrument(skip(data, _access))]
+async fn get_posts(
+    data: Data<State>,
+    _access: Access,
+    extract::Query(query): extract::Query<GetPostQuery>,
+) -> Result<Json<Vec<GetPostResp>>> {
+    let post_query = post::Entity::find();
+    let post_query = if let Some(after) = query.after {
+        post_query.filter(post::Column::Id.lt(uuid::Uuid::from(after)))
+    } else {
+        post_query
+    };
+    let posts = post_query
+        .order_by_desc(post::Column::Id)
+        .limit(100)
+        .all(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+    let posts = posts
+        .into_iter()
+        .map(|post| GetPostResp::from_model(post, &*data.db))
+        .collect::<FuturesOrdered<_>>()
+        .try_collect()
+        .await?;
+    Ok(Json(posts))
 }
 
 #[derive(Deserialize)]
@@ -180,58 +403,6 @@ async fn post_post(
     Ok(Json(PostPostResp { id: post_id }))
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct GetPostRespUser {
-    handle: String,
-    host: String,
-    uri: Url,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct GetPostRespFile {
-    #[serde(with = "mime_serde_shim")]
-    media_type: Mime,
-    url: Url,
-    alt: Option<String>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct GetPostRespEmoji {
-    name: String,
-    #[serde(with = "mime_serde_shim")]
-    media_type: Mime,
-    image_url: Url,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct GetPostRespReaction {
-    user: Option<GetPostRespUser>,
-    content: String,
-    emoji: Option<GetPostRespEmoji>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct GetPostResp {
-    id: Ulid,
-    created_at: DateTime<FixedOffset>,
-    reply_id: Option<Ulid>,
-    text: String,
-    title: Option<String>,
-    user: Option<GetPostRespUser>,
-    visibility: Visibility,
-    is_sensitive: bool,
-    uri: Url,
-    files: Vec<GetPostRespFile>,
-    reactions: Vec<GetPostRespReaction>,
-    mentions: Vec<Mention>,
-    emojis: Vec<GetPostRespEmoji>,
-}
-
 #[tracing::instrument(skip(data, _access))]
 async fn get_post(
     data: Data<State>,
@@ -243,137 +414,7 @@ async fn get_post(
         .await
         .context_internal_server_error("failed to query database")?
         .context_not_found("post not found")?;
-
-    let user = if post.user_id.is_some() {
-        let user = post
-            .find_related(user::Entity)
-            .one(&*data.db)
-            .await
-            .context_internal_server_error("failed to query database")?
-            .context_internal_server_error("user not found")?;
-        Some(GetPostRespUser {
-            handle: user.handle,
-            host: user.host,
-            uri: user
-                .uri
-                .parse()
-                .context_internal_server_error("malformed user URI")?,
-        })
-    } else {
-        None
-    };
-
-    let remote_files = post
-        .find_related(remote_file::Entity)
-        .order_by_asc(remote_file::Column::Order)
-        .all(&*data.db)
-        .await
-        .context_internal_server_error("failed to query database")?;
-
-    let files = remote_files
-        .into_iter()
-        .filter_map(|file| {
-            Some(GetPostRespFile {
-                media_type: file.media_type.parse().ok()?,
-                url: file.url.parse().ok()?,
-                alt: file.alt,
-            })
-        })
-        .collect::<Vec<_>>();
-
-    let reactions = reaction::Entity::find()
-        .filter(reaction::Column::PostId.eq(post.id))
-        .find_also_related(user::Entity)
-        .all(&*data.db)
-        .await
-        .context_internal_server_error("failed to query database")?;
-    let reactions = reactions
-        .into_iter()
-        .filter_map(|(reaction, user)| {
-            let emoji = if let (Some(media_type), Some(image_url)) =
-                (reaction.emoji_media_type, reaction.emoji_image_url)
-            {
-                Some(GetPostRespEmoji {
-                    name: reaction.content.clone(),
-                    media_type: Mime::from_str(&media_type).ok()?,
-                    image_url: Url::parse(&image_url).ok()?,
-                })
-            } else {
-                None
-            };
-
-            let user = if let Some(user) = user {
-                Some(GetPostRespUser {
-                    handle: user.handle,
-                    host: user.host,
-                    uri: user.uri.parse().ok()?,
-                })
-            } else {
-                None
-            };
-
-            Some(GetPostRespReaction {
-                user,
-                content: reaction.content,
-                emoji,
-            })
-        })
-        .collect::<Vec<_>>();
-
-    let mentions = post
-        .find_related(mention::Entity)
-        .all(&*data.db)
-        .await
-        .context_internal_server_error("failed to query database")?;
-    let mentions = mentions
-        .into_iter()
-        .filter_map(|mention| {
-            Some(Mention {
-                user_uri: mention.user_uri.parse().ok()?,
-                name: mention.name,
-            })
-        })
-        .collect::<Vec<_>>();
-
-    let emojis = post
-        .find_related(post_emoji::Entity)
-        .all(&*data.db)
-        .await
-        .context_internal_server_error("failed to query database")?;
-    let emojis = emojis
-        .into_iter()
-        .filter_map(|emoji| {
-            Some(GetPostRespEmoji {
-                name: emoji.name,
-                media_type: emoji.media_type.parse().ok()?,
-                image_url: emoji.image_url.parse().ok()?,
-            })
-        })
-        .collect::<Vec<_>>();
-
-    Ok(Json(GetPostResp {
-        id: post.id.into(),
-        created_at: post.created_at,
-        reply_id: post.reply_id.map(Into::into),
-        text: post.text,
-        title: post.title,
-        user,
-        visibility: match post.visibility {
-            sea_orm_active_enums::Visibility::Public => Visibility::Public,
-            sea_orm_active_enums::Visibility::Home => Visibility::Home,
-            sea_orm_active_enums::Visibility::Followers => Visibility::Followers,
-            sea_orm_active_enums::Visibility::DirectMessage => Visibility::DirectMessage,
-        },
-        is_sensitive: post.is_sensitive,
-        uri: post
-            .uri
-            .parse()
-            .context_internal_server_error("malformed post URI")?,
-        files,
-        reactions,
-        mentions,
-        emojis,
-    }))
+    Ok(Json(GetPostResp::from_model(post, &*data.db).await?))
 }
 
 #[tracing::instrument(skip(data, _access))]
