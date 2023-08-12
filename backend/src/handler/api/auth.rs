@@ -109,7 +109,6 @@ async fn post_login(
         let access_key_activemodel = access_key::ActiveModel {
             id: ActiveValue::Set(Ulid::new().into()),
             name: ActiveValue::Set(req.hostname),
-            created_at: ActiveValue::Set(Utc::now().fixed_offset()),
             last_used_at: ActiveValue::NotSet,
         };
         let access_key = access_key_activemodel

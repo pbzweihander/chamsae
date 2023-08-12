@@ -101,11 +101,6 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(AccessKey::Name).string().not_null())
-                    .col(
-                        ColumnDef::new(AccessKey::CreatedAt)
-                            .timestamp_with_time_zone()
-                            .not_null(),
-                    )
                     .col(ColumnDef::new(AccessKey::LastUsedAt).timestamp_with_time_zone())
                     .to_owned(),
             )
@@ -257,7 +252,6 @@ enum AccessKey {
     Table,
     Id,
     Name,
-    CreatedAt,
     LastUsedAt,
 }
 
