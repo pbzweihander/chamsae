@@ -3,6 +3,7 @@ pub use sea_orm_migration::prelude::*;
 mod m20230806_104639_initial;
 mod m20230811_152513_reaction;
 mod m20230811_163629_local_file;
+mod m20230812_032603_emoji;
 
 pub struct Migrator;
 
@@ -13,6 +14,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20230806_104639_initial::Migration),
             Box::new(m20230811_152513_reaction::Migration),
             Box::new(m20230811_163629_local_file::Migration),
+            Box::new(m20230812_032603_emoji::Migration),
         ]
     }
 }

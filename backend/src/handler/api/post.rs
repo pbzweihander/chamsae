@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     ap::delete::Delete,
     config::CONFIG,
-    entity::{local_file, post, reaction, remote_file, sea_orm_active_enums, user},
+    entity::{emoji, local_file, post, reaction, remote_file, sea_orm_active_enums, user},
     error::{Context, Result},
     format_err,
     state::State,
@@ -27,6 +27,7 @@ pub(super) fn create_router() -> Router {
     Router::new()
         .route("/", routing::post(post_post))
         .route("/:id", routing::get(get_post).delete(delete_post))
+        .route("/:id/reaction", routing::post(post_reaction))
 }
 
 #[derive(Deserialize, Serialize)]
@@ -303,4 +304,103 @@ async fn delete_post(
     } else {
         Ok(())
     }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PostReactionReqContent {
+    content: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PostReactionReqEmoji {
+    emoji_id: Uuid,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum PostReactionReq {
+    Content(PostReactionReqContent),
+    Emoji(PostReactionReqEmoji),
+}
+
+async fn post_reaction(
+    data: Data<State>,
+    _access: Access,
+    extract::Path(id): extract::Path<Uuid>,
+    Json(req): Json<PostReactionReq>,
+) -> Result<()> {
+    let tx = data
+        .db
+        .begin()
+        .await
+        .context_internal_server_error("failed to begin database transaction")?;
+
+    let existing_post_count = post::Entity::find_by_id(id)
+        .count(&tx)
+        .await
+        .context_internal_server_error("failed to query database")?;
+
+    if existing_post_count == 0 {
+        return Err(format_err!(NOT_FOUND, "post not found"));
+    }
+
+    let existing_reaction_count = reaction::Entity::find()
+        .filter(
+            reaction::Column::PostId
+                .eq(id)
+                .and(reaction::Column::UserId.is_null()),
+        )
+        .count(&tx)
+        .await
+        .context_internal_server_error("failed to query database")?;
+
+    if existing_reaction_count > 0 {
+        return Err(format_err!(CONFLICT, "already reacted post"));
+    }
+
+    let (content, emoji_uri, emoji_media_type, emoji_image_url) = match req {
+        PostReactionReq::Emoji(req) => {
+            let (emoji, file) = emoji::Entity::find_by_id(req.emoji_id)
+                .find_also_related(local_file::Entity)
+                .one(&tx)
+                .await
+                .context_internal_server_error("failed to query database")?
+                .context_not_found("emoji not found")?;
+            let file = file.context_internal_server_error("failed to find emoji file")?;
+            (
+                format!(":{}:", emoji.name),
+                Some(emoji.ap_id()?.to_string()),
+                Some(file.media_type),
+                Some(file.url),
+            )
+        }
+        PostReactionReq::Content(req) => (req.content, None, None, None),
+    };
+
+    let reaction_id = Uuid::new_v4();
+    let reaction_activemodel = reaction::ActiveModel {
+        id: ActiveValue::Set(reaction_id),
+        user_id: ActiveValue::Set(None),
+        post_id: ActiveValue::Set(id),
+        content: ActiveValue::Set(content),
+        uri: ActiveValue::Set(reaction::Model::ap_id_from_id(reaction_id)?.to_string()),
+        emoji_uri: ActiveValue::Set(emoji_uri),
+        emoji_media_type: ActiveValue::Set(emoji_media_type),
+        emoji_image_url: ActiveValue::Set(emoji_image_url),
+    };
+    let reaction = reaction_activemodel
+        .insert(&tx)
+        .await
+        .context_internal_server_error("failed to insert to database")?;
+
+    tx.commit()
+        .await
+        .context_internal_server_error("failed to commit database transation")?;
+
+    let like = reaction.into_json(&data).await?;
+    like.send(&data).await?;
+
+    Ok(())
 }

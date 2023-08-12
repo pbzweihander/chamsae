@@ -51,6 +51,7 @@ impl local_file::Model {
         let this = Self {
             id,
             post_id: None,
+            emoji_id: None,
             order: None,
             object_storage_key,
             media_type: media_type.to_string(),
@@ -77,6 +78,20 @@ impl local_file::Model {
             id: ActiveValue::Unchanged(self.id),
             post_id: ActiveValue::Set(Some(post_id)),
             order: ActiveValue::Set(Some(order as i16)),
+            ..Default::default()
+        };
+        this_activemodel
+            .update(db)
+            .await
+            .context_internal_server_error("failed to update database")?;
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(db))]
+    pub async fn attach_to_emoji(&self, emoji_id: Uuid, db: &impl ConnectionTrait) -> Result<()> {
+        let this_activemodel = local_file::ActiveModel {
+            id: ActiveValue::Unchanged(self.id),
+            emoji_id: ActiveValue::Set(Some(emoji_id)),
             ..Default::default()
         };
         this_activemodel

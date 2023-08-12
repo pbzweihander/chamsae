@@ -59,10 +59,11 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(Iden)]
-enum LocalFile {
+pub enum LocalFile {
     Table,
     Id,
     PostId,
+    EmojiId,
     Order,
     ObjectStorageKey,
     MediaType,

@@ -1,21 +1,23 @@
 use activitypub_federation::{
+    activity_queue::send_activity,
     config::Data,
     fetch::object_id::ObjectId,
     kinds::activity::LikeType,
-    protocol::verification::verify_domains_match,
+    protocol::{context::WithContext, verification::verify_domains_match},
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
+use sea_orm::ModelTrait;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    entity::{post, reaction},
+    entity::{post, reaction, user},
     error::{Context, Error},
     state::State,
 };
 
-use super::tag::Tag;
+use super::{person::LocalPerson, tag::Tag};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -28,6 +30,23 @@ pub struct Like {
     pub content: String,
     #[serde(default)]
     pub tag: Vec<Tag>,
+}
+
+impl Like {
+    #[tracing::instrument(skip(data))]
+    pub async fn send(self, data: &Data<State>) -> Result<(), Error> {
+        let post = self.object.dereference(data).await?;
+        let user = post
+            .find_related(user::Entity)
+            .one(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?
+            .context_internal_server_error("user not found")?;
+        let inbox =
+            Url::parse(&user.inbox).context_internal_server_error("malformed user inbox URL")?;
+        let with_context = WithContext::new_default(self);
+        send_activity(with_context, &LocalPerson, vec![inbox], data).await
+    }
 }
 
 #[async_trait]

@@ -1,3 +1,4 @@
+mod emoji;
 mod follow;
 mod follower;
 mod local_file;
