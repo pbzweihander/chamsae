@@ -33,6 +33,17 @@ pub(super) fn create_router() -> Router {
         )
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/post",
+    params(IdPaginationQuery),
+    responses(
+        (status = 200, body = Vec<Post>),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn get_posts(
     data: Data<State>,
@@ -60,6 +71,17 @@ async fn get_posts(
     Ok(Json(posts))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/post",
+    request_body = CreatePost,
+    responses(
+        (status = 200, body = IdResponse),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access, req))]
 async fn post_post(
     data: Data<State>,
@@ -197,6 +219,19 @@ async fn post_post(
     Ok(Json(IdResponse { id: post_id }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/post/{id}",
+    params(
+        ("id" = String, format = "ulid"),
+    ),
+    responses(
+        (status = 200, body = Post),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn get_post(
     data: Data<State>,
@@ -211,6 +246,19 @@ async fn get_post(
     Ok(Json(Post::from_model(post, &*data.db).await?))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/post/{id}",
+    params(
+        ("id" = String, format = "ulid"),
+    ),
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn delete_post(
     data: Data<State>,
@@ -276,6 +324,20 @@ async fn delete_post(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/post/{id}/reaction",
+    params(
+        ("id" = String, format = "ulid"),
+    ),
+    request_body = CreateReaction,
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn post_reaction(
     data: Data<State>,
@@ -357,6 +419,19 @@ async fn post_reaction(
     Ok(())
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/post/{id}/reaction",
+    params(
+        ("id" = String, format = "ulid"),
+    ),
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn delete_reaction(
     data: Data<State>,

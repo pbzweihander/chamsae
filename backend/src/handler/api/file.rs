@@ -21,6 +21,17 @@ pub(super) fn create_router() -> Router {
         .route("/:id", routing::get(get_file).delete(delete_file))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/file",
+    params(IdPaginationQuery),
+    responses(
+        (status = 200, body = Vec<LocalFile>),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn get_files(
     data: Data<State>,
@@ -46,6 +57,17 @@ async fn get_files(
     Ok(Json(files))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/file",
+    params(CreateFileQuery),
+    responses(
+        (status = 200, body = IdResponse),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access, req))]
 async fn post_file(
     data: Data<State>,
@@ -57,6 +79,19 @@ async fn post_file(
     Ok(Json(IdResponse { id: file.id.into() }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/file/{id}",
+    params(
+        ("id" = String, format = "ulid"),
+    ),
+    responses(
+        (status = 200, body = LocalFile),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn get_file(
     data: Data<State>,
@@ -72,6 +107,19 @@ async fn get_file(
     Ok(Json(LocalFile::from_model(file)?))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/file/{id}",
+    params(
+        ("id" = String, format = "ulid"),
+    ),
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn delete_file(
     data: Data<State>,

@@ -23,6 +23,17 @@ pub(super) fn create_router() -> Router {
         .route("/:name", routing::get(get_emoji).delete(delete_emoji))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/emoji",
+    params(TimestampPaginationQuery),
+    responses(
+        (status = 200, body = Vec<LocalEmoji>),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn get_emojis(
     data: Data<State>,
@@ -50,6 +61,17 @@ async fn get_emojis(
     Ok(Json(emojis))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/emoji",
+    request_body = CreateEmoji,
+    responses(
+        (status = 200, body = NameResponse),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn post_emoji(
     data: Data<State>,
@@ -96,6 +118,19 @@ async fn post_emoji(
     Ok(Json(NameResponse { name: emoji.name }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/emoji/{name}",
+    params(
+        ("name" = String,),
+    ),
+    responses(
+        (status = 200, body = LocalEmoji),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn get_emoji(
     data: Data<State>,
@@ -113,6 +148,19 @@ async fn get_emoji(
     Ok(Json(LocalEmoji::from_model(emoji, file)?))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/emoji/{name}",
+    params(
+        ("name" = String,),
+    ),
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn delete_emoji(
     data: Data<State>,

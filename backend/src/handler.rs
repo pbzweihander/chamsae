@@ -6,6 +6,11 @@ use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, Quer
 use serde::Serialize;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::Level;
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
+use utoipa_redoc::{Redoc, Servable};
 
 use crate::{
     config::CONFIG,
@@ -27,6 +32,73 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
             .unwrap(),
     );
     resp
+}
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        self::api::auth::post_login,
+        self::api::auth::get_check,
+        self::api::emoji::get_emojis,
+        self::api::emoji::post_emoji,
+        self::api::emoji::get_emoji,
+        self::api::emoji::delete_emoji,
+        self::api::file::get_files,
+        self::api::file::post_file,
+        self::api::file::get_file,
+        self::api::file::delete_file,
+        self::api::follow::get_follows,
+        self::api::follow::post_follow,
+        self::api::follow::delete_follow,
+        self::api::follower::get_followers,
+        self::api::hashtag::get_hashtag_posts,
+        self::api::post::get_posts,
+        self::api::post::post_post,
+        self::api::post::get_post,
+        self::api::post::delete_post,
+        self::api::post::post_reaction,
+        self::api::post::delete_reaction,
+        self::api::setting::get_setting,
+        self::api::setting::put_setting,
+    ),
+    components(schemas(
+        crate::dto::IdResponse,
+        crate::dto::NameResponse,
+        crate::dto::User,
+        crate::dto::Visibility,
+        crate::dto::Mention,
+        crate::dto::File,
+        crate::dto::Emoji,
+        crate::dto::CreateContentReaction,
+        crate::dto::CreateEmojiReaction,
+        crate::dto::CreateReaction,
+        crate::dto::Reaction,
+        crate::dto::Post,
+        crate::dto::CreatePost,
+        crate::dto::LocalFile,
+        crate::dto::LocalEmoji,
+        crate::dto::CreateEmoji,
+        crate::dto::Follow,
+        crate::dto::CreateFollow,
+        crate::dto::Setting,
+        self::api::auth::PostLoginReq,
+        self::api::auth::PostLoginResp,
+    )),
+    modifiers(&AccessKeyAddon),
+)]
+struct ApiDoc;
+
+struct AccessKeyAddon;
+
+impl Modify for AccessKeyAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "access_key",
+                SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
+            )
+        }
+    }
 }
 
 pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
@@ -53,6 +125,11 @@ pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
         .route("/nodeinfo/2.0", routing::get(get_nodeinfo_2_0))
         // TODO: We cannot use nested router because of https://github.com/LemmyNet/activitypub-federation-rust/issues/73
         .route("/ap/inbox", routing::post(self::ap::post_inbox))
+        .route(
+            "/openapi.json",
+            routing::get(|| async move { Json(ApiDoc::openapi()) }),
+        )
+        .merge(Redoc::with_url("/api-doc", ApiDoc::openapi()))
         .layer(FederationMiddleware::new(federation_config))
         .layer(TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)))
         .layer(axum::middleware::from_fn(server_header_middleware));

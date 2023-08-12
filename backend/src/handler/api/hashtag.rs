@@ -16,6 +16,21 @@ pub(super) fn create_router() -> Router {
     Router::new().route("/:name", routing::get(get_hashtag_posts))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/hashtag/{name}",
+    params(
+        IdPaginationQuery,
+        ("name" = String,),
+    ),
+    responses(
+        (status = 200, body = Vec<Post>),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
+#[tracing::instrument(skip(data, _access))]
 async fn get_hashtag_posts(
     data: Data<State>,
     _access: Access,

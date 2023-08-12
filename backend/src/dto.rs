@@ -8,6 +8,7 @@ use sea_orm::{
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::{
     entity::{
@@ -17,39 +18,45 @@ use crate::{
     error::{Context, Result},
 };
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
 pub struct IdPaginationQuery {
+    #[param(value_type = Option<String>, format = "ulid")]
     #[serde(default)]
     pub after: Option<Ulid>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
 pub struct TimestampPaginationQuery {
     #[serde(default)]
     pub after: Option<DateTime<FixedOffset>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct IdResponse {
+    #[schema(value_type = String, format = "ulid")]
     pub id: Ulid,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NameResponse {
     pub name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
+    #[schema(value_type = String, format = "ulid")]
     pub id: Ulid,
     pub handle: String,
     pub name: Option<String>,
     pub description: Option<String>,
     pub host: String,
+    #[schema(value_type = String, format = "url")]
     pub uri: Url,
+    #[schema(value_type = Option<String>, format = "ulid")]
     pub avatar_url: Option<Url>,
+    #[schema(value_type = Option<String>, format = "ulid")]
     pub banner_url: Option<Url>,
     pub manually_approves_followers: bool,
     pub is_bot: bool,
@@ -75,7 +82,7 @@ impl User {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum Visibility {
     Public,
@@ -84,51 +91,56 @@ pub enum Visibility {
     DirectMessage,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Mention {
+    #[schema(value_type = String, format = "url")]
     pub user_uri: Url,
     pub name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct File {
+    #[schema(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[schema(value_type = String, format = "url")]
     pub url: Url,
     pub alt: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Emoji {
     pub name: String,
+    #[schema(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[schema(value_type = String, format = "url")]
     pub image_url: Url,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateContentReaction {
     pub content: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateEmojiReaction {
     pub emoji_name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(untagged)]
 pub enum CreateReaction {
     Content(CreateContentReaction),
     Emoji(CreateEmojiReaction),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Reaction {
     pub user: Option<User>,
@@ -136,17 +148,20 @@ pub struct Reaction {
     pub emoji: Option<Emoji>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Post {
+    #[schema(value_type = String, format = "ulid")]
     pub id: Ulid,
     pub created_at: DateTime<FixedOffset>,
+    #[schema(value_type = Option<String>, format = "ulid")]
     pub reply_id: Option<Ulid>,
     pub text: String,
     pub title: Option<String>,
     pub user: Option<User>,
     pub visibility: Visibility,
     pub is_sensitive: bool,
+    #[schema(value_type = String, format = "url")]
     pub uri: Url,
     pub files: Vec<File>,
     pub reactions: Vec<Reaction>,
@@ -289,9 +304,10 @@ impl Post {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatePost {
+    #[schema(value_type = Option<String>, format = "ulid")]
     #[serde(default)]
     pub reply_id: Option<Ulid>,
     pub text: String,
@@ -300,6 +316,7 @@ pub struct CreatePost {
     pub visibility: Visibility,
     #[serde(default)]
     pub is_sensitive: bool,
+    #[schema(value_type = Vec<String>, format = "ulid")]
     #[serde(default)]
     pub files: Vec<Ulid>,
     #[serde(default)]
@@ -310,14 +327,17 @@ pub struct CreatePost {
     pub hashtags: Vec<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalFile {
+    #[schema(value_type = String, format = "ulid")]
     pub id: Ulid,
     pub posted: bool,
     pub emoji_name: Option<String>,
+    #[schema(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[schema(value_type = String, format = "url")]
     pub url: Url,
     pub alt: Option<String>,
 }
@@ -341,22 +361,25 @@ impl LocalFile {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFileQuery {
+    #[param(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
     #[serde(default)]
     pub alt: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalEmoji {
     pub name: String,
     pub created_at: DateTime<FixedOffset>,
+    #[schema(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[schema(value_type = String, format = "url")]
     pub image_url: Url,
 }
 
@@ -377,14 +400,15 @@ impl LocalEmoji {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateEmoji {
+    #[schema(value_type = String, format = "ulid")]
     pub file_id: Ulid,
     pub name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Follow {
     #[serde(flatten)]
@@ -401,20 +425,23 @@ impl Follow {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFollow {
+    #[schema(value_type = String, format = "ulid")]
     pub to_id: Ulid,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Setting {
     pub user_name: Option<String>,
     pub user_description: Option<String>,
     pub instance_name: Option<String>,
     pub instance_description: Option<String>,
+    #[schema(value_type = Option<String>, format = "ulid")]
     pub avatar_file_id: Option<Ulid>,
+    #[schema(value_type = Option<String>, format = "ulid")]
     pub banner_file_id: Option<Ulid>,
     pub maintainer_name: Option<String>,
     pub maintainer_email: Option<String>,

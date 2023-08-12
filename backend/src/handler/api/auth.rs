@@ -10,6 +10,7 @@ use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
+use utoipa::ToSchema;
 
 use crate::{
     config::CONFIG,
@@ -85,18 +86,27 @@ pub(super) fn create_router() -> Router {
         .route("/check", routing::get(get_check))
 }
 
-#[derive(Deserialize)]
-struct PostLoginReq {
+#[derive(Deserialize, ToSchema)]
+pub struct PostLoginReq {
     id: String,
     password: String,
     hostname: String,
 }
 
-#[derive(Serialize)]
-struct PostLoginResp {
+#[derive(Serialize, ToSchema)]
+pub struct PostLoginResp {
+    #[schema(value_type = String, format = "ulid")]
     token: Ulid,
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/login",
+    request_body = PostLoginReq,
+    responses(
+        (status = 200, body = PostLoginResp)
+    )
+)]
 #[tracing::instrument(skip(data, req))]
 async fn post_login(
     data: Data<State>,
@@ -124,6 +134,16 @@ async fn post_login(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/auth/check",
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 async fn get_check(_access: Access) {
     // noop
 }

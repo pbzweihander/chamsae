@@ -24,6 +24,17 @@ pub(super) fn create_router() -> Router {
         .route("/:id", routing::delete(delete_follow))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/follow",
+    params(IdPaginationQuery),
+    responses(
+        (status = 200, body = Vec<Follow>),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 async fn get_follows(
     data: Data<State>,
     _access: Access,
@@ -49,6 +60,17 @@ async fn get_follows(
     Ok(Json(follows))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/follow",
+    request_body = CreateFollow,
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn post_follow(
     data: Data<State>,
@@ -98,6 +120,19 @@ async fn post_follow(
     Ok(())
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/follow/{id}",
+    params(
+        ("id" = String, format = "ulid", description = "user id to unfollow"),
+    ),
+    responses(
+        (status = 200),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn delete_follow(
     data: Data<State>,

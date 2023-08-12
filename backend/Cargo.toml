@@ -27,4 +27,6 @@ tracing = { version = "0.1.37", features = ["log"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
 ulid = { version = "1.0.0", features = ["serde", "uuid"] }
 url = { version = "2.4.0", features = ["serde"] }
+utoipa = { version = "3.4.4", features = ["axum_extras", "chrono"] }
+utoipa-redoc = { version = "0.1.0", features = ["axum"] }
 uuid = { version = "1.4.1", features = ["serde", "v4"] }

@@ -1,13 +1,13 @@
 use axum::{routing, Router};
 
-mod auth;
-mod emoji;
-mod file;
-mod follow;
-mod follower;
-mod hashtag;
-mod post;
-mod setting;
+pub mod auth;
+pub mod emoji;
+pub mod file;
+pub mod follow;
+pub mod follower;
+pub mod hashtag;
+pub mod post;
+pub mod setting;
 
 pub(super) fn create_router() -> Router {
     let auth = self::auth::create_router();

@@ -15,6 +15,17 @@ pub(super) fn create_router() -> Router {
     Router::new().route("/", routing::get(get_followers))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/follower",
+    params(IdPaginationQuery),
+    responses(
+        (status = 200, body = Vec<User>),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 #[tracing::instrument(skip(data, _access))]
 async fn get_followers(
     data: Data<State>,

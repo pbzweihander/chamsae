@@ -17,11 +17,32 @@ pub(super) fn create_router() -> Router {
     Router::new().route("/", routing::get(get_setting).put(put_setting))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/setting",
+    responses(
+        (status = 200, body = Setting),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 async fn get_setting(data: Data<State>, _access: Access) -> Result<Json<Setting>> {
     let setting = setting::Model::get(&*data.db).await?;
     Ok(Json(Setting::from_model(setting)))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/setting",
+    request_body = Setting,
+    responses(
+        (status = 200, body = Setting),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
 async fn put_setting(
     data: Data<State>,
     _access: Access,
