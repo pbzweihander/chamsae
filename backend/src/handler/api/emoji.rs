@@ -1,5 +1,6 @@
 use activitypub_federation::config::Data;
 use axum::{routing, Json, Router};
+use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, PaginatorTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
@@ -59,6 +60,7 @@ async fn post_emoji(
 
     let emoji_activemodel = emoji::ActiveModel {
         name: ActiveValue::Set(req.name),
+        created_at: ActiveValue::Set(Utc::now().fixed_offset()),
     };
 
     let emoji = emoji_activemodel

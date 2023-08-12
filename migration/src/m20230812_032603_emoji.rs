@@ -18,6 +18,11 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
+                    .col(
+                        ColumnDef::new(Emoji::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null(),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -62,4 +67,5 @@ impl MigrationTrait for Migration {
 enum Emoji {
     Table,
     Name,
+    CreatedAt,
 }
