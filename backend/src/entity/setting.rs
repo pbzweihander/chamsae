@@ -13,6 +13,10 @@ pub struct Model {
     pub user_private_key: String,
     pub avatar_file_id: Option<Uuid>,
     pub banner_file_id: Option<Uuid>,
+    pub instance_description: Option<String>,
+    pub maintainer_name: Option<String>,
+    pub maintainer_email: Option<String>,
+    pub theme_color: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

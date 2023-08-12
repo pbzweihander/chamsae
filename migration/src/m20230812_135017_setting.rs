@@ -57,7 +57,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(Iden)]
-enum Setting {
+pub enum Setting {
     Table,
     Id,
     InstanceName,
@@ -66,4 +66,8 @@ enum Setting {
     UserPrivateKey,
     AvatarFileId,
     BannerFileId,
+    InstanceDescription,
+    MaintainerName,
+    MaintainerEmail,
+    ThemeColor,
 }

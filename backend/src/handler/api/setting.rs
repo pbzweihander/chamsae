@@ -36,11 +36,23 @@ async fn put_setting(
     if let Some(v) = req.instance_name {
         setting_activemodel.instance_name = ActiveValue::Set(Some(v));
     }
+    if let Some(v) = req.instance_description {
+        setting_activemodel.instance_description = ActiveValue::Set(Some(v));
+    }
     if let Some(v) = req.avatar_file_id {
         setting_activemodel.avatar_file_id = ActiveValue::Set(Some(v.into()));
     }
     if let Some(v) = req.banner_file_id {
         setting_activemodel.banner_file_id = ActiveValue::Set(Some(v.into()));
+    }
+    if let Some(v) = req.maintainer_name {
+        setting_activemodel.maintainer_name = ActiveValue::Set(Some(v));
+    }
+    if let Some(v) = req.maintainer_email {
+        setting_activemodel.maintainer_email = ActiveValue::Set(Some(v));
+    }
+    if let Some(v) = req.theme_color {
+        setting_activemodel.theme_color = ActiveValue::Set(Some(v));
     }
 
     let tx = data
