@@ -15,7 +15,7 @@ use ulid::Ulid;
 use url::Url;
 
 use crate::{
-    ap::delete::Delete,
+    ap::{delete::Delete, like::Like, undo::Undo},
     entity::{
         emoji, local_file, mention, post, post_emoji, reaction, remote_file, sea_orm_active_enums,
         user,
@@ -31,7 +31,10 @@ pub(super) fn create_router() -> Router {
     Router::new()
         .route("/", routing::get(get_posts).post(post_post))
         .route("/:id", routing::get(get_post).delete(delete_post))
-        .route("/:id/reaction", routing::post(post_reaction))
+        .route(
+            "/:id/reaction",
+            routing::post(post_reaction).delete(delete_reaction),
+        )
 }
 
 #[derive(Deserialize, Serialize)]
@@ -556,6 +559,58 @@ async fn post_reaction(
 
     let like = reaction.into_json(&data).await?;
     like.send(&data).await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(skip(data, _access))]
+async fn delete_reaction(
+    data: Data<State>,
+    _access: Access,
+    extract::Path(id): extract::Path<Ulid>,
+) -> Result<()> {
+    let tx = data
+        .db
+        .begin()
+        .await
+        .context_internal_server_error("failed to begin database transaction")?;
+
+    let existing = reaction::Entity::find()
+        .filter(
+            reaction::Column::PostId
+                .eq(uuid::Uuid::from(id))
+                .and(reaction::Column::UserId.is_null()),
+        )
+        .one(&tx)
+        .await
+        .context_internal_server_error("failed to query database")?;
+
+    if let Some(existing) = existing {
+        let this = existing.clone();
+
+        ModelTrait::delete(existing, &tx)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
+
+        let inbox = this
+            .find_related(post::Entity)
+            .inner_join(user::Entity)
+            .select_only()
+            .column(user::Column::Inbox)
+            .into_tuple::<String>()
+            .one(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?
+            .context_internal_server_error("user not found")?;
+        let inbox = Url::parse(&inbox).context_internal_server_error("malformed user inbox URL")?;
+        let like = this.into_json(&data).await?;
+        let undo = Undo::<Like, reaction::Model>::new(like)?;
+        undo.send(&data, vec![inbox]).await?;
+    }
 
     Ok(())
 }
