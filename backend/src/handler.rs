@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use activitypub_federation::config::{Data, FederationConfig, FederationMiddleware};
 use axum::{http::Request, middleware::Next, response::Response, routing, Json, Router};
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter};
+use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde::Serialize;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::Level;
@@ -13,7 +11,6 @@ use utoipa::{
 use utoipa_redoc::{Redoc, Servable};
 
 use crate::{
-    config::CONFIG,
     entity::{post, setting},
     error::Result,
     state::State,
@@ -110,29 +107,7 @@ impl Modify for AccessKeyAddon {
     }
 }
 
-pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
-    let http_client = anyhow::Context::context(
-        reqwest::Client::builder()
-            .danger_accept_invalid_certs(CONFIG.debug)
-            .danger_accept_invalid_hostnames(CONFIG.debug)
-            .build(),
-        "failed to build HTTP client",
-    )?;
-    let state = State {
-        db: Arc::new(db),
-        http_client,
-    };
-
-    let federation_config = anyhow::Context::context(
-        FederationConfig::builder()
-            .domain(&crate::config::CONFIG.domain)
-            .app_data(state.clone())
-            .debug(CONFIG.debug)
-            .build()
-            .await,
-        "failed to build federation config",
-    )?;
-
+pub async fn create_router(federation_config: FederationConfig<State>) -> anyhow::Result<Router> {
     let ap = self::ap::create_router();
     let api = self::api::create_router();
     let well_known = self::well_known::create_router();

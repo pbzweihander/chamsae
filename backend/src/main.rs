@@ -1,3 +1,4 @@
+use activitypub_federation::config::FederationConfig;
 use anyhow::Context;
 use migration::MigratorTrait;
 use sea_orm::Database;
@@ -64,7 +65,16 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("failed to migrate database")?;
 
-    let router = crate::handler::create_router(db)
+    let state = crate::state::State::new(db).context("failed to construct app state")?;
+    let federation_config = FederationConfig::builder()
+        .domain(&crate::config::CONFIG.domain)
+        .app_data(state.clone())
+        .debug(crate::config::CONFIG.debug)
+        .build()
+        .await
+        .context("failed to build federation config")?;
+
+    let router = crate::handler::create_router(federation_config)
         .await
         .context("failed to create router")?;
 
