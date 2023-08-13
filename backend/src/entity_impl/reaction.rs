@@ -7,8 +7,8 @@ use activitypub_federation::{
 use async_trait::async_trait;
 use mime::Mime;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
-    QuerySelect, TransactionTrait,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
+    QueryFilter, QuerySelect, TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
@@ -174,18 +174,24 @@ impl Object for reaction::Model {
             .context_internal_server_error("failed to query database")?;
 
         let this = if let Some(id) = existing_id {
-            Self { id, ..this }
+            let this_activemodel: reaction::ActiveModel = this.into();
+            let mut this_activemodel = this_activemodel.reset_all();
+            this_activemodel.id = ActiveValue::Unchanged(id);
+            this_activemodel
+                .update(&tx)
+                .await
+                .context_internal_server_error("failed to update database")?
         } else {
             let this_activemodel: reaction::ActiveModel = this.into();
-            let this = this_activemodel
+            this_activemodel
                 .insert(&tx)
                 .await
-                .context_internal_server_error("failed to insert to database")?;
-            tx.commit()
-                .await
-                .context_internal_server_error("failed to commit database transaction")?;
-            this
+                .context_internal_server_error("failed to insert to database")?
         };
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
 
         Ok(this)
     }
