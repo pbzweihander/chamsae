@@ -42,6 +42,7 @@ struct GetResolveUserQuery {
         ("access_key" = []),
     ),
 )]
+#[tracing::instrument(skip(data, _access))]
 async fn get_user(
     data: Data<State>,
     _access: Access,
@@ -108,6 +109,7 @@ struct GetResolveLinkQuery {
         ("access_key" = []),
     ),
 )]
+#[tracing::instrument(skip(data, _access))]
 async fn get_link(
     data: Data<State>,
     _access: Access,

@@ -31,16 +31,18 @@ pub struct PersonImage {
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-pub enum PersonOrServiceType {
+pub enum ActorType {
     Person,
     Service,
+    Application,
 }
 
-impl std::fmt::Display for PersonOrServiceType {
+impl std::fmt::Display for ActorType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Person => write!(f, "Person"),
             Self::Service => write!(f, "Service"),
+            Self::Application => write!(f, "Application"),
         }
     }
 }
@@ -49,7 +51,7 @@ impl std::fmt::Display for PersonOrServiceType {
 #[serde(rename_all = "camelCase")]
 pub struct Person {
     #[serde(rename = "type")]
-    pub ty: PersonOrServiceType,
+    pub ty: ActorType,
     pub id: ObjectId<user::Model>,
     pub preferred_username: String,
     #[serde(default)]
@@ -143,7 +145,7 @@ impl Object for LocalPerson {
         };
 
         Ok(Self::Kind {
-            ty: PersonOrServiceType::Person,
+            ty: ActorType::Person,
             id: id.clone().into(),
             preferred_username: CONFIG.user_handle.clone(),
             name: setting.user_name,

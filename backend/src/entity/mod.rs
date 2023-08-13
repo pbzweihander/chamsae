@@ -13,6 +13,7 @@ pub mod post;
 pub mod post_emoji;
 pub mod reaction;
 pub mod remote_file;
+pub mod report;
 pub mod sea_orm_active_enums;
 pub mod setting;
 pub mod user;

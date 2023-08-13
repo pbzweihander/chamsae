@@ -10,6 +10,7 @@ use crate::{
 };
 
 pub mod delete;
+pub mod flag;
 pub mod follow;
 pub mod like;
 pub mod note;
@@ -35,6 +36,7 @@ pub enum Activity {
     CreateFollow(self::follow::Follow),
     CreateNote(self::note::CreateNote),
     Delete(self::delete::Delete),
+    Flag(self::flag::Flag),
     Like(self::like::Like),
     RejectFollow(self::follow::FollowReject),
     UndoFollow(self::undo::Undo<self::follow::Follow, follower::Model>),

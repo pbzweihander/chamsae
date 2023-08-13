@@ -14,6 +14,7 @@ mod m20230812_134054_is_bot;
 mod m20230812_135017_setting;
 mod m20230812_155209_nodeinfo;
 mod m20230812_161529_user_description;
+mod m20230813_051423_report;
 
 pub struct Migrator;
 
@@ -35,6 +36,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20230812_135017_setting::Migration),
             Box::new(m20230812_155209_nodeinfo::Migration),
             Box::new(m20230812_161529_user_description::Migration),
+            Box::new(m20230813_051423_report::Migration),
         ]
     }
 }

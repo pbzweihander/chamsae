@@ -13,7 +13,7 @@ use utoipa::{IntoParams, ToSchema};
 use crate::{
     entity::{
         emoji, follow, hashtag, local_file, mention, post, post_emoji, reaction, remote_file,
-        sea_orm_active_enums, setting, user,
+        report, sea_orm_active_enums, setting, user,
     },
     error::{Context, Result},
 };
@@ -469,4 +469,27 @@ impl Setting {
 pub enum Object {
     User(Box<User>),
     Post(Box<Post>),
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Report {
+    pub from: User,
+    pub content: String,
+}
+
+impl Report {
+    pub fn from_model(report: report::Model, user: user::Model) -> Result<Self> {
+        Ok(Self {
+            from: User::from_model(user)?,
+            content: report.content,
+        })
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateReport {
+    pub user_id: Ulid,
+    pub content: String,
 }
