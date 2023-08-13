@@ -12,7 +12,7 @@ COPY Cargo.toml .
 COPY migration migration
 COPY backend backend
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/home/root/app/target \
+    --mount=type=cache,sharing=private,target=/home/root/app/target \
     cargo install --path ./backend && cargo install --path ./migration
 
 
