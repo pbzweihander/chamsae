@@ -12,10 +12,6 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 ## Usage
 
 > **NOTE**
-> You need a public accessible S3 compatible object storage.
-> This is not optional.
-
-> **NOTE**
 > You have to serve chamsae with HTTPS.
 > This is not optional.
 > For development, [Caddy](https://caddyserver.com/) is helpful.
@@ -23,13 +19,13 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 ### Requirements
 
 - PostgreSQL
-- Public accessible S3 compatible object storage
 
 ### Backend
 
+#### Example: Using local filesystem as object store
+
 ```
-RUST_LOG=info \
-  DEBUG=true \
+DEBUG=true \
   DOMAIN=localhost \
   USER_HANDLE=admin \
   USER_PASSWORD_BCRYPT={your_password_hash} \
@@ -38,15 +34,31 @@ RUST_LOG=info \
   DATABASE_USER={user} \
   DATABASE_PASSWORD={password} \
   DATABASE_DATABASE={db} \
-  OBJECT_STORAGE_REGION={region} \
-  OBJECT_STORAGE_ENDPOINT={endpoint} \
-  OBJECT_STORAGE_BUCKET={bucket} \
-  OBJECT_STORAGE_PUBLIC_URL_BASE={base_url} \
-  OBJECT_STORAGE_PATH_STYLE={true|false} \
-  OBJECT_STORAGE_ACCESS_KEY={access_key} \
-  OBJECT_STORAGE_SECRET_KEY={secret_key} \
+  OBJECT_STORE_TYPE=local_filesystem \
   cargo run --bin chamsae
 ```
+
+#### Example: Using CloudFlare R2 as object store
+
+```
+DEBUG=true \
+  DOMAIN=localhost \
+  USER_HANDLE=admin \
+  USER_PASSWORD_BCRYPT={your_password_hash} \
+  DATABASE_HOST={host} \
+  DATABASE_PORT={port} \
+  DATABASE_USER={user} \
+  DATABASE_PASSWORD={password} \
+  DATABASE_DATABASE={db} \
+  OBJECT_STORE_TYPE=s3 \
+  AWS_DEFAULT_REGION=auto \
+  AWS_ENDPOINT=https://{account_id}.r2.cloudflarestorage.com \
+  AWS_ACCESS_KEY_ID={access_key} \
+  AWS_SECRET_ACCESS_KEY={secret_key} \
+  cargo run --bin chamsae
+```
+
+#### Serve HTTPS with caddy
 
 To serve HTTPS with caddy:
 
