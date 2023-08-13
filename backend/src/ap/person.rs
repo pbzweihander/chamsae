@@ -8,6 +8,7 @@ use activitypub_federation::{
 };
 use async_trait::async_trait;
 use derivative::Derivative;
+use once_cell::sync::Lazy;
 use sea_orm::{EntityTrait, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -91,12 +92,20 @@ impl LocalPerson {
     }
 
     pub fn id() -> Url {
-        CONFIG.user_id.clone().unwrap()
+        static ID: Lazy<Url> = Lazy::new(|| {
+            Url::parse(&format!("https://{}/ap/person", CONFIG.domain))
+                .expect("failed to construct ID URL")
+        });
+        ID.clone()
     }
 
-    // pub fn inbox() -> Url {
-    //     CONFIG.inbox_url.clone().unwrap()
-    // }
+    pub fn inbox() -> Url {
+        static INBOX: Lazy<Url> = Lazy::new(|| {
+            Url::parse(&format!("https://{}/ap/inbox", CONFIG.domain))
+                .expect("failed to construct inbox URL")
+        });
+        INBOX.clone()
+    }
 }
 
 #[async_trait]
@@ -197,7 +206,7 @@ impl Object for LocalPerson {
 
 impl Actor for LocalPerson {
     fn id(&self) -> Url {
-        CONFIG.user_id.clone().unwrap()
+        Self::id()
     }
 
     fn public_key_pem(&self) -> &str {
@@ -209,7 +218,7 @@ impl Actor for LocalPerson {
     }
 
     fn inbox(&self) -> Url {
-        CONFIG.inbox_url.clone().unwrap()
+        Self::inbox()
     }
 }
 

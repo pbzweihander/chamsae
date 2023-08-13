@@ -107,28 +107,14 @@ pub struct Config {
     /// Password bcrypt hash of the owner user of this instance
     pub user_password_bcrypt: String,
 
-    #[serde(skip)]
-    pub user_id: Option<Url>,
-    #[serde(skip)]
-    pub inbox_url: Option<Url>,
-
     #[serde(flatten)]
     pub object_store_config: ObjectStoreConfig,
 }
 
 impl Config {
     pub fn try_from_env() -> Result<Self> {
-        let mut config: Config =
+        let config: Config =
             envy::from_env().context("failed to parse config from environment variables")?;
-
-        let user_id = Url::parse(&format!("https://{}/ap/person", config.domain))
-            .context("failed to construct ID URL")?;
-        let inbox_url = Url::parse(&format!("https://{}/ap/inbox", config.domain))
-            .context("failed to construct inbox URL")?;
-
-        config.user_id = Some(user_id);
-        config.inbox_url = Some(inbox_url);
-
         Ok(config)
     }
 }
