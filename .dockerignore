@@ -1,0 +1,14 @@
+target
+
+frontend/node_modules
+frontend/.pnp.*
+frontend/.yarn/*
+!frontend/.yarn/patches
+!frontend/.yarn/plugins
+!frontend/.yarn/releases
+!frontend/.yarn/sdks
+!frontend/.yarn/versions
+
+frontend/.next
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
