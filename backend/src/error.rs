@@ -6,6 +6,7 @@ use axum::{
     Json,
 };
 use serde::Serialize;
+use tracing_error::SpanTrace;
 use ulid::Ulid;
 
 #[derive(Debug)]
@@ -13,6 +14,7 @@ pub struct Error {
     pub id: Ulid,
     pub inner: anyhow::Error,
     pub status_code: StatusCode,
+    pub context: SpanTrace,
 }
 
 impl Error {
@@ -20,31 +22,17 @@ impl Error {
     where
         M: fmt::Display + fmt::Debug + Send + Sync + 'static,
     {
-        let id = Ulid::new();
-        let inner = anyhow::Error::msg(message);
-        if status_code.is_server_error() {
-            tracing::error!(%id, error = ?inner, "server error constructed");
-        } else {
-            tracing::warn!(%id, error = ?inner, "client error constructed");
-        }
-        Self {
-            id,
-            inner,
-            status_code,
-        }
+        Self::from_anyhow(status_code, anyhow::Error::msg(message))
     }
 
     pub fn from_anyhow(status_code: StatusCode, inner: anyhow::Error) -> Self {
         let id = Ulid::new();
-        if status_code.is_server_error() {
-            tracing::error!(%id, error = ?inner, "server error constructed");
-        } else {
-            tracing::warn!(%id, error = ?inner, "client error constructed");
-        }
+        let context = SpanTrace::capture();
         Self {
             id,
             inner,
             status_code,
+            context,
         }
     }
 }
@@ -62,9 +50,19 @@ impl IntoResponse for Error {
             error: self.inner.to_string(),
         };
         if self.status_code.is_server_error() {
-            tracing::error!(id = %self.id, error = ?self.inner, "responding server error");
+            tracing::error!(
+                "responding server error, id: {}\n{:?}\nContext:\n{}",
+                self.id,
+                self.inner,
+                self.context
+            );
         } else {
-            tracing::warn!(id = %self.id, error = ?self.inner, "responding client error");
+            tracing::warn!(
+                "responding client error, id: {}\n{:?}\nContext\n{}",
+                self.id,
+                self.inner,
+                self.context
+            );
         }
         (self.status_code, Json(resp)).into_response()
     }
@@ -75,11 +73,7 @@ where
     anyhow::Error: From<E>,
 {
     fn from(value: E) -> Self {
-        Self {
-            id: Ulid::new(),
-            inner: value.into(),
-            status_code: StatusCode::INTERNAL_SERVER_ERROR,
-        }
+        Self::from_anyhow(StatusCode::INTERNAL_SERVER_ERROR, value.into())
     }
 }
 
@@ -128,17 +122,17 @@ impl<T> AddContext<T> for Result<T> {
 pub trait Context<T> {
     fn context<C>(self, context: C, status_code: StatusCode) -> Result<T>
     where
-        C: fmt::Display + Send + Sync + 'static;
+        C: fmt::Display + fmt::Debug + Send + Sync + 'static;
 
     fn with_context<C, F>(self, f: F) -> Result<T>
     where
-        C: fmt::Display + Send + Sync + 'static,
+        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
         F: FnOnce() -> (C, StatusCode);
 
     fn context_bad_request<C>(self, context: C) -> Result<T>
     where
         Self: Sized,
-        C: fmt::Display + Send + Sync + 'static,
+        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
     {
         self.context(context, StatusCode::BAD_REQUEST)
     }
@@ -146,7 +140,7 @@ pub trait Context<T> {
     fn context_unauthorized<C>(self, context: C) -> Result<T>
     where
         Self: Sized,
-        C: fmt::Display + Send + Sync + 'static,
+        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
     {
         self.context(context, StatusCode::UNAUTHORIZED)
     }
@@ -154,7 +148,7 @@ pub trait Context<T> {
     fn context_not_found<C>(self, context: C) -> Result<T>
     where
         Self: Sized,
-        C: fmt::Display + Send + Sync + 'static,
+        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
     {
         self.context(context, StatusCode::NOT_FOUND)
     }
@@ -162,7 +156,7 @@ pub trait Context<T> {
     fn context_internal_server_error<C>(self, context: C) -> Result<T>
     where
         Self: Sized,
-        C: fmt::Display + Send + Sync + 'static,
+        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
     {
         self.context(context, StatusCode::INTERNAL_SERVER_ERROR)
     }
@@ -179,18 +173,8 @@ where
         match self {
             Ok(ok) => Ok(ok),
             Err(error) => {
-                let id = Ulid::new();
                 let inner = anyhow::Error::new(error).context(context);
-                if status_code.is_server_error() {
-                    tracing::error!(%id, error = ?inner, "server error constructed");
-                } else {
-                    tracing::warn!(%id, error = ?inner, "client error constructed");
-                }
-                Err(Error {
-                    id,
-                    inner,
-                    status_code,
-                })
+                Err(Error::from_anyhow(status_code, inner))
             }
         }
     }
@@ -204,18 +188,8 @@ where
             Ok(ok) => Ok(ok),
             Err(error) => {
                 let (context, status_code) = f();
-                let id = Ulid::new();
                 let inner = anyhow::Error::new(error).context(context);
-                if status_code.is_server_error() {
-                    tracing::error!(%id, error = ?inner, "server error constructed");
-                } else {
-                    tracing::warn!(%id, error = ?inner, "client error constructed");
-                }
-                Err(Error {
-                    id,
-                    inner,
-                    status_code,
-                })
+                Err(Error::from_anyhow(status_code, inner))
             }
         }
     }
@@ -224,48 +198,24 @@ where
 impl<T> Context<T> for std::option::Option<T> {
     fn context<C>(self, context: C, status_code: StatusCode) -> Result<T>
     where
-        C: fmt::Display + Send + Sync + 'static,
+        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
     {
         match self {
             Some(ok) => Ok(ok),
-            None => {
-                let id = Ulid::new();
-                let inner = anyhow::format_err!("{}", context);
-                if status_code.is_server_error() {
-                    tracing::error!(%id, error = ?inner, "server error constructed");
-                } else {
-                    tracing::warn!(%id, error = ?inner, "client error constructed");
-                }
-                Err(Error {
-                    id,
-                    inner,
-                    status_code,
-                })
-            }
+            None => Err(Error::new(status_code, context)),
         }
     }
 
     fn with_context<C, F>(self, f: F) -> Result<T>
     where
-        C: fmt::Display + Send + Sync + 'static,
+        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
         F: FnOnce() -> (C, StatusCode),
     {
         match self {
             Some(ok) => Ok(ok),
             None => {
                 let (context, status_code) = f();
-                let id = Ulid::new();
-                let inner = anyhow::format_err!("{}", context);
-                if status_code.is_server_error() {
-                    tracing::error!(%id, error = ?inner, "server error constructed");
-                } else {
-                    tracing::warn!(%id, error = ?inner, "client error constructed");
-                }
-                Err(Error {
-                    id,
-                    inner,
-                    status_code,
-                })
+                Err(Error::new(status_code, context))
             }
         }
     }

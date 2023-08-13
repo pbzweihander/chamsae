@@ -3,7 +3,7 @@ use anyhow::Context;
 use dotenvy::dotenv;
 use migration::MigratorTrait;
 use sea_orm::Database;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 mod ap;
 mod config;
@@ -46,8 +46,12 @@ async fn shutdown_signal() {
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_error::ErrorLayer::default())
         .init();
 
     if crate::config::CONFIG.debug {
