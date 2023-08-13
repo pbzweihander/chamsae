@@ -1,4 +1,5 @@
-name: clippy
+name: backend-lint
+run-name: "Backend: lint"
 
 on:
   push:

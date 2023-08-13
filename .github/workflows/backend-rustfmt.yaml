@@ -1,4 +1,5 @@
-name: rustfmt
+name: backend-format
+run-name: "Backend: format"
 
 on:
   push:
