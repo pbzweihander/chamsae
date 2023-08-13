@@ -22,6 +22,8 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 
 ### Backend
 
+You can also use `.env` file.
+
 #### Example: Using local filesystem as object store
 
 ```

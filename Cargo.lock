@@ -657,6 +657,7 @@ dependencies = [
  "axum-extra",
  "bcrypt",
  "chrono",
+ "dotenvy",
  "enum_delegate",
  "envy",
  "futures-util",

@@ -1,5 +1,6 @@
 use activitypub_federation::config::FederationConfig;
 use anyhow::Context;
+use dotenvy::dotenv;
 use migration::MigratorTrait;
 use sea_orm::Database;
 use tracing_subscriber::EnvFilter;
@@ -43,6 +44,8 @@ async fn shutdown_signal() {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    dotenv().ok();
+
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .init();
