@@ -3,6 +3,7 @@ use anyhow::Context;
 use dotenvy::dotenv;
 use migration::MigratorTrait;
 use sea_orm::Database;
+use stopper::Stopper;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 mod ap;
@@ -14,10 +15,11 @@ mod error;
 mod fmt;
 mod handler;
 mod object_store;
+mod queue;
 mod state;
 mod util;
 
-async fn shutdown_signal() {
+async fn shutdown_signal(stopper: Stopper) {
     let ctrl_c = async {
         tokio::signal::ctrl_c()
             .await
@@ -41,6 +43,7 @@ async fn shutdown_signal() {
     }
 
     tracing::info!("signal received, starting graceful shutdown");
+    stopper.stop();
 }
 
 #[tokio::main]
@@ -74,7 +77,10 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("failed to migrate database")?;
 
-    let state = crate::state::State::new(db).context("failed to construct app state")?;
+    let stopper = Stopper::new();
+    let state = crate::state::State::new(db, stopper.clone())
+        .await
+        .context("failed to construct app state")?;
     let federation_config = FederationConfig::builder()
         .domain(&crate::config::CONFIG.domain)
         .app_data(state.clone())
@@ -91,7 +97,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(%listen_addr, "starting http server...");
     axum::Server::bind(&listen_addr.parse()?)
         .serve(router.into_make_service())
-        .with_graceful_shutdown(shutdown_signal())
+        .with_graceful_shutdown(shutdown_signal(stopper))
         .await?;
 
     Ok(())

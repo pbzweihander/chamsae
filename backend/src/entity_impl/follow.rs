@@ -12,6 +12,7 @@ use crate::{
     entity::{follow, user},
     error::{Context, Error},
     format_err,
+    queue::Notification,
     state::State,
 };
 
@@ -90,5 +91,18 @@ impl Object for follow::Model {
         _data: &Data<Self::DataType>,
     ) -> Result<Self, Self::Error> {
         Err(format_err!(NOT_IMPLEMENTED, "unimplemented"))
+    }
+
+    #[tracing::instrument(skip(data))]
+    async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        let user_id = self.to_id;
+        ModelTrait::delete(self, &*data.db)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+        let notification = Notification::RejectFollow {
+            user_id: user_id.into(),
+        };
+        notification.send(&data.queue).await?;
+        Ok(())
     }
 }

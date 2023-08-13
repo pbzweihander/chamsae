@@ -4,7 +4,7 @@ use activitypub_federation::{
 use async_trait::async_trait;
 use sea_orm::{
     sea_query::OnConflict, ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
+    QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
@@ -20,7 +20,7 @@ use crate::{
         hashtag, local_file, mention, post, post_emoji, remote_file, sea_orm_active_enums, user,
     },
     error::{Context, Error},
-    format_err,
+    queue::Notification,
     state::State,
 };
 
@@ -379,28 +379,12 @@ impl Object for post::Model {
 
     #[tracing::instrument(skip(data))]
     async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        let tx = data
-            .db
-            .begin()
-            .await
-            .context_internal_server_error("failed to begin database transaction")?;
-
-        let existing_count = post::Entity::find_by_id(self.id)
-            .count(&tx)
-            .await
-            .context_internal_server_error("failed to query database")?;
-        if existing_count == 0 {
-            return Err(format_err!(NOT_FOUND, "post not found"));
-        }
-
-        ModelTrait::delete(self, &tx)
+        let id = self.id;
+        ModelTrait::delete(self, &*data.db)
             .await
             .context_internal_server_error("failed to delete from database")?;
-
-        tx.commit()
-            .await
-            .context_internal_server_error("failed to commit database transaction")?;
-
+        let notification = Notification::DeletePost { post_id: id.into() };
+        notification.send(&data.queue).await?;
         Ok(())
     }
 }

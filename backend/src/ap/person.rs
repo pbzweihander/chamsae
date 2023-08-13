@@ -18,6 +18,7 @@ use crate::{
     entity::{local_file, setting, user},
     error::{Context, Error},
     format_err,
+    queue::Notification,
     state::State,
     util::get_follower_inboxes,
 };
@@ -280,7 +281,11 @@ impl ActivityHandler for PersonUpdate {
 
     #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        user::Model::from_json(self.object, data).await?;
+        let user = user::Model::from_json(self.object, data).await?;
+        let notification = Notification::UpdateUser {
+            user_id: user.id.into(),
+        };
+        notification.send(&data.queue).await?;
         Ok(())
     }
 }

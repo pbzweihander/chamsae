@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 activitypub_federation = { version = "0.4.6", default-features = false, features = ["axum"] }
 anyhow = { version = "1.0.72", features = ["backtrace"] }
+async-stream = "0.3.5"
 async-trait = "0.1.72"
 axum = { version = "0.6.20", features = ["headers"] }
 axum-extra = { version = "0.7.7", features = ["async-read-body"] }
@@ -21,11 +22,13 @@ mime = "0.3.17"
 mime_serde_shim = "0.2.2"
 object_store = { version = "0.6.1", features = ["aws"] }
 once_cell = "1.18.0"
+pgmq = { git = "https://github.com/pbzweihander/pgmq.git", branch = "pbzweihander", version = "0.14.4" }
 reqwest = { version = "0.11.18", features = ["json"] }
-sea-orm = { version = "0.12.2", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros"] }
+sea-orm = { version = "0.12.2", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros", "sea-orm-internal"] }
 serde = { version = "1.0.182", features = ["derive"] }
 serde_json = "1.0.104"
-tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "signal"] }
+stopper = "0.2.0"
+tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "signal", "time"] }
 tower-http = { version = "0.4.3", features = ["trace"] }
 tracing = { version = "0.1.37", features = ["log"] }
 tracing-error = "0.2.0"

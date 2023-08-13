@@ -29,9 +29,9 @@ pub(super) fn create_router() -> Router {
         .route("/:id", routing::get(get_post).delete(delete_post))
         .route(
             "/:id/reaction",
-            routing::get(get_reactions)
-                .post(post_reaction)
-                .delete(delete_reaction),
+            routing::get(get_post_reactions)
+                .post(post_post_reaction)
+                .delete(delete_post_reaction),
         )
 }
 
@@ -340,7 +340,7 @@ async fn delete_post(
     ),
 )]
 #[tracing::instrument(skip(data, _access))]
-async fn get_reactions(
+async fn get_post_reactions(
     data: Data<State>,
     _access: Access,
     extract::Path(id): extract::Path<Ulid>,
@@ -383,7 +383,7 @@ async fn get_reactions(
     ),
 )]
 #[tracing::instrument(skip(data, _access))]
-async fn post_reaction(
+async fn post_post_reaction(
     data: Data<State>,
     _access: Access,
     extract::Path(id): extract::Path<Ulid>,
@@ -477,7 +477,7 @@ async fn post_reaction(
     ),
 )]
 #[tracing::instrument(skip(data, _access))]
-async fn delete_reaction(
+async fn delete_post_reaction(
     data: Data<State>,
     _access: Access,
     extract::Path(id): extract::Path<Ulid>,

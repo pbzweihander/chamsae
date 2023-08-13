@@ -6,7 +6,7 @@ use activitypub_federation::{
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, Utc};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, QueryFilter, QuerySelect,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QuerySelect,
     TransactionTrait,
 };
 use ulid::Ulid;
@@ -157,6 +157,14 @@ impl Object for user::Model {
             .context_internal_server_error("failed to commit database transaction")?;
 
         Ok(this)
+    }
+
+    #[tracing::instrument(skip(data))]
+    async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        ModelTrait::delete(self, &*data.db)
+            .await
+            .context_internal_server_error("failed to delete from database")?;
+        Ok(())
     }
 }
 

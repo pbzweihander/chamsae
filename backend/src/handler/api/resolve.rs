@@ -21,8 +21,8 @@ use super::auth::Access;
 
 pub(super) fn create_router() -> Router {
     Router::new()
-        .route("/user", routing::get(get_user))
-        .route("/link", routing::get(get_link))
+        .route("/user", routing::get(get_resolve_user))
+        .route("/link", routing::get(get_resolve_link))
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
@@ -44,7 +44,7 @@ struct GetResolveUserQuery {
     ),
 )]
 #[tracing::instrument(skip(data, _access))]
-async fn get_user(
+async fn get_resolve_user(
     data: Data<State>,
     _access: Access,
     extract::Query(query): extract::Query<GetResolveUserQuery>,
@@ -114,7 +114,7 @@ struct GetResolveLinkQuery {
     ),
 )]
 #[tracing::instrument(skip(data, _access))]
-async fn get_link(
+async fn get_resolve_link(
     data: Data<State>,
     _access: Access,
     extract::Query(query): extract::Query<GetResolveLinkQuery>,

@@ -6,6 +6,7 @@ pub mod file;
 pub mod follow;
 pub mod follower;
 pub mod hashtag;
+pub mod notification;
 pub mod post;
 pub mod report;
 pub mod resolve;
@@ -18,6 +19,7 @@ pub(super) fn create_router() -> Router {
     let follow = self::follow::create_router();
     let follower = self::follower::create_router();
     let hashtag = self::hashtag::create_router();
+    let notification = self::notification::create_router();
     let post = self::post::create_router();
     let report = self::report::create_router();
     let resolve = self::resolve::create_router();
@@ -30,6 +32,7 @@ pub(super) fn create_router() -> Router {
         .nest("/follow", follow)
         .nest("/follower", follower)
         .nest("/hashtag", hashtag)
+        .nest("/notification", notification)
         .nest("/post", post)
         .nest("/report", report)
         .nest("/resolve", resolve)

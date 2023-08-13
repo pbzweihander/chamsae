@@ -7,14 +7,15 @@ use activitypub_federation::{
 };
 use async_trait::async_trait;
 use derivative::Derivative;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    entity::post,
+    entity::{post, user},
     error::{Context, Error},
     format_err,
+    queue::Notification,
     state::State,
 };
 
@@ -85,16 +86,59 @@ impl ActivityHandler for Delete {
 
     #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        let post_id = self.object.id;
-        let res = post::Entity::delete_many()
-            .filter(post::Column::Uri.eq(post_id.as_str()))
-            .exec(&*data.db)
+        let uri = self.object.id;
+
+        let tx = data
+            .db
+            .begin()
             .await
-            .context_internal_server_error("failed to delete from database")?;
-        if res.rows_affected > 0 {
-            Ok(())
-        } else {
-            Err(format_err!(NOT_FOUND, "post not found"))
+            .context_internal_server_error("failed to begin database transaction")?;
+
+        let post = post::Entity::find()
+            .filter(post::Column::Uri.eq(uri.as_str()))
+            .one(&tx)
+            .await
+            .context_internal_server_error("failed to query from database")?;
+        if let Some(post) = post {
+            let post_id = post.id;
+            ModelTrait::delete(post, &tx)
+                .await
+                .context_internal_server_error("failed to delete from database")?;
+            tx.commit()
+                .await
+                .context_internal_server_error("failed to commit database transaction")?;
+
+            let notification = Notification::DeletePost {
+                post_id: post_id.into(),
+            };
+            notification.send(&data.queue).await?;
+
+            return Ok(());
         }
+
+        let user = user::Entity::find()
+            .filter(user::Column::Uri.eq(uri.as_str()))
+            .one(&tx)
+            .await
+            .context_internal_server_error("failed to query from database")?;
+
+        if let Some(user) = user {
+            let user_id = user.id;
+            ModelTrait::delete(user, &tx)
+                .await
+                .context_internal_server_error("failed to delete from database")?;
+            tx.commit()
+                .await
+                .context_internal_server_error("failed to commit database transaction")?;
+
+            let notification = Notification::DeleteUser {
+                user_id: user_id.into(),
+            };
+            notification.send(&data.queue).await?;
+
+            return Ok(());
+        }
+
+        Err(format_err!(NOT_FOUND, "object not found"))
     }
 }

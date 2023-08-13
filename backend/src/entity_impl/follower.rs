@@ -13,6 +13,7 @@ use crate::{
     ap::{follow::Follow, person::LocalPerson},
     entity::{follower, user},
     error::{Context, Error},
+    queue::Notification,
     state::State,
 };
 
@@ -109,24 +110,17 @@ impl Object for follower::Model {
 
     #[tracing::instrument(skip(data))]
     async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        let tx = data
-            .db
-            .begin()
-            .await
-            .context_internal_server_error("failed to begin database transaction")?;
-        let existing_count = follower::Entity::find_by_id(self.from_id)
-            .count(&tx)
-            .await
-            .context_internal_server_error("failed to query database")?;
-        if existing_count == 0 {
-            return Ok(());
-        }
-        ModelTrait::delete(self, &tx)
+        let user_id = self.from_id;
+
+        ModelTrait::delete(self, &*data.db)
             .await
             .context_internal_server_error("failed to delete from database")?;
-        tx.commit()
-            .await
-            .context_internal_server_error("failed to commit database transaction")?;
+
+        let notification = Notification::DeleteFollower {
+            user_id: user_id.into(),
+        };
+        notification.send(&data.queue).await?;
+
         Ok(())
     }
 }

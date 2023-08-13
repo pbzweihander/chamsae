@@ -21,6 +21,7 @@ use crate::{
     entity::{follow, follower, user},
     error::{Context, Error},
     format_err,
+    queue::Notification,
     state::State,
 };
 
@@ -71,7 +72,8 @@ impl ActivityHandler for Follow {
 
     #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        follower::Model::from_json(self.clone(), data).await?;
+        let follower = follower::Model::from_json(self.clone(), data).await?;
+
         let accept = FollowAccept {
             ty: Default::default(),
             id: generate_object_id()?,
@@ -79,6 +81,12 @@ impl ActivityHandler for Follow {
             object: self,
         };
         accept.send(data).await?;
+
+        let notification = Notification::CreateFollower {
+            user_id: follower.from_id.into(),
+        };
+        notification.send(&data.queue).await?;
+
         Ok(())
     }
 }
@@ -133,10 +141,16 @@ impl ActivityHandler for FollowAccept {
         let follow = follow_id.dereference(data).await?;
         let mut follow_activemodel: follow::ActiveModel = follow.into();
         follow_activemodel.accepted = ActiveValue::Set(true);
-        follow_activemodel
+        let follow = follow_activemodel
             .update(&*data.db)
             .await
             .context_internal_server_error("failed to update database")?;
+
+        let notification = Notification::AcceptFollow {
+            user_id: follow.to_id.into(),
+        };
+        notification.send(&data.queue).await?;
+
         Ok(())
     }
 }
@@ -227,6 +241,11 @@ impl ActivityHandler for FollowReject {
             tx.commit()
                 .await
                 .context_internal_server_error("failed to commit database transaction")?;
+
+            let notification = Notification::RejectFollow {
+                user_id: follow_id.into(),
+            };
+            notification.send(&data.queue).await?;
 
             Ok(())
         } else {

@@ -7,8 +7,8 @@ use activitypub_federation::{
 use async_trait::async_trait;
 use mime::Mime;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait,
-    QueryFilter, QuerySelect, TransactionTrait,
+    ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QuerySelect,
+    TransactionTrait,
 };
 use ulid::Ulid;
 use url::Url;
@@ -22,7 +22,7 @@ use crate::{
     config::CONFIG,
     entity::{post, reaction, user},
     error::{Context, Error},
-    format_err,
+    queue::Notification,
     state::State,
 };
 
@@ -198,24 +198,17 @@ impl Object for reaction::Model {
 
     #[tracing::instrument(skip(data))]
     async fn delete(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        let tx = data
-            .db
-            .begin()
-            .await
-            .context_internal_server_error("failed to begin database transaction")?;
-        let existing_count = reaction::Entity::find_by_id(self.id)
-            .count(&tx)
-            .await
-            .context_internal_server_error("failed to query database")?;
-        if existing_count == 0 {
-            return Err(format_err!(NOT_FOUND, "reaction not found"));
-        }
-        ModelTrait::delete(self, &tx)
+        let post_id = self.post_id;
+
+        ModelTrait::delete(self, &*data.db)
             .await
             .context_internal_server_error("failed to delete from database")?;
-        tx.commit()
-            .await
-            .context_internal_server_error("failed to commit database transaction")?;
+
+        let notification = Notification::DeleteReaction {
+            post_id: post_id.into(),
+        };
+        notification.send(&data.queue).await?;
+
         Ok(())
     }
 }
