@@ -463,3 +463,10 @@ impl Setting {
         }
     }
 }
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(untagged)]
+pub enum Object {
+    User(Box<User>),
+    Post(Box<Post>),
+}

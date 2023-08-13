@@ -59,6 +59,8 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         self::api::post::delete_post,
         self::api::post::post_reaction,
         self::api::post::delete_reaction,
+        self::api::resolve::get_user,
+        self::api::resolve::get_link,
         self::api::setting::get_setting,
         self::api::setting::put_setting,
     ),
@@ -82,6 +84,7 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         crate::dto::Follow,
         crate::dto::CreateFollow,
         crate::dto::Setting,
+        crate::dto::Object,
         self::api::auth::PostLoginReq,
         self::api::auth::PostLoginResp,
     )),
@@ -103,7 +106,17 @@ impl Modify for AccessKeyAddon {
 }
 
 pub async fn create_router(db: DatabaseConnection) -> anyhow::Result<Router> {
-    let state = State { db: Arc::new(db) };
+    let http_client = anyhow::Context::context(
+        reqwest::Client::builder()
+            .danger_accept_invalid_certs(CONFIG.debug)
+            .danger_accept_invalid_hostnames(CONFIG.debug)
+            .build(),
+        "failed to build HTTP client",
+    )?;
+    let state = State {
+        db: Arc::new(db),
+        http_client,
+    };
 
     let federation_config = anyhow::Context::context(
         FederationConfig::builder()

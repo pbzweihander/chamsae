@@ -7,6 +7,7 @@ pub mod follow;
 pub mod follower;
 pub mod hashtag;
 pub mod post;
+pub mod resolve;
 pub mod setting;
 
 pub(super) fn create_router() -> Router {
@@ -17,6 +18,7 @@ pub(super) fn create_router() -> Router {
     let follower = self::follower::create_router();
     let hashtag = self::hashtag::create_router();
     let post = self::post::create_router();
+    let resolve = self::resolve::create_router();
     let setting = self::setting::create_router();
 
     Router::new()
@@ -27,6 +29,7 @@ pub(super) fn create_router() -> Router {
         .nest("/follower", follower)
         .nest("/hashtag", hashtag)
         .nest("/post", post)
+        .nest("/resolve", resolve)
         .nest("/setting", setting)
         .route("/healthz", routing::get(get_healthz))
 }

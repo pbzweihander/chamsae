@@ -43,3 +43,10 @@ pub enum Activity {
     /// Fallback
     Other(self::other_activity::OtherActivity),
 }
+
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum Object {
+    Note(Box<self::note::Note>),
+    Person(Box<self::person::Person>),
+}

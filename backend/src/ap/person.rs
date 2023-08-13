@@ -22,7 +22,7 @@ use crate::{
 
 use super::generate_object_id;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PersonImage {
     #[serde(rename = "type")]
@@ -45,7 +45,7 @@ impl std::fmt::Display for PersonOrServiceType {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Person {
     #[serde(rename = "type")]

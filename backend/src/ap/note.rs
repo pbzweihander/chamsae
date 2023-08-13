@@ -24,7 +24,7 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson, tag::Tag};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Attachment {
     #[serde(rename = "type")]
@@ -36,7 +36,7 @@ pub struct Attachment {
     pub name: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Note {
     #[serde(rename = "type")]

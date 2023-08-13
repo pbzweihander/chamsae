@@ -3,7 +3,7 @@ use mime::Mime;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Mention {
     #[serde(rename = "type")]
@@ -29,7 +29,7 @@ impl Default for HashtagType {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Hashtag {
     #[serde(rename = "type")]
@@ -54,7 +54,7 @@ impl Default for EmojiType {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EmojiIcon {
     #[serde(rename = "type")]
@@ -64,7 +64,7 @@ pub struct EmojiIcon {
     pub url: Url,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Emoji {
     #[serde(rename = "type")]
@@ -74,7 +74,7 @@ pub struct Emoji {
     pub icon: EmojiIcon,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Tag {
     Mention(Mention),

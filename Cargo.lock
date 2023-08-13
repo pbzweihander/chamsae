@@ -681,6 +681,7 @@ dependencies = [
  "mime",
  "mime_serde_shim",
  "once_cell",
+ "reqwest",
  "rust-s3",
  "sea-orm",
  "serde",
