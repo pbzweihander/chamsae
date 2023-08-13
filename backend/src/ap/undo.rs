@@ -9,6 +9,7 @@ use activitypub_federation::{
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
+use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -20,12 +21,15 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Undo<T, M> {
     #[serde(rename = "type")]
     pub ty: UndoType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
     pub object: T,
     #[serde(skip)]

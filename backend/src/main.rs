@@ -11,6 +11,7 @@ mod dto;
 mod entity;
 mod entity_impl;
 mod error;
+mod fmt;
 mod handler;
 mod object_store;
 mod state;

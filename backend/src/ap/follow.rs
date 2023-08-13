@@ -7,6 +7,7 @@ use activitypub_federation::{
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
+use derivative::Derivative;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, QueryFilter, QuerySelect,
     TransactionTrait,
@@ -25,13 +26,17 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Follow {
     #[serde(rename = "type")]
     pub ty: FollowType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub object: Url,
 }
 
@@ -78,12 +83,15 @@ impl ActivityHandler for Follow {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FollowAccept {
     #[serde(rename = "type")]
     pub ty: AcceptType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
     pub object: Follow,
 }
@@ -133,12 +141,15 @@ impl ActivityHandler for FollowAccept {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Derivative, Clone, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FollowReject {
     #[serde(rename = "type")]
     pub ty: RejectType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
     pub object: Follow,
 }

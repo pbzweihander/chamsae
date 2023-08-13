@@ -6,6 +6,7 @@ use activitypub_federation::{
     traits::ActivityHandler,
 };
 use async_trait::async_trait;
+use derivative::Derivative;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -19,20 +20,25 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Tombstone {
     #[serde(rename = "type")]
     pub ty: TombstoneType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Delete {
     #[serde(rename = "type")]
     pub ty: DeleteType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
     pub object: Tombstone,
 }

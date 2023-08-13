@@ -1,13 +1,16 @@
 use activitypub_federation::kinds::{link::MentionType, object::ImageType};
+use derivative::Derivative;
 use mime::Mime;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Mention {
     #[serde(rename = "type")]
     pub ty: MentionType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub href: Url,
     pub name: String,
 }
@@ -54,21 +57,25 @@ impl Default for EmojiType {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct EmojiIcon {
     #[serde(rename = "type")]
     pub ty: ImageType,
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub url: Url,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Emoji {
     #[serde(rename = "type")]
     pub ty: EmojiType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
     pub name: String,
     pub icon: EmojiIcon,

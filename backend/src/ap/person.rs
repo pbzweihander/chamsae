@@ -7,6 +7,7 @@ use activitypub_federation::{
     traits::{ActivityHandler, Actor, Object},
 };
 use async_trait::async_trait;
+use derivative::Derivative;
 use sea_orm::{EntityTrait, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -22,11 +23,13 @@ use crate::{
 
 use super::generate_object_id;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PersonImage {
     #[serde(rename = "type")]
     pub ty: ImageType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub url: Url,
 }
 
@@ -47,11 +50,13 @@ impl std::fmt::Display for ActorType {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Person {
     #[serde(rename = "type")]
     pub ty: ActorType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: ObjectId<user::Model>,
     pub preferred_username: String,
     #[serde(default)]
@@ -62,7 +67,9 @@ pub struct Person {
     pub icon: Option<PersonImage>,
     #[serde(default)]
     pub image: Option<PersonImage>,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub inbox: Url,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_option_display"))]
     #[serde(default)]
     pub shared_inbox: Option<Url>,
     #[serde(default)]
@@ -206,13 +213,17 @@ impl Actor for LocalPerson {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PersonUpdate {
     #[serde(rename = "type")]
     pub ty: UpdateType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_vec_display"))]
     #[serde(default)]
     pub to: Vec<Url>,
     pub object: Person,

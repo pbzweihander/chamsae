@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use chrono::{DateTime, FixedOffset};
+use derivative::Derivative;
 use mime::Mime;
 use sea_orm::{
     ColumnTrait, ConnectionTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder, QuerySelect,
@@ -43,7 +44,8 @@ pub struct NameResponse {
     pub name: String,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Derivative, Serialize, ToSchema)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
     #[schema(value_type = String, format = "ulid")]
@@ -52,10 +54,13 @@ pub struct User {
     pub name: Option<String>,
     pub description: Option<String>,
     pub host: String,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     #[schema(value_type = String, format = "url")]
     pub uri: Url,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_option_display"))]
     #[schema(value_type = Option<String>, format = "ulid")]
     pub avatar_url: Option<Url>,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_option_display"))]
     #[schema(value_type = Option<String>, format = "ulid")]
     pub banner_url: Option<Url>,
     pub manually_approves_followers: bool,
@@ -91,32 +96,38 @@ pub enum Visibility {
     DirectMessage,
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Derivative, Deserialize, Serialize, ToSchema)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Mention {
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     #[schema(value_type = String, format = "url")]
     pub user_uri: Url,
     pub name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Derivative, Deserialize, Serialize, ToSchema)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct File {
     #[schema(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     #[schema(value_type = String, format = "url")]
     pub url: Url,
     pub alt: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Derivative, Deserialize, Serialize, ToSchema)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Emoji {
     pub name: String,
     #[schema(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     #[schema(value_type = String, format = "url")]
     pub image_url: Url,
 }
@@ -148,7 +159,8 @@ pub struct Reaction {
     pub emoji: Option<Emoji>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Derivative, Serialize, ToSchema)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Post {
     #[schema(value_type = String, format = "ulid")]
@@ -161,6 +173,7 @@ pub struct Post {
     pub user: Option<User>,
     pub visibility: Visibility,
     pub is_sensitive: bool,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     #[schema(value_type = String, format = "url")]
     pub uri: Url,
     pub files: Vec<File>,
@@ -327,7 +340,8 @@ pub struct CreatePost {
     pub hashtags: Vec<String>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Derivative, Serialize, ToSchema)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalFile {
     #[schema(value_type = String, format = "ulid")]
@@ -337,6 +351,7 @@ pub struct LocalFile {
     #[schema(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     #[schema(value_type = String, format = "url")]
     pub url: Url,
     pub alt: Option<String>,
@@ -371,7 +386,8 @@ pub struct CreateFileQuery {
     pub alt: Option<String>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Derivative, Serialize, ToSchema)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalEmoji {
     pub name: String,
@@ -379,6 +395,7 @@ pub struct LocalEmoji {
     #[schema(value_type = String, format = "mime")]
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     #[schema(value_type = String, format = "url")]
     pub image_url: Url,
 }

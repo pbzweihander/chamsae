@@ -11,6 +11,7 @@ use activitypub_federation::{
 };
 use async_trait::async_trait;
 use chrono::{DateTime, FixedOffset};
+use derivative::Derivative;
 use mime::Mime;
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
@@ -24,33 +25,41 @@ use crate::{
 
 use super::{generate_object_id, person::LocalPerson, tag::Tag};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Attachment {
     #[serde(rename = "type")]
     pub ty: DocumentType,
     #[serde(with = "mime_serde_shim")]
     pub media_type: Mime,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub url: Url,
     #[serde(default)]
     pub name: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Note {
     #[serde(rename = "type")]
     pub ty: NoteType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: ObjectId<post::Model>,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub attributed_to: ObjectId<user::Model>,
     pub published: DateTime<FixedOffset>,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_vec_display"))]
     #[serde(default)]
     pub to: Vec<Url>,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_vec_display"))]
     #[serde(default)]
     pub cc: Vec<Url>,
     #[serde(default)]
     pub summary: Option<String>,
     pub content: String,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_option_display"))]
     pub in_reply_to: Option<ObjectId<post::Model>>,
     #[serde(default)]
     pub attachment: Vec<Attachment>,
@@ -66,15 +75,20 @@ impl Note {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateNote {
     #[serde(rename = "type")]
     pub ty: CreateType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: ObjectId<user::Model>,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_vec_display"))]
     #[serde(default)]
     pub to: Vec<Url>,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_vec_display"))]
     #[serde(default)]
     pub cc: Vec<Url>,
     pub object: Note,

@@ -7,6 +7,7 @@ use activitypub_federation::{
     traits::ActivityHandler,
 };
 use async_trait::async_trait;
+use derivative::Derivative;
 use sea_orm::{ActiveModelTrait, ActiveValue};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
@@ -21,13 +22,17 @@ use crate::{
 
 use super::generate_object_id;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Flag {
     #[serde(rename = "type")]
     pub ty: FlagType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub object: Url,
     pub content: String,
 }

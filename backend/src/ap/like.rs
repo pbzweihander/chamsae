@@ -7,6 +7,7 @@ use activitypub_federation::{
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
+use derivative::Derivative;
 use sea_orm::ModelTrait;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -19,13 +20,17 @@ use crate::{
 
 use super::{person::LocalPerson, tag::Tag};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Like {
     #[serde(rename = "type")]
     pub ty: LikeType,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: ObjectId<reaction::Model>,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub object: ObjectId<post::Model>,
     #[serde(default)]
     pub content: Option<String>,

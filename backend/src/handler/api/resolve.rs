@@ -2,6 +2,7 @@ use activitypub_federation::{
     config::Data, fetch::webfinger::Webfinger, protocol::context::WithContext, traits::Object,
 };
 use axum::{extract, routing, Json, Router};
+use derivative::Derivative;
 use reqwest::header;
 use serde::Deserialize;
 use url::Url;
@@ -92,8 +93,11 @@ async fn get_user(
     Ok(Json(User::from_model(user)?))
 }
 
-#[derive(Debug, Deserialize, IntoParams)]
+#[derive(Derivative, Deserialize, IntoParams)]
+#[derivative(Debug)]
+#[serde(rename_all = "camelCase")]
 struct GetResolveLinkQuery {
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     #[param(value_type = String, format = "url")]
     link: Url,
 }
