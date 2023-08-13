@@ -16,7 +16,7 @@ COPY migration migration
 COPY backend backend
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,id=rust-target-${TARGETPLATFORM},sharing=locked,target=/home/root/app/target \
-    cargo install --path ./backend && cargo install --path ./migration
+    cargo build --release
 
 
 FROM nodebase AS febuilder
@@ -48,8 +48,8 @@ RUN apt-get update && \
 
 USER chamsae
 
-COPY --from=builder /usr/local/cargo/bin/chamsae /usr/local/bin
-COPY --from=builder /usr/local/cargo/bin/migration /usr/local/bin
+COPY --from=builder /app/target/release/chamsae /usr/local/bin
+COPY --from=builder /app/target/release/migration /usr/local/bin
 
 COPY --from=febuilder /app/.next/standalone /app/
 COPY --from=febuilder /app/.next/static /app/.next/static
