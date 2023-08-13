@@ -89,6 +89,7 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         crate::dto::Setting,
         crate::dto::Object,
         crate::dto::Report,
+        crate::dto::CreateReport,
         self::api::auth::PostLoginReq,
         self::api::auth::PostLoginResp,
     )),

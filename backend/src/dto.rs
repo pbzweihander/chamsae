@@ -490,6 +490,7 @@ impl Report {
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateReport {
+    #[schema(value_type = String, format = "ulid")]
     pub user_id: Ulid,
     pub content: String,
 }
