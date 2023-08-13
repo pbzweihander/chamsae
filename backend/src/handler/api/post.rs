@@ -11,7 +11,7 @@ use url::Url;
 
 use crate::{
     ap::{delete::Delete, like::Like, undo::Undo},
-    dto::{CreatePost, CreateReaction, IdPaginationQuery, IdResponse, Post, Visibility},
+    dto::{CreatePost, CreateReaction, IdPaginationQuery, IdResponse, Post, Reaction, Visibility},
     entity::{
         emoji, hashtag, local_file, mention, post, post_emoji, reaction, sea_orm_active_enums, user,
     },
@@ -29,7 +29,9 @@ pub(super) fn create_router() -> Router {
         .route("/:id", routing::get(get_post).delete(delete_post))
         .route(
             "/:id/reaction",
-            routing::post(post_reaction).delete(delete_reaction),
+            routing::get(get_reactions)
+                .post(post_reaction)
+                .delete(delete_reaction),
         )
 }
 
@@ -322,6 +324,48 @@ async fn delete_post(
     } else {
         Ok(())
     }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/post/{id}/reaction",
+    params(
+        ("id" = String, format = "ulid"),
+    ),
+    responses(
+        (status = 200, body = Vec<Reaction>),
+    ),
+    security(
+        ("access_key" = []),
+    ),
+)]
+#[tracing::instrument(skip(data, _access))]
+async fn get_reactions(
+    data: Data<State>,
+    _access: Access,
+    extract::Path(id): extract::Path<Ulid>,
+) -> Result<Json<Vec<Reaction>>> {
+    let existing_post_count = post::Entity::find_by_id(id)
+        .count(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+
+    if existing_post_count == 0 {
+        return Err(format_err!(BAD_REQUEST, "post not found"));
+    }
+
+    let reactions = reaction::Entity::find()
+        .filter(reaction::Column::PostId.eq(uuid::Uuid::from(id)))
+        .find_also_related(user::Entity)
+        .all(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+    let reactions = reactions
+        .into_iter()
+        .filter_map(|(reaction, user)| Reaction::from_model(reaction, user).ok())
+        .collect::<Vec<_>>();
+
+    Ok(Json(reactions))
 }
 
 #[utoipa::path(

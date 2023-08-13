@@ -159,6 +159,36 @@ pub struct Reaction {
     pub emoji: Option<Emoji>,
 }
 
+impl Reaction {
+    pub fn from_model(reaction: reaction::Model, user: Option<user::Model>) -> Result<Self> {
+        let emoji = if let (Some(media_type), Some(image_url)) =
+            (reaction.emoji_media_type, reaction.emoji_image_url)
+        {
+            Some(Emoji {
+                name: reaction.content.clone(),
+                media_type: Mime::from_str(&media_type)
+                    .context_internal_server_error("malformed reaction emoji MIME")?,
+                image_url: Url::parse(&image_url)
+                    .context_internal_server_error("malformed reaction emoji image URL")?,
+            })
+        } else {
+            None
+        };
+
+        let user = if let Some(user) = user {
+            Some(User::from_model(user)?)
+        } else {
+            None
+        };
+
+        Ok(Self {
+            user,
+            content: reaction.content,
+            emoji,
+        })
+    }
+}
+
 #[derive(Derivative, Serialize, ToSchema)]
 #[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
@@ -223,31 +253,7 @@ impl Post {
             .context_internal_server_error("failed to query database")?;
         let reactions = reactions
             .into_iter()
-            .filter_map(|(reaction, user)| {
-                let emoji = if let (Some(media_type), Some(image_url)) =
-                    (reaction.emoji_media_type, reaction.emoji_image_url)
-                {
-                    Some(Emoji {
-                        name: reaction.content.clone(),
-                        media_type: Mime::from_str(&media_type).ok()?,
-                        image_url: Url::parse(&image_url).ok()?,
-                    })
-                } else {
-                    None
-                };
-
-                let user = if let Some(user) = user {
-                    Some(User::from_model(user).ok()?)
-                } else {
-                    None
-                };
-
-                Some(Reaction {
-                    user,
-                    content: reaction.content,
-                    emoji,
-                })
-            })
+            .filter_map(|(reaction, user)| Reaction::from_model(reaction, user).ok())
             .collect::<Vec<_>>();
 
         let mentions = post
