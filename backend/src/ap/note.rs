@@ -13,13 +13,12 @@ use async_trait::async_trait;
 use chrono::{DateTime, FixedOffset};
 use derivative::Derivative;
 use mime::Mime;
-use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    entity::{follow, post, user},
-    error::{Context, Error},
+    entity::{post, user},
+    error::Error,
     state::State,
 };
 
@@ -132,16 +131,7 @@ impl ActivityHandler for CreateNote {
     }
 
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        let existing_following_user_count = user::Entity::find()
-            .filter(user::Column::Uri.eq(self.actor.inner().to_string()))
-            .inner_join(follow::Entity)
-            .count(&*data.db)
-            .await
-            .context_internal_server_error("failed to query database")?;
-        // if zero, the note was from not following user. ignore.
-        if existing_following_user_count != 0 {
-            post::Model::from_json(self.object, data).await?;
-        }
+        post::Model::from_json(self.object, data).await?;
         Ok(())
     }
 }
