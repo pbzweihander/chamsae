@@ -1,8 +1,6 @@
 use activitypub_federation::config::Data;
 use axum::{body::Bytes, extract, routing, Json, Router};
-use sea_orm::{
-    ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
-};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait};
 use ulid::Ulid;
 
 use crate::{
@@ -75,7 +73,7 @@ async fn post_file(
     extract::Query(query): extract::Query<CreateFileQuery>,
     req: Bytes,
 ) -> Result<Json<IdResponse>> {
-    let file = local_file::Model::new(req, query.media_type, query.alt, &*data.db).await?;
+    let file = local_file::Model::put(req, query.media_type, query.alt, &*data.db).await?;
     Ok(Json(IdResponse { id: file.id.into() }))
 }
 
@@ -145,9 +143,7 @@ async fn delete_file(
             ));
         }
 
-        ModelTrait::delete(existing, &tx)
-            .await
-            .context_internal_server_error("failed to delete from database")?;
+        existing.delete(&tx).await?;
 
         tx.commit()
             .await

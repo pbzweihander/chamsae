@@ -3,6 +3,14 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "object_store_type")]
+pub enum ObjectStoreType {
+    #[sea_orm(string_value = "local_file_system")]
+    LocalFileSystem,
+    #[sea_orm(string_value = "s3")]
+    S3,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "visibility")]
 pub enum Visibility {
     #[sea_orm(string_value = "direct_message")]

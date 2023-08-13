@@ -4,15 +4,14 @@ use sea_orm::{ActiveModelTrait, ActiveValue, ConnectionTrait, ModelTrait};
 use ulid::Ulid;
 
 use crate::{
-    config::CONFIG,
-    entity::local_file,
+    entity::{local_file, sea_orm_active_enums},
     error::{Context, Result},
-    format_err,
+    object_store::OBJECT_STORE,
 };
 
 impl local_file::Model {
     #[tracing::instrument(skip(data, db))]
-    pub async fn new(
+    pub async fn put(
         data: Bytes,
         media_type: Mime,
         alt: Option<String>,
@@ -20,44 +19,20 @@ impl local_file::Model {
     ) -> Result<Self> {
         let id = Ulid::new();
 
-        let bucket = CONFIG.object_storage_bucket()?;
-        let object_storage_key = id.to_string();
-        let res = bucket
-            .put_object_with_content_type(&object_storage_key, &data, media_type.as_ref())
-            .await
-            .context_internal_server_error("failed to put object to object storage")?;
-        if res.status_code() >= 400 {
-            if let Ok(res_str) = res.to_string() {
-                return Err(format_err!(
-                    INTERNAL_SERVER_ERROR,
-                    "failed to put object to object storage, status code: {}, message: {}",
-                    res.status_code(),
-                    res_str
-                ));
-            } else {
-                return Err(format_err!(
-                    INTERNAL_SERVER_ERROR,
-                    "failed to put object to object storage, status code: {}",
-                    res.status_code()
-                ));
-            }
-        }
-        let url = CONFIG
-            .object_storage_public_url_base
-            .join(&object_storage_key)
-            .context_internal_server_error("failed to construct object public URL")?;
+        let (object_store_key, object_store_type, url) =
+            OBJECT_STORE.put(&id.to_string(), data).await?;
 
-        let this = Self {
-            id: id.into(),
-            post_id: None,
-            emoji_name: None,
-            order: None,
-            object_storage_key,
-            media_type: media_type.to_string(),
-            url: url.to_string(),
-            alt,
+        let this_activemodel = local_file::ActiveModel {
+            id: ActiveValue::Set(id.into()),
+            post_id: ActiveValue::Set(None),
+            emoji_name: ActiveValue::Set(None),
+            order: ActiveValue::Set(None),
+            object_store_key: ActiveValue::Set(object_store_key),
+            object_store_type: ActiveValue::Set(object_store_type),
+            media_type: ActiveValue::Set(media_type.to_string()),
+            url: ActiveValue::Set(url.to_string()),
+            alt: ActiveValue::Set(alt),
         };
-        let this_activemodel: local_file::ActiveModel = this.into();
         let this = this_activemodel
             .insert(db)
             .await
@@ -106,32 +81,18 @@ impl local_file::Model {
 
     #[tracing::instrument(skip(db))]
     pub async fn delete(self, db: &impl ConnectionTrait) -> Result<()> {
-        let bucket = CONFIG.object_storage_bucket()?;
-        let res = bucket
-            .delete_object(&self.object_storage_key)
-            .await
-            .context_internal_server_error("failed to delete object from object storage")?;
-        if res.status_code() >= 500 {
-            if let Ok(res_str) = res.to_string() {
-                return Err(format_err!(
-                    INTERNAL_SERVER_ERROR,
-                    "failed to delete object from object storage, status code: {}, message: {}",
-                    res.status_code(),
-                    res_str
-                ));
-            } else {
-                return Err(format_err!(
-                    INTERNAL_SERVER_ERROR,
-                    "failed to delete object from object storage, status code: {}",
-                    res.status_code()
-                ));
-            }
-        }
+        OBJECT_STORE
+            .delete(&self.object_store_key, &self.object_store_type)
+            .await?;
 
         ModelTrait::delete(self, db)
             .await
             .context_internal_server_error("failed to delete from database")?;
 
         Ok(())
+    }
+
+    pub fn is_local(&self) -> bool {
+        self.object_store_type == sea_orm_active_enums::ObjectStoreType::LocalFileSystem
     }
 }

@@ -18,6 +18,7 @@ use crate::{
 
 mod ap;
 mod api;
+mod file;
 mod well_known;
 
 async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response {
@@ -110,11 +111,13 @@ impl Modify for AccessKeyAddon {
 pub async fn create_router(federation_config: FederationConfig<State>) -> anyhow::Result<Router> {
     let ap = self::ap::create_router();
     let api = self::api::create_router();
+    let file = self::file::create_router();
     let well_known = self::well_known::create_router();
 
     let router = Router::new()
         .nest("/api", api)
         .nest("/ap", ap)
+        .nest("/file", file)
         .nest("/.well-known", well_known)
         .route("/nodeinfo/2.0", routing::get(get_nodeinfo_2_0))
         // TODO: We cannot use nested router because of https://github.com/LemmyNet/activitypub-federation-rust/issues/73

@@ -68,4 +68,6 @@ pub enum LocalFile {
     MediaType,
     Url,
     Alt,
+    ObjectStoreType,
+    ObjectStoreKey,
 }

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -33,6 +35,45 @@ fn default_database_password() -> String {
 
 fn default_database_database() -> String {
     "postgres".to_string()
+}
+
+fn default_object_store_local_file_base_path() -> PathBuf {
+    PathBuf::from("./files/")
+}
+
+#[derive(Clone, Deserialize)]
+pub struct ObjectStorageS3Config {
+    /// Bucket name of the S3 compatible object storage. e.g. `my-bucket`
+    pub object_store_bucket: String,
+    /// Public endpoint Base URL of the S3 compatible object storage.
+    /// If the bucket is connected to a domain, this value should be that domain.
+    /// If the bucket is connected to a CDN, this value should be the CDN domain.
+    /// Note: trailing slash is mandatory.
+    /// e.g. `https://example.com`
+    pub object_store_public_url_base: Url,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct ObjectStorageLocalFilesystemConfig {
+    /// Directory path for the local files to be stored. e.g. `./files/`
+    #[serde(default = "default_object_store_local_file_base_path")]
+    pub object_store_local_file_base_path: PathBuf,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "object_store_type")]
+pub enum ObjectStoreConfig {
+    /// With S3 option, you can provide following environment variables to config:
+    /// - `AWS_ACCESS_KEY_ID`,
+    /// - `AWS_SECRET_ACCESS_KEY`
+    /// - `AWS_DEFAULT_REGION`
+    /// - `AWS_ENDPOINT`
+    /// - `AWS_SESSION_TOKEN`
+    /// - `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`
+    /// - `AWS_ALLOW_HTTP`
+    /// Reference: https://docs.rs/object_store/latest/object_store/aws/struct.AmazonS3Builder.html#method.from_env
+    S3(ObjectStorageS3Config),
+    LocalFilesystem(ObjectStorageLocalFilesystemConfig),
 }
 
 #[derive(Clone, Deserialize)]
@@ -71,70 +112,22 @@ pub struct Config {
     #[serde(skip)]
     pub inbox_url: Option<Url>,
 
-    /// Region of the S3 compatible object storage.
-    /// e.g. `ap-northeast-1` for AWS, `nyc3` for DigitalOcean, or `auto`
-    pub object_storage_region: String,
-    /// API endpoint of the S3 compatible object storage.
-    /// e.g. `s3-ap-northeast-1.amazonaws.com`, or `{account_id}.r2.cloudflarestorage.com`
-    pub object_storage_endpoint: String,
-    /// Bucket name of the S3 compatible object storage. e.g. `my-bucket`
-    pub object_storage_bucket: String,
-    /// Public endpoint Base URL of the S3 compatible object storage.
-    /// If the bucket is connected to a domain, this value should be that domain.
-    /// If the bucket is connected to a CDN, this value should be the CDN domain.
-    /// Note: trailing slash is mandatory.
-    /// e.g. `https://example.com`
-    pub object_storage_public_url_base: Url,
-    /// Whether to enable path style for the object storage
-    #[serde(default)]
-    pub object_storage_path_style: bool,
-    #[serde(default)]
-    pub object_storage_access_key: Option<String>,
-    #[serde(default)]
-    pub object_storage_secret_key: Option<String>,
-
-    #[serde(skip)]
-    pub object_storage_creds: Option<s3::creds::Credentials>,
+    #[serde(flatten)]
+    pub object_store_config: ObjectStoreConfig,
 }
 
 impl Config {
-    pub fn object_storage_bucket(&self) -> Result<s3::Bucket> {
-        let object_storage_bucket = s3::Bucket::new(
-            &self.object_storage_bucket,
-            s3::Region::Custom {
-                region: self.object_storage_region.clone(),
-                endpoint: self.object_storage_endpoint.clone(),
-            },
-            self.object_storage_creds.clone().unwrap(),
-        )
-        .context("failed to initialize object storage bucket")?;
-        Ok(if self.object_storage_path_style {
-            object_storage_bucket.with_path_style()
-        } else {
-            object_storage_bucket
-        })
-    }
-
     pub fn try_from_env() -> Result<Self> {
         let mut config: Config =
-            envy::from_env().context("failed to parse config fro environment variables")?;
+            envy::from_env().context("failed to parse config from environment variables")?;
 
         let user_id = Url::parse(&format!("https://{}/ap/person", config.domain))
             .context("failed to construct ID URL")?;
         let inbox_url = Url::parse(&format!("https://{}/ap/inbox", config.domain))
             .context("failed to construct inbox URL")?;
 
-        let object_storage_creds = s3::creds::Credentials::new(
-            config.object_storage_access_key.as_deref(),
-            config.object_storage_secret_key.as_deref(),
-            None,
-            None,
-            None,
-        )
-        .context("failed to initialize object storage credential")?;
         config.user_id = Some(user_id);
         config.inbox_url = Some(inbox_url);
-        config.object_storage_creds = Some(object_storage_creds);
 
         Ok(config)
     }

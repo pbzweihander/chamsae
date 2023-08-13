@@ -12,3 +12,5 @@ frontend/.yarn/*
 frontend/.next
 frontend/*.tsbuildinfo
 frontend/next-env.d.ts
+
+files
