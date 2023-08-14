@@ -14,7 +14,7 @@ COPY Cargo.lock .
 COPY Cargo.toml .
 COPY migration migration
 COPY backend backend
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
+RUN --mount=type=cache,sharing=locked,target=/usr/local/cargo/registry \
     --mount=type=cache,id=rust-target-${TARGETPLATFORM},sharing=locked,target=/home/root/app/target \
     cargo build --release && \
     cp target/release/chamsae target/release/migration /usr/local/bin/
