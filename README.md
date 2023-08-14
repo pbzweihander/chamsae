@@ -37,6 +37,7 @@ DEBUG=true \
   DATABASE_PASSWORD={password} \
   DATABASE_DATABASE={db} \
   OBJECT_STORE_TYPE=local_filesystem \
+  OBJECT_STORE_LOCAL_FILE_BASE_PATH=./files/ \
   cargo run --bin chamsae
 ```
 
