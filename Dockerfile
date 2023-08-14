@@ -48,8 +48,8 @@ RUN apt-get update && \
 
 USER chamsae
 
-COPY --from=builder /app/target/release/chamsae /usr/local/bin
-COPY --from=builder /app/target/release/migration /usr/local/bin
+COPY --from=builder /home/root/app/target/release/chamsae /usr/local/bin
+COPY --from=builder /home/root/app/target/release/migration /usr/local/bin
 
 COPY --from=febuilder /app/.next/standalone /app/
 COPY --from=febuilder /app/.next/static /app/.next/static
