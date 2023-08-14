@@ -236,6 +236,7 @@ pub enum Post {
     Visibility,
     IsSensitive,
     Uri,
+    RepostId,
 }
 
 #[derive(Iden)]

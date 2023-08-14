@@ -198,6 +198,8 @@ pub struct Post {
     pub created_at: DateTime<FixedOffset>,
     #[schema(value_type = Option<String>, format = "ulid")]
     pub reply_id: Option<Ulid>,
+    #[schema(value_type = Option<String>, format = "ulid")]
+    pub repost_id: Option<Ulid>,
     pub text: String,
     pub title: Option<String>,
     pub user: Option<User>,
@@ -300,6 +302,7 @@ impl Post {
             id: post.id.into(),
             created_at: post.created_at,
             reply_id: post.reply_id.map(Into::into),
+            repost_id: post.repost_id.map(Into::into),
             text: post.text,
             title: post.title,
             user,
@@ -329,6 +332,9 @@ pub struct CreatePost {
     #[schema(value_type = Option<String>, format = "ulid")]
     #[serde(default)]
     pub reply_id: Option<Ulid>,
+    #[schema(value_type = Option<String>, format = "ulid")]
+    #[serde(default)]
+    pub repost_id: Option<Ulid>,
     pub text: String,
     #[serde(default)]
     pub title: Option<String>,

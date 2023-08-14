@@ -1,12 +1,11 @@
 use activitypub_federation::{
-    activity_queue::send_activity,
     config::Data,
     fetch::object_id::ObjectId,
     kinds::{
         activity::CreateType,
         object::{DocumentType, NoteType},
     },
-    protocol::context::WithContext,
+    protocol::verification::verify_domains_match,
     traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
@@ -17,13 +16,13 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    entity::{post, user},
-    error::Error,
+    entity::post,
+    error::{Context, Error},
     queue::Notification,
     state::State,
 };
 
-use super::{generate_object_id, person::LocalPerson, tag::Tag};
+use super::{generate_object_id, tag::Tag, NoteOrAnnounce};
 
 #[derive(Clone, Derivative, Deserialize, Serialize)]
 #[derivative(Debug)]
@@ -48,7 +47,10 @@ pub struct Note {
     #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: ObjectId<post::Model>,
     #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
-    pub attributed_to: ObjectId<user::Model>,
+    pub attributed_to: Url,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_option_display"))]
+    #[serde(default)]
+    pub quote_url: Option<ObjectId<post::Model>>,
     pub published: DateTime<FixedOffset>,
     #[derivative(Debug(format_with = "crate::fmt::debug_format_vec_display"))]
     #[serde(default)]
@@ -69,12 +71,6 @@ pub struct Note {
     pub tag: Vec<Tag>,
 }
 
-impl Note {
-    pub fn into_create(self) -> Result<CreateNote, Error> {
-        CreateNote::new(self)
-    }
-}
-
 #[derive(Derivative, Deserialize, Serialize)]
 #[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
@@ -84,7 +80,7 @@ pub struct CreateNote {
     #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
     #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
-    pub actor: ObjectId<user::Model>,
+    pub actor: Url,
     #[derivative(Debug(format_with = "crate::fmt::debug_format_vec_display"))]
     #[serde(default)]
     pub to: Vec<Url>,
@@ -105,13 +101,6 @@ impl CreateNote {
             object: note,
         })
     }
-
-    #[tracing::instrument(skip(data))]
-    pub async fn send(self, data: &Data<State>, inboxes: Vec<Url>) -> Result<(), Error> {
-        let me = LocalPerson::get(&*data.db).await?;
-        let with_context = WithContext::new_default(self);
-        send_activity(with_context, &me, inboxes, data).await
-    }
 }
 
 #[async_trait]
@@ -124,15 +113,17 @@ impl ActivityHandler for CreateNote {
     }
 
     fn actor(&self) -> &Url {
-        self.actor.inner()
+        &self.actor
     }
 
-    async fn verify(&self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        post::Model::verify(&self.object, &self.id, data).await
+    #[tracing::instrument(skip(_data))]
+    async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        verify_domains_match(&self.id, &self.actor).context_bad_request("failed to verify domain")
     }
 
+    #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        let post = post::Model::from_json(self.object, data).await?;
+        let post = post::Model::from_json(NoteOrAnnounce::Note(self.object), data).await?;
         let notification = Notification::CreatePost {
             post_id: post.id.into(),
         };

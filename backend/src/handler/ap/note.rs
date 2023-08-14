@@ -6,7 +6,7 @@ use sea_orm::EntityTrait;
 use ulid::Ulid;
 
 use crate::{
-    ap::note::Note,
+    ap::NoteOrAnnounce,
     entity::{post, sea_orm_active_enums},
     error::{Context, Result},
     format_err,
@@ -21,7 +21,7 @@ pub(super) fn create_router() -> Router {
 async fn get_note(
     data: Data<State>,
     extract::Path(id): extract::Path<Ulid>,
-) -> Result<FederationJson<WithContext<Note>>> {
+) -> Result<FederationJson<WithContext<NoteOrAnnounce>>> {
     let this = post::Entity::find_by_id(id)
         .one(&*data.db)
         .await

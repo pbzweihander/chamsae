@@ -9,7 +9,7 @@ use url::Url;
 use utoipa::IntoParams;
 
 use crate::{
-    ap::{person::Person, Object as ApObject},
+    ap::{person::Person, NoteOrAnnounce, Object as ApObject},
     config::CONFIG,
     dto::{self, User},
     entity::{post, user},
@@ -134,12 +134,16 @@ async fn get_resolve_link(
     let object = object.inner().clone();
     let dto = match object {
         ApObject::Note(note) => {
-            let model = post::Model::from_json(*note, &data).await?;
+            let model = post::Model::from_json(NoteOrAnnounce::Note(*note), &data).await?;
             dto::Object::Post(Box::new(dto::Post::from_model(model, &*data.db).await?))
         }
         ApObject::Person(person) => {
             let model = user::Model::from_json(*person, &data).await?;
             dto::Object::User(Box::new(dto::User::from_model(model)?))
+        }
+        ApObject::Announce(announce) => {
+            let model = post::Model::from_json(NoteOrAnnounce::Announce(*announce), &data).await?;
+            dto::Object::Post(Box::new(dto::Post::from_model(model, &*data.db).await?))
         }
     };
     Ok(Json(dto))

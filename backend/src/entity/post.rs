@@ -17,6 +17,7 @@ pub struct Model {
     pub is_sensitive: bool,
     #[sea_orm(unique)]
     pub uri: String,
+    pub repost_id: Option<Uuid>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -34,7 +35,15 @@ pub enum Relation {
         on_update = "NoAction",
         on_delete = "SetNull"
     )]
-    SelfRef,
+    SelfRef2,
+    #[sea_orm(
+        belongs_to = "Entity",
+        from = "Column::RepostId",
+        to = "Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    SelfRef1,
     #[sea_orm(has_many = "super::post_emoji::Entity")]
     PostEmoji,
     #[sea_orm(has_many = "super::reaction::Entity")]

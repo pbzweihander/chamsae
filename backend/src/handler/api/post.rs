@@ -105,6 +105,15 @@ async fn post_post(
             return Err(format_err!(NOT_FOUND, "reply target post not found"));
         }
     }
+    if let Some(repost_id) = req.repost_id {
+        let repost_post_count = post::Entity::find_by_id(repost_id)
+            .count(&tx)
+            .await
+            .context_internal_server_error("failed to request database")?;
+        if repost_post_count == 0 {
+            return Err(format_err!(NOT_FOUND, "repost target post not found"));
+        }
+    }
 
     let emojis = emoji::Entity::find()
         .filter(emoji::Column::Name.is_in(req.emojis))
@@ -118,6 +127,7 @@ async fn post_post(
         id: ActiveValue::Set(id.into()),
         created_at: ActiveValue::Set(Utc::now().fixed_offset()),
         reply_id: ActiveValue::Set(req.reply_id.map(Into::into)),
+        repost_id: ActiveValue::Set(req.repost_id.map(Into::into)),
         text: ActiveValue::Set(req.text),
         title: ActiveValue::Set(req.title),
         user_id: ActiveValue::Set(None),
@@ -215,8 +225,7 @@ async fn post_post(
             .collect::<Vec<_>>(),
     };
 
-    let create = post.into_create()?;
-    create.send(&data, inboxes).await?;
+    post.send(&data, inboxes).await?;
 
     Ok(Json(IdResponse { id: post_id }))
 }

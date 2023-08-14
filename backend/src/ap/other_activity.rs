@@ -1,16 +1,20 @@
 use activitypub_federation::{config::Data, traits::ActivityHandler};
 use async_trait::async_trait;
+use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{error::Error, format_err, state::State};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Derivative, Deserialize, Serialize)]
+#[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct OtherActivity {
     #[serde(rename = "type")]
     pub ty: String,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub id: Url,
+    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
     #[serde(flatten)]
     pub fields: serde_json::Value,
