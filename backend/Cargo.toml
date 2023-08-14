@@ -11,6 +11,7 @@ async-trait = "0.1.72"
 axum = { version = "0.6.20", features = ["headers"] }
 axum-extra = { version = "0.7.7", features = ["async-read-body"] }
 bcrypt = "0.15.0"
+cached = { version = "0.44.0", features = ["async", "redis_store", "redis_tokio"] }
 chrono = { version = "0.4.26", features = ["serde"] }
 derivative = "2.2.0"
 dotenvy = "0.15.7"
@@ -28,7 +29,7 @@ sea-orm = { version = "0.12.2", features = ["sqlx-postgres", "runtime-tokio-nati
 serde = { version = "1.0.182", features = ["derive"] }
 serde_json = "1.0.104"
 stopper = "0.2.0"
-tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "signal", "time"] }
+tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "signal", "time", "sync"] }
 tower-http = { version = "0.4.3", features = ["trace"] }
 tracing = { version = "0.1.37", features = ["log"] }
 tracing-error = "0.2.0"

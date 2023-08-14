@@ -1,7 +1,9 @@
 use activitypub_federation::config::{Data, FederationConfig, FederationMiddleware};
 use axum::{http::Request, middleware::Next, response::Response, routing, Json, Router};
+use cached::{AsyncRedisCache, IOCachedAsync};
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use tokio::sync::OnceCell;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::Level;
 use utoipa::{
@@ -11,8 +13,9 @@ use utoipa::{
 use utoipa_redoc::{Redoc, Servable};
 
 use crate::{
+    config::CONFIG,
     entity::{post, setting},
-    error::Result,
+    error::{Context, Result},
     state::State,
 };
 
@@ -137,13 +140,13 @@ pub async fn create_router(federation_config: FederationConfig<State>) -> anyhow
     Ok(router)
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct NodeInfoSoftware {
     name: String,
     version: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct NodeInfoUsageUsers {
     total: usize,
@@ -151,7 +154,7 @@ struct NodeInfoUsageUsers {
     active_half_year: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct NodeInfoUsage {
     users: NodeInfoUsageUsers,
@@ -159,14 +162,14 @@ struct NodeInfoUsage {
     local_comments: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct NodeInfoMetadataMaintainer {
     name: Option<String>,
     email: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct NodeInfoMetadata {
     node_name: Option<String>,
@@ -175,7 +178,7 @@ struct NodeInfoMetadata {
     theme_color: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct NodeInfo {
     version: String,
@@ -186,39 +189,63 @@ struct NodeInfo {
     metadata: NodeInfoMetadata,
 }
 
-// TODO: cache
 async fn get_nodeinfo_2_0(data: Data<State>) -> Result<Json<NodeInfo>> {
-    let setting = setting::Model::get(&*data.db).await?;
-    let local_post_count = post::Entity::find()
-        .filter(post::Column::UserId.is_null())
-        .count(&*data.db)
+    static CACHE: OnceCell<AsyncRedisCache<u8, NodeInfo>> = OnceCell::const_new();
+    let cache = CACHE
+        .get_or_try_init(|| async move {
+            AsyncRedisCache::new("fn_cache:get_nodeinfo_2_0", 60 * 10)
+                .set_connection_string(CONFIG.redis_url.as_str())
+                .build()
+                .await
+                .context_internal_server_error("failed to build Redis cache")
+        })
         .await?;
+    if let Some(cached) = cache
+        .cache_get(&0)
+        .await
+        .context_internal_server_error("failed to get cache from Redis")?
+    {
+        Ok(Json(cached))
+    } else {
+        let setting = setting::Model::get(&*data.db).await?;
+        let local_post_count = post::Entity::find()
+            .filter(post::Column::UserId.is_null())
+            .count(&*data.db)
+            .await?;
 
-    Ok(Json(NodeInfo {
-        version: "2.0".to_string(),
-        software: NodeInfoSoftware {
-            name: env!("CARGO_PKG_NAME").to_string(),
-            version: env!("CARGO_PKG_VERSION").to_string(),
-        },
-        protocols: vec!["activitypub".to_string()],
-        usage: NodeInfoUsage {
-            users: NodeInfoUsageUsers {
-                total: 1,
-                active_month: 1,
-                active_half_year: 1,
+        let nodeinfo = NodeInfo {
+            version: "2.0".to_string(),
+            software: NodeInfoSoftware {
+                name: env!("CARGO_PKG_NAME").to_string(),
+                version: env!("CARGO_PKG_VERSION").to_string(),
             },
-            local_posts: local_post_count,
-            local_comments: 0,
-        },
-        open_registrations: false,
-        metadata: NodeInfoMetadata {
-            node_name: setting.instance_name,
-            node_description: setting.instance_description,
-            maintainer: NodeInfoMetadataMaintainer {
-                name: setting.maintainer_name,
-                email: setting.maintainer_email,
+            protocols: vec!["activitypub".to_string()],
+            usage: NodeInfoUsage {
+                users: NodeInfoUsageUsers {
+                    total: 1,
+                    active_month: 1,
+                    active_half_year: 1,
+                },
+                local_posts: local_post_count,
+                local_comments: 0,
             },
-            theme_color: setting.theme_color,
-        },
-    }))
+            open_registrations: false,
+            metadata: NodeInfoMetadata {
+                node_name: setting.instance_name,
+                node_description: setting.instance_description,
+                maintainer: NodeInfoMetadataMaintainer {
+                    name: setting.maintainer_name,
+                    email: setting.maintainer_email,
+                },
+                theme_color: setting.theme_color,
+            },
+        };
+
+        cache
+            .cache_set(0, nodeinfo.clone())
+            .await
+            .context_internal_server_error("failed to set cache to Redis")?;
+
+        Ok(Json(nodeinfo))
+    }
 }
