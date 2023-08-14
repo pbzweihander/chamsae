@@ -85,7 +85,7 @@ impl ActivityHandler for Follow {
         let notification = Notification::CreateFollower {
             user_id: follower.from_id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
 
         Ok(())
     }
@@ -149,7 +149,7 @@ impl ActivityHandler for FollowAccept {
         let notification = Notification::AcceptFollow {
             user_id: follow.to_id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
 
         Ok(())
     }
@@ -245,7 +245,7 @@ impl ActivityHandler for FollowReject {
             let notification = Notification::RejectFollow {
                 user_id: follow_id.into(),
             };
-            notification.send(&data.queue).await?;
+            notification.send(&mut data.redis()).await?;
 
             Ok(())
         } else {

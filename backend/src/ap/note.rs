@@ -136,7 +136,7 @@ impl ActivityHandler for CreateNote {
         let notification = Notification::CreatePost {
             post_id: post.id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
         Ok(())
     }
 }

@@ -82,7 +82,7 @@ impl ActivityHandler for Like {
         let notification = Notification::CreateReaction {
             post_id: reaction.post_id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
         Ok(())
     }
 }

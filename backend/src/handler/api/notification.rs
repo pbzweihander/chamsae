@@ -7,7 +7,7 @@ use axum::{
 };
 use futures_util::Stream;
 
-use crate::{queue::notification_stream, state::State};
+use crate::{error::Error, queue::notification_stream, state::State};
 
 use super::auth::Access;
 
@@ -29,9 +29,7 @@ pub(super) fn create_router() -> Router {
 async fn get_stream(
     data: Data<State>,
     _access: Access,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    Sse::new(data.stopper.stop_stream(notification_stream(
-        data.queue.clone(),
-        data.stopper.clone(),
-    )))
+) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, Error> {
+    let stream = notification_stream(data.redis_pubsub().await?, data.stopper.clone()).await?;
+    Ok(Sse::new(data.stopper.stop_stream(stream)))
 }

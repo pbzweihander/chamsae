@@ -102,7 +102,7 @@ impl Object for follow::Model {
         let notification = Notification::RejectFollow {
             user_id: user_id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
         Ok(())
     }
 }

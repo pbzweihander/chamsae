@@ -285,7 +285,7 @@ impl ActivityHandler for PersonUpdate {
         let notification = Notification::UpdateUser {
             user_id: user.id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
         Ok(())
     }
 }

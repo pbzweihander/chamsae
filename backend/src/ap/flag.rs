@@ -92,7 +92,7 @@ impl ActivityHandler for Flag {
         let notification = Notification::CreateReport {
             report_id: report.id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
 
         Ok(())
     }

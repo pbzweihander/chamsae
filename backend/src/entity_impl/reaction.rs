@@ -207,7 +207,7 @@ impl Object for reaction::Model {
         let notification = Notification::DeleteReaction {
             post_id: post_id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
 
         Ok(())
     }

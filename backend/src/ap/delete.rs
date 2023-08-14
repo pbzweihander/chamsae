@@ -111,7 +111,7 @@ impl ActivityHandler for Delete {
             let notification = Notification::DeletePost {
                 post_id: post_id.into(),
             };
-            notification.send(&data.queue).await?;
+            notification.send(&mut data.redis()).await?;
 
             return Ok(());
         }
@@ -134,7 +134,7 @@ impl ActivityHandler for Delete {
             let notification = Notification::DeleteUser {
                 user_id: user_id.into(),
             };
-            notification.send(&data.queue).await?;
+            notification.send(&mut data.redis()).await?;
 
             return Ok(());
         }

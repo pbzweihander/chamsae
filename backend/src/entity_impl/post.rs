@@ -384,7 +384,7 @@ impl Object for post::Model {
             .await
             .context_internal_server_error("failed to delete from database")?;
         let notification = Notification::DeletePost { post_id: id.into() };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
         Ok(())
     }
 }

@@ -17,24 +17,12 @@ fn default_listen_addr() -> String {
     "0.0.0.0:3000".to_string()
 }
 
-fn default_database_host() -> String {
-    "localhost".to_string()
+fn default_database_url() -> Url {
+    Url::parse("postgresql://postgres:chamsae@localhost:5432").unwrap()
 }
 
-fn default_database_port() -> u16 {
-    5432
-}
-
-fn default_database_user() -> String {
-    "postgres".to_string()
-}
-
-fn default_database_password() -> String {
-    "chamsae".to_string()
-}
-
-fn default_database_database() -> String {
-    "postgres".to_string()
+fn default_redis_url() -> Url {
+    Url::parse("redis://localhost:6379/0").unwrap()
 }
 
 fn default_object_store_local_file_base_path() -> PathBuf {
@@ -89,16 +77,11 @@ pub struct Config {
     #[serde(default = "default_listen_addr")]
     pub listen_addr: String,
 
-    #[serde(default = "default_database_host")]
-    pub database_host: String,
-    #[serde(default = "default_database_port")]
-    pub database_port: u16,
-    #[serde(default = "default_database_user")]
-    pub database_user: String,
-    #[serde(default = "default_database_password")]
-    pub database_password: String,
-    #[serde(default = "default_database_database")]
-    pub database_database: String,
+    #[serde(default = "default_database_url")]
+    pub database_url: Url,
+
+    #[serde(default = "default_redis_url")]
+    pub redis_url: Url,
 
     /// Handle of the owner of this instance.
     /// DO NOT CHANGE!

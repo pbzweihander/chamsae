@@ -1,24 +1,15 @@
 use std::convert::Infallible;
 
-use anyhow::Context;
-use async_stream::stream;
 use axum::response::sse::Event;
-use futures_util::Stream;
-use pgmq::PGMQueue;
+use futures_util::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
 use stopper::Stopper;
 use ulid::Ulid;
 use utoipa::ToSchema;
 
-const DEFAULT_QUEUE_NAME: &str = "_default_queue";
-const DEFAULT_VT: Option<i32> = Some(60); // 1 minute
+use crate::error::Error;
 
-pub async fn init_queue(queue: &PGMQueue) -> anyhow::Result<()> {
-    queue
-        .create(DEFAULT_QUEUE_NAME)
-        .await
-        .context("failed to create default message queue table")
-}
+const NOTIFICATION_CHANNEL_NAME: &str = "notification";
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -81,57 +72,52 @@ pub enum Notification {
 }
 
 impl Notification {
-    pub async fn send(self, queue: &PGMQueue) -> crate::error::Result<()> {
-        crate::error::Context::context_internal_server_error(
-            queue.send(DEFAULT_QUEUE_NAME, &self).await,
-            "failed to send to message queue",
-        )?;
+    pub async fn send(self, redis: &mut impl redis::AsyncCommands) -> crate::error::Result<()> {
+        use crate::error::Context;
+
+        let payload = serde_json::to_vec(&self)
+            .context_internal_server_error("failed to serialize Redis channel payload")?;
+        redis
+            .publish(NOTIFICATION_CHANNEL_NAME, payload)
+            .await
+            .context_internal_server_error("failed to publish to Redis channel")?;
         Ok(())
     }
 }
 
-async fn make_event(queue: &PGMQueue) -> anyhow::Result<Option<Event>> {
-    if let Some(message) = queue
-        .read::<Notification>(DEFAULT_QUEUE_NAME, DEFAULT_VT)
-        .await
-        .context("failed to read from message queue")?
-    {
-        let notification = message.message;
-        let event = Event::default()
-            .json_data(notification)
-            .context("failed to construct SSE event")?;
-        queue
-            .delete(DEFAULT_QUEUE_NAME, message.msg_id)
-            .await
-            .context("failed to delete from message queue")?;
-        Ok(Some(event))
-    } else {
-        Ok(None)
-    }
+fn make_event(msg: redis::Msg) -> anyhow::Result<Event> {
+    use anyhow::Context;
+
+    let payload = msg.get_payload_bytes();
+    let payload: Notification =
+        serde_json::from_slice(payload).context("failed to deserialize Redis channel payload")?;
+    let event = Event::default()
+        .json_data(payload)
+        .context("failed to construct SSE event")?;
+    Ok(event)
 }
 
-pub fn notification_stream(
-    queue: PGMQueue,
+pub async fn notification_stream(
+    mut pubsub: redis::aio::PubSub,
     stopper: Stopper,
-) -> impl Stream<Item = Result<Event, Infallible>> {
-    stream! {
-        loop {
-            match stopper.stop_future(make_event(&queue)).await {
-                Some(Ok(Some(event))) => {
-                    tracing::info!("foobar"); // TODO: remove
-                    yield Ok(event);
-                }
-                Some(Ok(None)) => {
-                    stopper.stop_future(tokio::time::sleep(std::time::Duration::from_secs(5))).await;
-                }
-                Some(Err(error)) => {
+) -> Result<impl Stream<Item = Result<Event, Infallible>>, Error> {
+    use crate::error::Context;
+
+    pubsub
+        .subscribe(NOTIFICATION_CHANNEL_NAME)
+        .await
+        .context_internal_server_error("failed to subscribe Redis channel")?;
+    let stream = stopper
+        .stop_stream(pubsub.into_on_message())
+        .filter_map(|msg| {
+            let opt = match make_event(msg) {
+                Ok(event) => Some(Result::<_, Infallible>::Ok(event)),
+                Err(error) => {
                     tracing::error!("failed to make SSE event\n{:?}", error);
-                    stopper.stop_future(tokio::time::sleep(std::time::Duration::from_secs(10))).await;
+                    None
                 }
-                None => {
-                    break;
-                }
-            }
-        }
-    }
+            };
+            async move { opt }
+        });
+    Ok(stream)
 }

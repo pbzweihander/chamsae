@@ -119,7 +119,7 @@ impl Object for follower::Model {
         let notification = Notification::DeleteFollower {
             user_id: user_id.into(),
         };
-        notification.send(&data.queue).await?;
+        notification.send(&mut data.redis()).await?;
 
         Ok(())
     }
