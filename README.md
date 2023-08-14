@@ -19,6 +19,7 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 ### Requirements
 
 - PostgreSQL
+- Redis
 
 ### Backend
 
@@ -31,11 +32,8 @@ DEBUG=true \
   DOMAIN=localhost \
   USER_HANDLE=admin \
   USER_PASSWORD_BCRYPT={your_password_hash} \
-  DATABASE_HOST={host} \
-  DATABASE_PORT={port} \
-  DATABASE_USER={user} \
-  DATABASE_PASSWORD={password} \
-  DATABASE_DATABASE={db} \
+  DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
+  REDIS_URL=redis://localhost:6379/0 \
   OBJECT_STORE_TYPE=local_filesystem \
   OBJECT_STORE_LOCAL_FILE_BASE_PATH=./files/ \
   cargo run --bin chamsae
@@ -48,11 +46,8 @@ DEBUG=true \
   DOMAIN=localhost \
   USER_HANDLE=admin \
   USER_PASSWORD_BCRYPT={your_password_hash} \
-  DATABASE_HOST={host} \
-  DATABASE_PORT={port} \
-  DATABASE_USER={user} \
-  DATABASE_PASSWORD={password} \
-  DATABASE_DATABASE={db} \
+  DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
+  REDIS_URL=redis://localhost:6379/0 \
   OBJECT_STORE_TYPE=s3 \
   AWS_DEFAULT_REGION=auto \
   AWS_ENDPOINT=https://{account_id}.r2.cloudflarestorage.com \
