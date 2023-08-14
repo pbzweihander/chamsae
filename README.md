@@ -49,6 +49,7 @@ DEBUG=true \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
   REDIS_URL=redis://localhost:6379/0 \
   OBJECT_STORE_TYPE=s3 \
+  OBJECT_STORE_BUCKET=bucket \
   OBJECT_STORE_PUBLIC_URL_BASE=https://example.com/bucket \
   AWS_DEFAULT_REGION=auto \
   AWS_ENDPOINT=https://{account_id}.r2.cloudflarestorage.com \
