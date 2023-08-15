@@ -13,8 +13,7 @@ use ulid::Ulid;
 use utoipa::ToSchema;
 
 use crate::{
-    config::CONFIG,
-    entity::access_key,
+    entity::{access_key, setting},
     error::{Context, Error, Result},
     format_err,
     state::State,
@@ -111,7 +110,8 @@ async fn post_login(
     data: Data<State>,
     Json(req): Json<PostLoginReq>,
 ) -> Result<Json<PostLoginResp>> {
-    if bcrypt::verify(&req.password, &CONFIG.user_password_bcrypt)
+    let setting = setting::Model::get(&*data.db).await?;
+    if bcrypt::verify(&req.password, &setting.user_password_hash)
         .context_bad_request("failed to authenticate")?
     {
         let access_key_activemodel = access_key::ActiveModel {

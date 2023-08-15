@@ -1,6 +1,8 @@
 use activitypub_federation::config::Data;
 use axum::{routing, Json, Router};
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, PaginatorTrait, TransactionTrait};
+use serde::Deserialize;
+use utoipa::ToSchema;
 
 use crate::{
     ap::person::PersonUpdate,
@@ -14,7 +16,9 @@ use crate::{
 use super::auth::Access;
 
 pub(super) fn create_router() -> Router {
-    Router::new().route("/", routing::get(get_setting).put(put_setting))
+    Router::new()
+        .route("/", routing::get(get_setting).put(put_setting))
+        .route("/initial", routing::post(post_initial_setting))
 }
 
 #[utoipa::path(
@@ -27,6 +31,7 @@ pub(super) fn create_router() -> Router {
         ("access_key" = []),
     ),
 )]
+#[tracing::instrument(skip(data, _access))]
 async fn get_setting(data: Data<State>, _access: Access) -> Result<Json<Setting>> {
     let setting = setting::Model::get(&*data.db).await?;
     Ok(Json(Setting::from_model(setting)))
@@ -43,6 +48,7 @@ async fn get_setting(data: Data<State>, _access: Access) -> Result<Json<Setting>
         ("access_key" = []),
     ),
 )]
+#[tracing::instrument(skip(data, _access))]
 async fn put_setting(
     data: Data<State>,
     _access: Access,
@@ -56,9 +62,6 @@ async fn put_setting(
     }
     if let Some(v) = req.user_description {
         setting_activemodel.user_description = ActiveValue::Set(Some(v));
-    }
-    if let Some(v) = req.instance_name {
-        setting_activemodel.instance_name = ActiveValue::Set(Some(v));
     }
     if let Some(v) = req.instance_description {
         setting_activemodel.instance_description = ActiveValue::Set(Some(v));
@@ -117,4 +120,35 @@ async fn put_setting(
     update.send(&data).await?;
 
     Ok(Json(Setting::from_model(setting)))
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PostInitialSettingReq {
+    instance_name: String,
+    user_handle: String,
+    user_password: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/setting/initial",
+    request_body = PostInitialSettingReq,
+    responses(
+        (status = 200),
+    ),
+)]
+#[tracing::instrument(skip(data, req))]
+async fn post_initial_setting(
+    data: Data<State>,
+    Json(req): Json<PostInitialSettingReq>,
+) -> Result<()> {
+    setting::Model::init(
+        req.instance_name,
+        req.user_handle,
+        req.user_password,
+        &*data.db,
+    )
+    .await?;
+    Ok(())
 }

@@ -83,13 +83,6 @@ pub struct Config {
     #[serde(default = "default_redis_url")]
     pub redis_url: Url,
 
-    /// Handle of the owner of this instance.
-    /// DO NOT CHANGE!
-    /// e.g. `admin`
-    pub user_handle: String,
-    /// Password bcrypt hash of the owner user of this instance
-    pub user_password_bcrypt: String,
-
     #[serde(flatten)]
     pub object_store_config: ObjectStoreConfig,
 }

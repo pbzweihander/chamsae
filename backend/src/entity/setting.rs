@@ -7,10 +7,12 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub instance_name: Option<String>,
-    pub user_name: Option<String>,
+    pub instance_name: String,
+    pub user_handle: String,
+    pub user_password_hash: String,
     pub user_public_key: String,
     pub user_private_key: String,
+    pub user_name: Option<String>,
     pub avatar_file_id: Option<Uuid>,
     pub banner_file_id: Option<Uuid>,
     pub instance_description: Option<String>,

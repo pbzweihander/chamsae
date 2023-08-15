@@ -14,8 +14,13 @@ impl MigrationTrait for Migration {
                     .table(Setting::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Setting::Id).uuid().not_null().primary_key())
-                    .col(ColumnDef::new(Setting::InstanceName).string())
-                    .col(ColumnDef::new(Setting::UserName).string())
+                    .col(ColumnDef::new(Setting::InstanceName).string().not_null())
+                    .col(ColumnDef::new(Setting::UserHandle).string().not_null())
+                    .col(
+                        ColumnDef::new(Setting::UserPasswordHash)
+                            .string()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(Setting::UserPublicKey)
                             .string_len(4096)
@@ -26,6 +31,7 @@ impl MigrationTrait for Migration {
                             .string_len(4096)
                             .not_null(),
                     )
+                    .col(ColumnDef::new(Setting::UserName).string())
                     .col(ColumnDef::new(Setting::AvatarFileId).uuid())
                     .col(ColumnDef::new(Setting::BannerFileId).uuid())
                     .foreign_key(
@@ -61,9 +67,11 @@ pub enum Setting {
     Table,
     Id,
     InstanceName,
-    UserName,
+    UserHandle,
+    UserPasswordHash,
     UserPublicKey,
     UserPrivateKey,
+    UserName,
     AvatarFileId,
     BannerFileId,
     InstanceDescription,

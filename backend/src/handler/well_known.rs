@@ -9,6 +9,7 @@ use url::Url;
 use crate::{
     ap::person::LocalPerson,
     config::CONFIG,
+    entity::setting,
     error::{Context, Result},
     format_err,
     state::State,
@@ -30,9 +31,10 @@ async fn get_webfinger(
     extract::Query(query): extract::Query<GetWebfingerQuery>,
     data: Data<State>,
 ) -> Result<Json<Webfinger>> {
+    let setting = setting::Model::get(&*data.db).await?;
     let name = extract_webfinger_name(&query.resource, &data)
         .context_bad_request("failed to extract resource name")?;
-    if name == CONFIG.user_handle {
+    if name == setting.user_handle {
         let resp = build_webfinger_response(name, LocalPerson::id());
         Ok(Json(resp))
     } else {

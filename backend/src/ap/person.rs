@@ -9,7 +9,7 @@ use activitypub_federation::{
 use async_trait::async_trait;
 use derivative::Derivative;
 use once_cell::sync::Lazy;
-use sea_orm::{EntityTrait, QuerySelect, TransactionTrait};
+use sea_orm::{ConnectionTrait, EntityTrait, QuerySelect};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -83,8 +83,12 @@ pub struct Person {
 pub struct LocalPerson(pub setting::Model);
 
 impl LocalPerson {
-    pub async fn get(db: &impl TransactionTrait) -> Result<Self, Error> {
+    pub async fn get(db: &impl ConnectionTrait) -> Result<Self, Error> {
         Ok(Self(setting::Model::get(db).await?))
+    }
+
+    pub fn handle(&self) -> &str {
+        &self.0.user_handle
     }
 
     pub fn followers() -> Result<Url, Error> {
@@ -164,7 +168,7 @@ impl Object for LocalPerson {
         Ok(Self::Kind {
             ty: ActorType::Person,
             id: id.clone().into(),
-            preferred_username: CONFIG.user_handle.clone(),
+            preferred_username: self.handle().to_string(),
             name: setting.user_name,
             summary: setting.user_description,
             icon: avatar_url.map(|url| PersonImage {

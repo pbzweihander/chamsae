@@ -72,6 +72,7 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         self::api::resolve::get_resolve_link,
         self::api::setting::get_setting,
         self::api::setting::put_setting,
+        self::api::setting::post_initial_setting,
     ),
     components(schemas(
         crate::dto::IdResponse,
@@ -102,6 +103,7 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         crate::queue::NotificationType,
         self::api::auth::PostLoginReq,
         self::api::auth::PostLoginResp,
+        self::api::setting::PostInitialSettingReq,
     )),
     modifiers(&AccessKeyAddon),
 )]
@@ -178,7 +180,7 @@ struct NodeInfoMetadataMaintainer {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct NodeInfoMetadata {
-    node_name: Option<String>,
+    node_name: String,
     node_description: Option<String>,
     maintainer: NodeInfoMetadataMaintainer,
     theme_color: Option<String>,
