@@ -1,26 +1,30 @@
 # syntax = docker/dockerfile:1
 
-FROM rust:1.71.1-bookworm AS rustbase
-ENV HOME=/home/root
-WORKDIR $HOME/app
+FROM lukemathwalker/cargo-chef:latest-rust-1.71-slim-bookwarm AS chef
+WORKDIR /app
 
 FROM node:20-bookworm-slim AS nodebase
 WORKDIR /app
 
 
-FROM rustbase AS builder
-ARG TARGETPLATFORM
+FROM chef AS backend-planner
 COPY Cargo.lock .
 COPY Cargo.toml .
 COPY migration migration
 COPY backend backend
-RUN --mount=type=cache,sharing=locked,target=/usr/local/cargo/registry \
-    --mount=type=cache,id=rust-target-${TARGETPLATFORM},sharing=locked,target=/home/root/app/target \
-    cargo build --release && \
-    cp target/release/chamsae target/release/migration /usr/local/bin/
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS backend-builer
+COPY --from=baceknd-planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+COPY Cargo.lock .
+COPY Cargo.toml .
+COPY migration migration
+COPY backend backend
+RUN cargo build --release
 
 
-FROM nodebase AS febuilder
+FROM nodebase AS frontend-builder
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 #RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -49,8 +53,8 @@ RUN apt-get update && \
 
 USER chamsae
 
-COPY --from=builder /usr/local/bin/chamsae /usr/local/bin
-COPY --from=builder /usr/local/bin/migration /usr/local/bin
+COPY --from=backend-builder /app/target/release/chamsae /usr/local/bin
+COPY --from=backend-builder /app/target/release/migration /usr/local/bin
 
-COPY --from=febuilder /app/.next/standalone /app/
-COPY --from=febuilder /app/.next/static /app/.next/static
+COPY --from=frontend-builder /app/.next/standalone /app/
+COPY --from=frontend-builder /app/.next/static /app/.next/static
