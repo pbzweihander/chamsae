@@ -34,8 +34,7 @@ jobs:
       with:
         path: docker-build-cache
         key: ${{ runner.os }}-docker-build-cache
-    - name: inject go-build-cache into docker
-      uses: overmindtech/buildkit-cache-dance/inject@main
+    - uses: overmindtech/buildkit-cache-dance/inject@main
       with:
         cache-source: docker-build-cache
     - uses: docker/build-push-action@v4
@@ -47,7 +46,6 @@ jobs:
         cache-from: type=gha,scope=rust,mode=max
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-    - name: extract go-build-cache from docker
-      uses: overmindtech/buildkit-cache-dance/extract@main
+    - uses: overmindtech/buildkit-cache-dance/extract@main
       with:
         cache-source: docker-build-cache
