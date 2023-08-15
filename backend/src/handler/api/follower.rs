@@ -46,7 +46,7 @@ async fn get_followers(
     };
     let followers = pagination_query
         .order_by_desc(user::Column::Id)
-        .limit(100)
+        .limit(query.size)
         .all(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?;

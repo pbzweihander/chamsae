@@ -45,7 +45,7 @@ async fn get_reports(
     };
     let reports = pagination_query
         .order_by_desc(report::Column::Id)
-        .limit(100)
+        .limit(query.size)
         .all(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?;

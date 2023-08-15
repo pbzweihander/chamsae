@@ -19,17 +19,27 @@ use crate::{
     error::{Context, Result},
 };
 
+fn default_size() -> u64 {
+    10
+}
+
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct IdPaginationQuery {
     #[param(value_type = Option<String>, format = "ulid")]
     #[serde(default)]
     pub after: Option<Ulid>,
+    #[param(default = 10)]
+    #[serde(default = "default_size")]
+    pub size: u64,
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct TimestampPaginationQuery {
     #[serde(default)]
     pub after: Option<DateTime<FixedOffset>>,
+    #[param(default = 10)]
+    #[serde(default = "default_size")]
+    pub size: u64,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

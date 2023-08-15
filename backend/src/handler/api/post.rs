@@ -60,7 +60,7 @@ async fn get_posts(
     };
     let posts = pagination_query
         .order_by_desc(post::Column::Id)
-        .limit(100)
+        .limit(query.size)
         .all(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?;
@@ -529,7 +529,7 @@ async fn delete_post_reaction(
             .context_internal_server_error("failed to commit database transaction")?;
 
         let inbox = Url::parse(&inbox).context_internal_server_error("malformed user inbox URL")?;
-        let undo = Undo::<Like, reaction::Model>::new(like)?;
+        let undo = Undo::<Like>::new(like)?;
         undo.send(&data, vec![inbox]).await?;
     }
 

@@ -44,7 +44,7 @@ async fn get_notifications(
     };
     let notifications = pagination_query
         .order_by_desc(notification::Column::Id)
-        .limit(100)
+        .limit(query.size)
         .all(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?;

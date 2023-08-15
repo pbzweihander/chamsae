@@ -49,7 +49,7 @@ async fn get_emojis(
     let emojis = pagination_query
         .find_also_related(local_file::Entity)
         .order_by_desc(emoji::Column::CreatedAt)
-        .limit(100)
+        .limit(query.size)
         .all(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?;

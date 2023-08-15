@@ -8,7 +8,6 @@ use url::Url;
 
 use crate::{
     config::CONFIG,
-    entity::{follower, reaction},
     error::{Context, Error},
     state::State,
 };
@@ -70,8 +69,8 @@ pub enum Activity {
     Flag(self::flag::Flag),
     Like(self::like::Like),
     RejectFollow(self::follow::FollowReject),
-    UndoFollow(self::undo::Undo<self::follow::Follow, follower::Model>),
-    UndoLike(self::undo::Undo<self::like::Like, reaction::Model>),
+    UndoFollow(self::undo::Undo<self::follow::Follow>),
+    UndoLike(self::undo::Undo<self::like::Like>),
     UpdatePerson(Box<self::person::PersonUpdate>),
     /// Fallback
     Other(self::other_activity::OtherActivity),

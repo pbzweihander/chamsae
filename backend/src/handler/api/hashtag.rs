@@ -46,7 +46,7 @@ async fn get_hashtag_posts(
     let posts = pagination_query
         .filter(hashtag::Column::Name.eq(name))
         .order_by_desc(post::Column::Id)
-        .limit(100)
+        .limit(query.size)
         .all(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?;

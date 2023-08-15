@@ -44,7 +44,7 @@ async fn get_files(
     };
     let files = pagination_query
         .order_by_desc(local_file::Column::Id)
-        .limit(100)
+        .limit(query.size)
         .all(&*data.db)
         .await
         .context_internal_server_error("failed to query database")?;
