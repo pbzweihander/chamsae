@@ -18,7 +18,7 @@ use url::Url;
 use crate::{
     entity::post,
     error::{Context, Error},
-    queue::Notification,
+    queue::{Notification, NotificationType},
     state::State,
 };
 
@@ -124,10 +124,10 @@ impl ActivityHandler for CreateNote {
     #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let post = post::Model::from_json(NoteOrAnnounce::Note(self.object), data).await?;
-        let notification = Notification::CreatePost {
+        let notification = Notification::new(NotificationType::CreatePost {
             post_id: post.id.into(),
-        };
-        notification.send(&mut data.redis()).await?;
+        });
+        notification.send(&*data.db, &mut data.redis()).await?;
         Ok(())
     }
 }

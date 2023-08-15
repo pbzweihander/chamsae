@@ -2,18 +2,19 @@ use std::convert::Infallible;
 
 use axum::response::sse::Event;
 use futures_util::{Stream, StreamExt};
+use sea_orm::{ActiveModelTrait, ActiveValue, ConnectionTrait};
 use serde::{Deserialize, Serialize};
 use stopper::Stopper;
 use ulid::Ulid;
 use utoipa::ToSchema;
 
-use crate::error::Error;
+use crate::{entity::notification, error::Error};
 
 const NOTIFICATION_CHANNEL_NAME: &str = "notification";
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase", tag = "type")]
-pub enum Notification {
+pub enum NotificationType {
     #[serde(rename_all = "camelCase")]
     CreatePost {
         #[schema(value_type = String, format = "ulid")]
@@ -71,9 +72,41 @@ pub enum Notification {
     },
 }
 
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase", tag = "type")]
+pub struct Notification {
+    #[schema(value_type = String, format = "ulid")]
+    pub id: Ulid,
+    #[serde(flatten)]
+    pub ty: NotificationType,
+}
+
 impl Notification {
-    pub async fn send(self, redis: &mut impl redis::AsyncCommands) -> crate::error::Result<()> {
+    pub fn new(ty: NotificationType) -> Self {
+        Self {
+            id: Ulid::new(),
+            ty,
+        }
+    }
+
+    #[tracing::instrument(skip(db, redis))]
+    pub async fn send(
+        self,
+        db: &impl ConnectionTrait,
+        redis: &mut impl redis::AsyncCommands,
+    ) -> crate::error::Result<()> {
         use crate::error::Context;
+
+        let payload = serde_json::to_value(&self.ty)
+            .context_internal_server_error("failed to serialize notification payload")?;
+        let this_activemodel = notification::ActiveModel {
+            id: ActiveValue::Set(self.id.into()),
+            payload: ActiveValue::Set(payload),
+        };
+        this_activemodel
+            .insert(db)
+            .await
+            .context_internal_server_error("failed to insert to database")?;
 
         let payload = serde_json::to_vec(&self)
             .context_internal_server_error("failed to serialize Redis channel payload")?;

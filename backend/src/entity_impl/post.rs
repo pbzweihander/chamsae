@@ -23,7 +23,7 @@ use crate::{
         hashtag, local_file, mention, post, post_emoji, remote_file, sea_orm_active_enums, user,
     },
     error::{Context, Error},
-    queue::Notification,
+    queue::{Notification, NotificationType},
     state::State,
 };
 
@@ -531,8 +531,8 @@ impl Object for post::Model {
         ModelTrait::delete(self, &*data.db)
             .await
             .context_internal_server_error("failed to delete from database")?;
-        let notification = Notification::DeletePost { post_id: id.into() };
-        notification.send(&mut data.redis()).await?;
+        let notification = Notification::new(NotificationType::DeletePost { post_id: id.into() });
+        notification.send(&*data.db, &mut data.redis()).await?;
         Ok(())
     }
 }

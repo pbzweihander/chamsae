@@ -17,7 +17,7 @@ use crate::{
     ap::person::LocalPerson,
     entity::{report, user},
     error::{Context, Error},
-    queue::Notification,
+    queue::{Notification, NotificationType},
     state::State,
 };
 
@@ -89,10 +89,10 @@ impl ActivityHandler for Flag {
             .await
             .context_internal_server_error("failed to insert to database")?;
 
-        let notification = Notification::CreateReport {
+        let notification = Notification::new(NotificationType::CreateReport {
             report_id: report.id.into(),
-        };
-        notification.send(&mut data.redis()).await?;
+        });
+        notification.send(&*data.db, &mut data.redis()).await?;
 
         Ok(())
     }

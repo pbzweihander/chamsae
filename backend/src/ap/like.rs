@@ -15,7 +15,7 @@ use url::Url;
 use crate::{
     entity::{post, reaction, user},
     error::{Context, Error},
-    queue::Notification,
+    queue::{Notification, NotificationType},
     state::State,
 };
 
@@ -79,10 +79,11 @@ impl ActivityHandler for Like {
     #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let reaction = reaction::Model::from_json(self, data).await?;
-        let notification = Notification::CreateReaction {
+        let notification = Notification::new(NotificationType::CreateReaction {
             post_id: reaction.post_id.into(),
-        };
-        notification.send(&mut data.redis()).await?;
+        });
+        notification.send(&*data.db, &mut data.redis()).await?;
+
         Ok(())
     }
 }

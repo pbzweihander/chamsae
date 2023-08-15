@@ -9,6 +9,7 @@ pub mod follower;
 pub mod hashtag;
 pub mod local_file;
 pub mod mention;
+pub mod notification;
 pub mod post;
 pub mod post_emoji;
 pub mod reaction;

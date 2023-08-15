@@ -246,8 +246,8 @@ async fn post_post(
 #[tracing::instrument(skip(data, _access))]
 async fn get_post(
     data: Data<State>,
-    extract::Path(id): extract::Path<Ulid>,
     _access: Access,
+    extract::Path(id): extract::Path<Ulid>,
 ) -> Result<Json<Post>> {
     let post = post::Entity::find_by_id(id)
         .one(&*data.db)
@@ -273,8 +273,8 @@ async fn get_post(
 #[tracing::instrument(skip(data, _access))]
 async fn delete_post(
     data: Data<State>,
-    extract::Path(id): extract::Path<Ulid>,
     _access: Access,
+    extract::Path(id): extract::Path<Ulid>,
 ) -> Result<()> {
     let tx = data
         .db

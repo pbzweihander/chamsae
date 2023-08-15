@@ -15,7 +15,7 @@ use crate::{
     entity::{post, user},
     error::{Context, Error},
     format_err,
-    queue::Notification,
+    queue::{Notification, NotificationType},
     state::State,
 };
 
@@ -108,10 +108,10 @@ impl ActivityHandler for Delete {
                 .await
                 .context_internal_server_error("failed to commit database transaction")?;
 
-            let notification = Notification::DeletePost {
+            let notification = Notification::new(NotificationType::DeletePost {
                 post_id: post_id.into(),
-            };
-            notification.send(&mut data.redis()).await?;
+            });
+            notification.send(&*data.db, &mut data.redis()).await?;
 
             return Ok(());
         }
@@ -131,10 +131,10 @@ impl ActivityHandler for Delete {
                 .await
                 .context_internal_server_error("failed to commit database transaction")?;
 
-            let notification = Notification::DeleteUser {
+            let notification = Notification::new(NotificationType::DeleteUser {
                 user_id: user_id.into(),
-            };
-            notification.send(&mut data.redis()).await?;
+            });
+            notification.send(&*data.db, &mut data.redis()).await?;
 
             return Ok(());
         }
