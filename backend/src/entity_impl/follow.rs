@@ -1,5 +1,7 @@
 use activitypub_federation::{
-    config::Data, protocol::verification::verify_domains_match, traits::Object,
+    config::Data,
+    protocol::verification::verify_domains_match,
+    traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
 use sea_orm::{EntityTrait, ModelTrait, QuerySelect};
@@ -69,7 +71,7 @@ impl Object for follow::Model {
             Url::parse(&to_user_id).context_internal_server_error("malformed user URI")?;
         Ok(Self::Kind {
             ty: Default::default(),
-            id: self.ap_id()?,
+            id: Some(self.ap_id()?),
             actor: LocalPerson::id(),
             object: to_user_id,
         })
@@ -81,7 +83,7 @@ impl Object for follow::Model {
         expected_domain: &Url,
         _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
-        verify_domains_match(&json.id, expected_domain)
+        verify_domains_match(json.id(), expected_domain)
             .context_bad_request("failed to verify domain")
     }
 

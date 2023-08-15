@@ -33,8 +33,8 @@ use super::{generate_object_id, person::LocalPerson};
 pub struct Follow {
     #[serde(rename = "type")]
     pub ty: FollowType,
-    #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
-    pub id: Url,
+    #[derivative(Debug(format_with = "crate::fmt::debug_format_option_display"))]
+    pub id: Option<Url>,
     #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
     pub actor: Url,
     #[derivative(Debug(format_with = "std::fmt::Display::fmt"))]
@@ -58,7 +58,7 @@ impl ActivityHandler for Follow {
     type Error = Error;
 
     fn id(&self) -> &Url {
-        &self.id
+        self.id.as_ref().unwrap_or(&self.actor)
     }
 
     fn actor(&self) -> &Url {
@@ -67,7 +67,7 @@ impl ActivityHandler for Follow {
 
     #[tracing::instrument(skip(_data))]
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        verify_domains_match(&self.actor, &self.id).context_bad_request("failed to verify domain")
+        verify_domains_match(&self.actor, self.id()).context_bad_request("failed to verify domain")
     }
 
     #[tracing::instrument(skip(data))]
@@ -137,7 +137,7 @@ impl ActivityHandler for FollowAccept {
 
     #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        let follow_id: ObjectId<follow::Model> = self.object.id.into();
+        let follow_id: ObjectId<follow::Model> = self.object.id().clone().into();
         let follow = follow_id.dereference(data).await?;
         let mut follow_activemodel: follow::ActiveModel = follow.into();
         follow_activemodel.accepted = ActiveValue::Set(true);
@@ -176,11 +176,13 @@ impl FollowReject {
             actor: LocalPerson::id(),
             object: Follow {
                 ty: Default::default(),
-                id: Url::parse(&format!(
-                    "https://{}/ap/follower/{}",
-                    CONFIG.domain, user_id
-                ))
-                .context_internal_server_error("failed to construct URL")?,
+                id: Some(
+                    Url::parse(&format!(
+                        "https://{}/ap/follower/{}",
+                        CONFIG.domain, user_id
+                    ))
+                    .context_internal_server_error("failed to construct URL")?,
+                ),
                 actor: user_uri,
                 object: LocalPerson::id(),
             },

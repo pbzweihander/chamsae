@@ -1,6 +1,8 @@
 use activitypub_federation::{
-    config::Data, fetch::object_id::ObjectId, protocol::verification::verify_domains_match,
-    traits::Object,
+    config::Data,
+    fetch::object_id::ObjectId,
+    protocol::verification::verify_domains_match,
+    traits::{ActivityHandler, Object},
 };
 use async_trait::async_trait;
 use sea_orm::{
@@ -50,7 +52,9 @@ impl Object for follower::Model {
             Url::parse(&from_user_id).context_internal_server_error("malformed user URI")?;
         Ok(Self::Kind {
             ty: Default::default(),
-            id: Url::parse(&self.uri).context_internal_server_error("malformed follower URI")?,
+            id: Some(
+                Url::parse(&self.uri).context_internal_server_error("malformed follower URI")?,
+            ),
             actor: from_user_id,
             object: LocalPerson::id(),
         })
@@ -62,17 +66,18 @@ impl Object for follower::Model {
         expected_domain: &Url,
         _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
-        verify_domains_match(&json.id, expected_domain)
+        verify_domains_match(json.id(), expected_domain)
             .context_bad_request("failed to verify domain")
     }
 
     #[tracing::instrument(skip(data))]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
+        let uri = json.id().clone();
         let actor: ObjectId<user::Model> = json.actor.into();
         let from_user = actor.dereference(data).await?;
         let this = Self {
             from_id: from_user.id,
-            uri: json.id.to_string(),
+            uri: uri.to_string(),
         };
 
         let tx = data
@@ -84,7 +89,7 @@ impl Object for follower::Model {
         let existing_count = follower::Entity::find()
             .filter(
                 follower::Column::Uri
-                    .eq(json.id.to_string())
+                    .eq(uri.as_str())
                     .or(follower::Column::FromId.eq(from_user.id)),
             )
             .count(&tx)
