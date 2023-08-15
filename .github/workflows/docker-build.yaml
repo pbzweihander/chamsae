@@ -29,14 +29,16 @@ jobs:
           type=ref,event=pr
         flavor:
           latest=auto
-    - uses: actions/checkout@v3
     - uses: actions/cache@v3
       with:
         path: docker-build-cache
-        key: ${{ runner.os }}-docker-build-cache
+        key: |
+          ${{ runner.os }}-docker-build-cache-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('frontend/yarn.lock') }}
+          ${{ runner.os }}-docker-build-cache-
     - uses: overmindtech/buildkit-cache-dance/inject@main
       with:
         cache-source: docker-build-cache
+    - uses: actions/checkout@v3
     - uses: docker/build-push-action@v4
       with:
         context: .
