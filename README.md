@@ -30,8 +30,6 @@ You can also use `.env` file.
 ```
 DEBUG=true \
   DOMAIN=localhost \
-  USER_HANDLE=admin \
-  USER_PASSWORD_BCRYPT={your_password_hash} \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
   REDIS_URL=redis://localhost:6379/0 \
   OBJECT_STORE_TYPE=local_filesystem \
@@ -44,8 +42,6 @@ DEBUG=true \
 ```
 DEBUG=true \
   DOMAIN=localhost \
-  USER_HANDLE=admin \
-  USER_PASSWORD_BCRYPT={your_password_hash} \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
   REDIS_URL=redis://localhost:6379/0 \
   OBJECT_STORE_TYPE=s3 \
@@ -56,6 +52,15 @@ DEBUG=true \
   AWS_ACCESS_KEY_ID={access_key} \
   AWS_SECRET_ACCESS_KEY={secret_key} \
   cargo run --bin chamsae
+```
+
+#### Initialize instance
+
+```
+xh -v POST :3000/api/setting/initial \
+  instanceName=my-instance \
+  userHandle=admin \
+  userPassword={your_password}
 ```
 
 #### Serve HTTPS with caddy
