@@ -12,7 +12,7 @@ use crate::{
     entity::{follow, user},
     error::{Context, Error},
     format_err,
-    queue::{Notification, NotificationType},
+    queue::{Event, Notification, NotificationType},
     state::State,
 };
 
@@ -99,10 +99,10 @@ impl Object for follow::Model {
         ModelTrait::delete(self, &*data.db)
             .await
             .context_internal_server_error("failed to delete from database")?;
-        let notification = Notification::new(NotificationType::RejectFollow {
+        let event = Event::Notification(Notification::new(NotificationType::RejectFollow {
             user_id: user_id.into(),
-        });
-        notification.send(&*data.db, &mut data.redis()).await?;
+        }));
+        event.send(&*data.db, &mut data.redis()).await?;
         Ok(())
     }
 }

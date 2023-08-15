@@ -15,7 +15,7 @@ use url::Url;
 use crate::{
     entity::{post, reaction, user},
     error::{Context, Error},
-    queue::{Notification, NotificationType},
+    queue::{Event, Notification, NotificationType, Update},
     state::State,
 };
 
@@ -80,10 +80,10 @@ impl ActivityHandler for Like {
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let reaction = reaction::Model::from_json(self, data).await?;
 
-        let notification = Notification::new(NotificationType::CreateReaction {
+        let event = Event::Update(Update::CreateReaction {
             post_id: reaction.post_id.into(),
         });
-        notification.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db, &mut data.redis()).await?;
 
         let local_person_reacted_count = reaction
             .find_related(post::Entity)
@@ -92,11 +92,11 @@ impl ActivityHandler for Like {
             .await
             .context_internal_server_error("failed to query database")?;
         if local_person_reacted_count > 0 {
-            let notification = Notification::new(NotificationType::Reacted {
+            let event = Event::Notification(Notification::new(NotificationType::Reacted {
                 post_id: reaction.post_id.into(),
                 reaction_id: reaction.id.into(),
-            });
-            notification.send(&*data.db, &mut data.redis()).await?;
+            }));
+            event.send(&*data.db, &mut data.redis()).await?;
         }
 
         Ok(())

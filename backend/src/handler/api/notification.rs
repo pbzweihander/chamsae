@@ -1,12 +1,5 @@
-use std::convert::Infallible;
-
 use activitypub_federation::config::Data;
-use axum::{
-    extract,
-    response::{sse::Event, Sse},
-    routing, Json, Router,
-};
-use futures_util::Stream;
+use axum::{extract, routing, Json, Router};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 use ulid::Ulid;
 
@@ -14,7 +7,7 @@ use crate::{
     dto::IdPaginationQuery,
     entity::notification,
     error::{Context, Error},
-    queue::{notification_stream, Notification},
+    queue::Notification,
     state::State,
 };
 
@@ -24,7 +17,6 @@ pub(super) fn create_router() -> Router {
     Router::new()
         .route("/", routing::get(get_notifications))
         .route("/:id", routing::get(get_notification))
-        .route("/stream", routing::get(get_notification_stream))
 }
 
 #[utoipa::path(
@@ -98,23 +90,4 @@ async fn get_notification(
             .context_internal_server_error("malformed notification payload")?,
     };
     Ok(Json(notification))
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/notification/stream",
-    responses(
-        (status = 200, description = "SSE stream", body = Notification),
-    ),
-    security(
-        ("access_key" = []),
-    ),
-)]
-#[tracing::instrument(skip(data, _access))]
-async fn get_notification_stream(
-    data: Data<State>,
-    _access: Access,
-) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, Error> {
-    let stream = notification_stream(data.redis_pubsub().await?, data.stopper.clone()).await?;
-    Ok(Sse::new(data.stopper.stop_stream(stream)))
 }

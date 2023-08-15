@@ -33,10 +33,6 @@ pub(super) fn create_router() -> Router {
                 .post(post_post_reaction)
                 .delete(delete_post_reaction),
         )
-        .route(
-            "/:post_id/reaction/:reaction_id",
-            routing::get(get_post_reaction),
-        )
 }
 
 #[utoipa::path(
@@ -538,45 +534,4 @@ async fn delete_post_reaction(
     }
 
     Ok(())
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/post/{post_id}/reaction/{reaction_id}",
-    params(
-        ("post_id" = String, format = "ulid"),
-        ("reaction_id" = String, format = "ulid"),
-    ),
-    responses(
-        (status = 200, body = Reaction),
-    ),
-    security(
-        ("access_key" = []),
-    ),
-)]
-#[tracing::instrument(skip(data, _access))]
-async fn get_post_reaction(
-    data: Data<State>,
-    _access: Access,
-    extract::Path((post_id, reaction_id)): extract::Path<(Ulid, Ulid)>,
-) -> Result<Json<Reaction>> {
-    let reaction = reaction::Entity::find_by_id(reaction_id)
-        .filter(reaction::Column::PostId.eq(uuid::Uuid::from(post_id)))
-        .one(&*data.db)
-        .await
-        .context_internal_server_error("failed to query database")?
-        .context_not_found("reaction not found")?;
-    let user = if reaction.user_id.is_some() {
-        Some(
-            reaction
-                .find_related(user::Entity)
-                .one(&*data.db)
-                .await
-                .context_internal_server_error("failed to query database")?
-                .context_internal_server_error("user not found")?,
-        )
-    } else {
-        None
-    };
-    Ok(Json(Reaction::from_model(reaction, user)?))
 }

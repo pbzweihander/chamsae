@@ -21,7 +21,7 @@ use crate::{
     entity::{follow, follower, user},
     error::{Context, Error},
     format_err,
-    queue::{Notification, NotificationType},
+    queue::{Event, Notification, NotificationType},
     state::State,
 };
 
@@ -82,10 +82,10 @@ impl ActivityHandler for Follow {
         };
         accept.send(data).await?;
 
-        let notification = Notification::new(NotificationType::CreateFollower {
+        let event = Event::Notification(Notification::new(NotificationType::CreateFollower {
             user_id: follower.from_id.into(),
-        });
-        notification.send(&*data.db, &mut data.redis()).await?;
+        }));
+        event.send(&*data.db, &mut data.redis()).await?;
 
         Ok(())
     }
@@ -146,10 +146,10 @@ impl ActivityHandler for FollowAccept {
             .await
             .context_internal_server_error("failed to update database")?;
 
-        let notification = Notification::new(NotificationType::AcceptFollow {
+        let event = Event::Notification(Notification::new(NotificationType::AcceptFollow {
             user_id: follow.to_id.into(),
-        });
-        notification.send(&*data.db, &mut data.redis()).await?;
+        }));
+        event.send(&*data.db, &mut data.redis()).await?;
 
         Ok(())
     }
@@ -242,10 +242,10 @@ impl ActivityHandler for FollowReject {
                 .await
                 .context_internal_server_error("failed to commit database transaction")?;
 
-            let notification = Notification::new(NotificationType::RejectFollow {
+            let event = Event::Notification(Notification::new(NotificationType::RejectFollow {
                 user_id: follow_id.into(),
-            });
-            notification.send(&*data.db, &mut data.redis()).await?;
+            }));
+            event.send(&*data.db, &mut data.redis()).await?;
 
             Ok(())
         } else {

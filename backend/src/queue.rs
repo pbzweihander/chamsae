@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use axum::response::sse::Event;
+use axum::response::sse::Event as SseEvent;
 use futures_util::{Stream, StreamExt};
 use sea_orm::{ActiveModelTrait, ActiveValue, ConnectionTrait};
 use serde::{Deserialize, Serialize};
@@ -12,9 +12,10 @@ use crate::{entity::notification, error::Error};
 
 const NOTIFICATION_CHANNEL_NAME: &str = "notification";
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase", tag = "type")]
-pub enum NotificationType {
+pub enum Update {
     #[serde(rename_all = "camelCase")]
     CreatePost {
         #[schema(value_type = String, format = "ulid")]
@@ -35,6 +36,21 @@ pub enum NotificationType {
         #[schema(value_type = String, format = "ulid")]
         post_id: Ulid,
     },
+    #[serde(rename_all = "camelCase")]
+    UpdateUser {
+        #[schema(value_type = String, format = "ulid")]
+        user_id: Ulid,
+    },
+    #[serde(rename_all = "camelCase")]
+    DeleteUser {
+        #[schema(value_type = String, format = "ulid")]
+        user_id: Ulid,
+    },
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum NotificationType {
     #[serde(rename_all = "camelCase")]
     AcceptFollow {
         #[schema(value_type = String, format = "ulid")]
@@ -59,16 +75,6 @@ pub enum NotificationType {
     CreateReport {
         #[schema(value_type = String, format = "ulid")]
         report_id: Ulid,
-    },
-    #[serde(rename_all = "camelCase")]
-    UpdateUser {
-        #[schema(value_type = String, format = "ulid")]
-        user_id: Ulid,
-    },
-    #[serde(rename_all = "camelCase")]
-    DeleteUser {
-        #[schema(value_type = String, format = "ulid")]
-        user_id: Ulid,
     },
     #[serde(rename_all = "camelCase")]
     Mentioned {
@@ -97,7 +103,6 @@ pub enum NotificationType {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase", tag = "type")]
 pub struct Notification {
     #[schema(value_type = String, format = "ulid")]
     pub id: Ulid,
@@ -112,7 +117,16 @@ impl Notification {
             ty,
         }
     }
+}
 
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase", tag = "eventType")]
+pub enum Event {
+    Update(Update),
+    Notification(Notification),
+}
+
+impl Event {
     #[tracing::instrument(skip(db, redis))]
     pub async fn send(
         self,
@@ -121,16 +135,19 @@ impl Notification {
     ) -> crate::error::Result<()> {
         use crate::error::Context;
 
-        let payload = serde_json::to_value(&self.ty)
-            .context_internal_server_error("failed to serialize notification payload")?;
-        let this_activemodel = notification::ActiveModel {
-            id: ActiveValue::Set(self.id.into()),
-            payload: ActiveValue::Set(payload),
-        };
-        this_activemodel
-            .insert(db)
-            .await
-            .context_internal_server_error("failed to insert to database")?;
+        if let Event::Notification(notification) = &self {
+            let payload = serde_json::to_value(&notification.ty)
+                .context_internal_server_error("failed to serialize notification payload")?;
+
+            let notification_activemodel = notification::ActiveModel {
+                id: ActiveValue::Set(notification.id.into()),
+                payload: ActiveValue::Set(payload),
+            };
+            notification_activemodel
+                .insert(db)
+                .await
+                .context_internal_server_error("failed to insert to database")?;
+        }
 
         let payload = serde_json::to_vec(&self)
             .context_internal_server_error("failed to serialize Redis channel payload")?;
@@ -142,22 +159,22 @@ impl Notification {
     }
 }
 
-fn make_event(msg: redis::Msg) -> anyhow::Result<Event> {
+fn make_sse_event(msg: redis::Msg) -> anyhow::Result<SseEvent> {
     use anyhow::Context;
 
     let payload = msg.get_payload_bytes();
-    let payload: Notification =
+    let payload: Event =
         serde_json::from_slice(payload).context("failed to deserialize Redis channel payload")?;
-    let event = Event::default()
+    let event = SseEvent::default()
         .json_data(payload)
         .context("failed to construct SSE event")?;
     Ok(event)
 }
 
-pub async fn notification_stream(
+pub async fn event_stream(
     mut pubsub: redis::aio::PubSub,
     stopper: Stopper,
-) -> Result<impl Stream<Item = Result<Event, Infallible>>, Error> {
+) -> Result<impl Stream<Item = Result<SseEvent, Infallible>>, Error> {
     use crate::error::Context;
 
     pubsub
@@ -167,7 +184,7 @@ pub async fn notification_stream(
     let stream = stopper
         .stop_stream(pubsub.into_on_message())
         .filter_map(|msg| {
-            let opt = match make_event(msg) {
+            let opt = match make_sse_event(msg) {
                 Ok(event) => Some(Result::<_, Infallible>::Ok(event)),
                 Err(error) => {
                     tracing::error!("failed to make SSE event\n{:?}", error);

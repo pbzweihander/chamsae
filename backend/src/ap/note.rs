@@ -19,7 +19,7 @@ use url::Url;
 use crate::{
     entity::{mention, post},
     error::{Context, Error},
-    queue::{Notification, NotificationType},
+    queue::{Event, Notification, NotificationType, Update},
     state::State,
 };
 
@@ -126,10 +126,10 @@ impl ActivityHandler for CreateNote {
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let post = post::Model::from_json(NoteOrAnnounce::Note(self.object), data).await?;
 
-        let notification = Notification::new(NotificationType::CreatePost {
+        let event = Event::Update(Update::CreatePost {
             post_id: post.id.into(),
         });
-        notification.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db, &mut data.redis()).await?;
 
         let local_person_mentioned_count = post
             .find_related(mention::Entity)
@@ -138,10 +138,10 @@ impl ActivityHandler for CreateNote {
             .await
             .context_internal_server_error("failed to query database")?;
         if local_person_mentioned_count > 0 {
-            let notification = Notification::new(NotificationType::Mentioned {
+            let event = Event::Notification(Notification::new(NotificationType::Mentioned {
                 post_id: post.id.into(),
-            });
-            notification.send(&*data.db, &mut data.redis()).await?;
+            }));
+            event.send(&*data.db, &mut data.redis()).await?;
         }
 
         if let Some(repost_id) = post.repost_id {
@@ -151,10 +151,10 @@ impl ActivityHandler for CreateNote {
                 .await
                 .context_internal_server_error("failed to query database")?;
             if local_person_reposted_count > 0 {
-                let notification = Notification::new(NotificationType::Quoted {
+                let event = Event::Notification(Notification::new(NotificationType::Quoted {
                     post_id: post.id.into(),
-                });
-                notification.send(&*data.db, &mut data.redis()).await?;
+                }));
+                event.send(&*data.db, &mut data.redis()).await?;
             }
         }
 

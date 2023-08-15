@@ -13,7 +13,7 @@ use crate::{
     ap::{follow::Follow, person::LocalPerson},
     entity::{follower, user},
     error::{Context, Error},
-    queue::{Notification, NotificationType},
+    queue::{Event, Notification, NotificationType},
     state::State,
 };
 
@@ -116,10 +116,10 @@ impl Object for follower::Model {
             .await
             .context_internal_server_error("failed to delete from database")?;
 
-        let notification = Notification::new(NotificationType::DeleteFollower {
+        let event = Event::Notification(Notification::new(NotificationType::DeleteFollower {
             user_id: user_id.into(),
-        });
-        notification.send(&*data.db, &mut data.redis()).await?;
+        }));
+        event.send(&*data.db, &mut data.redis()).await?;
 
         Ok(())
     }

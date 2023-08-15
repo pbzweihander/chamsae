@@ -22,7 +22,7 @@ use crate::{
     config::CONFIG,
     entity::{post, reaction, user},
     error::{Context, Error},
-    queue::{Notification, NotificationType},
+    queue::{Event, Update},
     state::State,
 };
 
@@ -204,10 +204,10 @@ impl Object for reaction::Model {
             .await
             .context_internal_server_error("failed to delete from database")?;
 
-        let notification = Notification::new(NotificationType::DeleteReaction {
+        let event = Event::Update(Update::DeleteReaction {
             post_id: post_id.into(),
         });
-        notification.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db, &mut data.redis()).await?;
 
         Ok(())
     }
