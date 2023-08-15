@@ -1,5 +1,3 @@
-
-
 use activitypub_federation::{
     activity_queue::send_activity,
     config::Data,
