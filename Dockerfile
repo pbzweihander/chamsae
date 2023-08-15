@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1
 
-FROM lukemathwalker/cargo-chef:latest-rust-1.71-slim-bookwarm AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-1.71-slim-bookworm AS chef
 WORKDIR /app
 
 FROM node:20-bookworm-slim AS nodebase
