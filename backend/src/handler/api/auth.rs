@@ -88,7 +88,6 @@ pub(super) fn create_router() -> Router {
 
 #[derive(Deserialize, ToSchema)]
 pub struct PostLoginReq {
-    id: String,
     password: String,
     hostname: String,
 }
@@ -112,9 +111,8 @@ async fn post_login(
     data: Data<State>,
     Json(req): Json<PostLoginReq>,
 ) -> Result<Json<PostLoginResp>> {
-    if CONFIG.user_handle == req.id
-        && bcrypt::verify(&req.password, &CONFIG.user_password_bcrypt)
-            .context_bad_request("failed to authenticate")?
+    if bcrypt::verify(&req.password, &CONFIG.user_password_bcrypt)
+        .context_bad_request("failed to authenticate")?
     {
         let access_key_activemodel = access_key::ActiveModel {
             id: ActiveValue::Set(Ulid::new().into()),
