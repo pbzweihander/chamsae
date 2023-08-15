@@ -64,6 +64,7 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         self::api::post::get_post_reactions,
         self::api::post::post_post_reaction,
         self::api::post::delete_post_reaction,
+        self::api::post::get_post_reaction,
         self::api::report::get_reports,
         self::api::report::post_report,
         self::api::report::get_report,

@@ -154,6 +154,7 @@ pub enum CreateReaction {
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Reaction {
+    pub id: Ulid,
     pub user: Option<User>,
     pub content: String,
     pub emoji: Option<Emoji>,
@@ -182,6 +183,7 @@ impl Reaction {
         };
 
         Ok(Self {
+            id: reaction.id.into(),
             user,
             content: reaction.content,
             emoji,

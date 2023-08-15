@@ -8,7 +8,7 @@ use activitypub_federation::{
 };
 use async_trait::async_trait;
 use derivative::Derivative;
-use sea_orm::ModelTrait;
+use sea_orm::{ColumnTrait, ModelTrait, PaginatorTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -79,10 +79,25 @@ impl ActivityHandler for Like {
     #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let reaction = reaction::Model::from_json(self, data).await?;
+
         let notification = Notification::new(NotificationType::CreateReaction {
             post_id: reaction.post_id.into(),
         });
         notification.send(&*data.db, &mut data.redis()).await?;
+
+        let local_person_reacted_count = reaction
+            .find_related(post::Entity)
+            .filter(post::Column::UserId.is_null())
+            .count(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        if local_person_reacted_count > 0 {
+            let notification = Notification::new(NotificationType::Reacted {
+                post_id: reaction.post_id.into(),
+                reaction_id: reaction.id.into(),
+            });
+            notification.send(&*data.db, &mut data.redis()).await?;
+        }
 
         Ok(())
     }

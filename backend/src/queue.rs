@@ -70,6 +70,30 @@ pub enum NotificationType {
         #[schema(value_type = String, format = "ulid")]
         user_id: Ulid,
     },
+    #[serde(rename_all = "camelCase")]
+    Mentioned {
+        #[schema(value_type = String, format = "ulid")]
+        post_id: Ulid,
+    },
+    #[serde(rename_all = "camelCase")]
+    Reposted {
+        #[schema(value_type = String, format = "ulid")]
+        user_id: Ulid,
+        #[schema(value_type = String, format = "ulid")]
+        post_id: Ulid,
+    },
+    #[serde(rename_all = "camelCase")]
+    Quoted {
+        #[schema(value_type = String, format = "ulid")]
+        post_id: Ulid,
+    },
+    #[serde(rename_all = "camelCase")]
+    Reacted {
+        #[schema(value_type = String, format = "ulid")]
+        post_id: Ulid,
+        #[schema(value_type = String, format = "ulid")]
+        reaction_id: Ulid,
+    },
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

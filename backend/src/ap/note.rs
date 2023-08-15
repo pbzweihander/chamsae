@@ -12,17 +12,18 @@ use async_trait::async_trait;
 use chrono::{DateTime, FixedOffset};
 use derivative::Derivative;
 use mime::Mime;
+use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    entity::post,
+    entity::{mention, post},
     error::{Context, Error},
     queue::{Notification, NotificationType},
     state::State,
 };
 
-use super::{generate_object_id, tag::Tag, NoteOrAnnounce};
+use super::{generate_object_id, person::LocalPerson, tag::Tag, NoteOrAnnounce};
 
 #[derive(Clone, Derivative, Deserialize, Serialize)]
 #[derivative(Debug)]
@@ -124,10 +125,39 @@ impl ActivityHandler for CreateNote {
     #[tracing::instrument(skip(data))]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let post = post::Model::from_json(NoteOrAnnounce::Note(self.object), data).await?;
+
         let notification = Notification::new(NotificationType::CreatePost {
             post_id: post.id.into(),
         });
         notification.send(&*data.db, &mut data.redis()).await?;
+
+        let local_person_mentioned_count = post
+            .find_related(mention::Entity)
+            .filter(mention::Column::UserUri.eq(LocalPerson::id().as_str()))
+            .count(&*data.db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        if local_person_mentioned_count > 0 {
+            let notification = Notification::new(NotificationType::Mentioned {
+                post_id: post.id.into(),
+            });
+            notification.send(&*data.db, &mut data.redis()).await?;
+        }
+
+        if let Some(repost_id) = post.repost_id {
+            let local_person_reposted_count = post::Entity::find_by_id(repost_id)
+                .filter(post::Column::UserId.is_null())
+                .count(&*data.db)
+                .await
+                .context_internal_server_error("failed to query database")?;
+            if local_person_reposted_count > 0 {
+                let notification = Notification::new(NotificationType::Quoted {
+                    post_id: post.id.into(),
+                });
+                notification.send(&*data.db, &mut data.redis()).await?;
+            }
+        }
+
         Ok(())
     }
 }
