@@ -14,7 +14,7 @@ COPY migration migration
 COPY backend backend
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM chef AS backend-builer
+FROM chef AS backend-builder
 COPY --from=baceknd-planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY Cargo.lock .
