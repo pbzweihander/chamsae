@@ -164,6 +164,7 @@ pub enum CreateReaction {
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Reaction {
+    #[schema(value_type = String, format = "ulid")]
     pub id: Ulid,
     pub user: Option<User>,
     pub content: String,
