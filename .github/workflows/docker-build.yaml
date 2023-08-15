@@ -42,8 +42,8 @@ jobs:
         context: .
         platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
         push: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        cache-to: type=gha,scope=rust
-        cache-from: type=gha,scope=rust,mode=max
+        cache-to: type=gha,scope=docker
+        cache-from: type=gha,scope=docker,mode=max
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
     - uses: overmindtech/buildkit-cache-dance/extract@main
