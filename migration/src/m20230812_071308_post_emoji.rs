@@ -20,7 +20,8 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .from(PostEmoji::Table, PostEmoji::PostId)
-                            .to(Post::Table, Post::Id),
+                            .to(Post::Table, Post::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .index(
                         Index::create()

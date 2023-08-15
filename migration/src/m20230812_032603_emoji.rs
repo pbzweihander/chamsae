@@ -36,6 +36,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .from(LocalFile::Table, LocalFile::EmojiName)
                             .to(Emoji::Table, Emoji::Name)
+                            .on_delete(ForeignKeyAction::SetNull)
                             .get_foreign_key(),
                     )
                     .to_owned(),

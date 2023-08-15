@@ -17,6 +17,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .from(Post::Table, Post::RepostId)
                             .to(Post::Table, Post::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
                             .get_foreign_key(),
                     )
                     .to_owned(),

@@ -25,7 +25,7 @@ pub enum Relation {
         from = "Column::EmojiName",
         to = "super::emoji::Column::Name",
         on_update = "NoAction",
-        on_delete = "NoAction"
+        on_delete = "SetNull"
     )]
     Emoji,
     #[sea_orm(

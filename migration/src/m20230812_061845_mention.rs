@@ -18,6 +18,7 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .from(Mention::Table, Mention::PostId)
+                            .on_delete(ForeignKeyAction::Cascade)
                             .to(Post::Table, Post::Id),
                     )
                     .index(

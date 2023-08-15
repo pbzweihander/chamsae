@@ -41,7 +41,7 @@ pub enum Relation {
         from = "Column::RepostId",
         to = "Column::Id",
         on_update = "NoAction",
-        on_delete = "NoAction"
+        on_delete = "Cascade"
     )]
     SelfRef1,
     #[sea_orm(has_many = "super::post_emoji::Entity")]
