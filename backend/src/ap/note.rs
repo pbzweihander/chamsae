@@ -129,7 +129,7 @@ impl ActivityHandler for CreateNote {
         let event = Event::Update(Update::CreatePost {
             post_id: post.id.into(),
         });
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
 
         let local_person_mentioned_count = post
             .find_related(mention::Entity)
@@ -141,7 +141,7 @@ impl ActivityHandler for CreateNote {
             let event = Event::Notification(Notification::new(NotificationType::Mentioned {
                 post_id: post.id.into(),
             }));
-            event.send(&*data.db, &mut data.redis()).await?;
+            event.send(&*data.db).await?;
         }
 
         if let Some(repost_id) = post.repost_id {
@@ -154,7 +154,7 @@ impl ActivityHandler for CreateNote {
                 let event = Event::Notification(Notification::new(NotificationType::Quoted {
                     post_id: post.id.into(),
                 }));
-                event.send(&*data.db, &mut data.redis()).await?;
+                event.send(&*data.db).await?;
             }
         }
 

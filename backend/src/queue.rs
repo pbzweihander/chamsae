@@ -2,15 +2,17 @@ use std::convert::Infallible;
 
 use axum::response::sse::Event as SseEvent;
 use futures_util::{Stream, StreamExt};
-use sea_orm::{ActiveModelTrait, ActiveValue, ConnectionTrait};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, ConnectionTrait, DbBackend, Statement, TransactionTrait,
+};
 use serde::{Deserialize, Serialize};
-use stopper::Stopper;
+use sqlx_postgres::{PgListener, PgNotification};
 use ulid::Ulid;
 use utoipa::ToSchema;
 
 use crate::{entity::notification, error::Error};
 
-const NOTIFICATION_CHANNEL_NAME: &str = "notification";
+const EVENT_CHANNEL_NAME: &str = "event";
 
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -127,13 +129,14 @@ pub enum Event {
 }
 
 impl Event {
-    #[tracing::instrument(skip(db, redis))]
-    pub async fn send(
-        self,
-        db: &impl ConnectionTrait,
-        redis: &mut impl redis::AsyncCommands,
-    ) -> crate::error::Result<()> {
+    #[tracing::instrument(skip(db))]
+    pub async fn send(self, db: &impl TransactionTrait) -> crate::error::Result<()> {
         use crate::error::Context;
+
+        let tx = db
+            .begin()
+            .await
+            .context_internal_server_error("failed to begin database transaction")?;
 
         if let Event::Notification(notification) = &self {
             let payload = serde_json::to_value(&notification.ty)
@@ -144,27 +147,41 @@ impl Event {
                 payload: ActiveValue::Set(payload),
             };
             notification_activemodel
-                .insert(db)
+                .insert(&tx)
                 .await
                 .context_internal_server_error("failed to insert to database")?;
         }
 
-        let payload = serde_json::to_vec(&self)
+        let payload = serde_json::to_string(&self)
             .context_internal_server_error("failed to serialize Redis channel payload")?;
-        redis
-            .publish(NOTIFICATION_CHANNEL_NAME, payload)
+
+        // let statement = Statement::from_string(
+        //     DbBackend::Postgres,
+        //     format!("NOTIFY {}, '{}'", EVENT_CHANNEL_NAME, payload),
+        // );
+        let statement = Statement::from_sql_and_values(
+            DbBackend::Postgres,
+            "SELECT pg_notify($1, $2)",
+            [EVENT_CHANNEL_NAME.into(), payload.into()],
+        );
+        tx.execute(statement)
             .await
-            .context_internal_server_error("failed to publish to Redis channel")?;
+            .context_internal_server_error("failed to notify to Postgres channel")?;
+
+        tx.commit()
+            .await
+            .context_internal_server_error("failed to commit database transaction")?;
+
         Ok(())
     }
 }
 
-fn make_sse_event(msg: redis::Msg) -> anyhow::Result<SseEvent> {
+fn make_sse_event(msg: PgNotification) -> anyhow::Result<SseEvent> {
     use anyhow::Context;
 
-    let payload = msg.get_payload_bytes();
+    let payload = msg.payload();
     let payload: Event =
-        serde_json::from_slice(payload).context("failed to deserialize Redis channel payload")?;
+        serde_json::from_str(payload).context("failed to deserialize Redis channel payload")?;
     let event = SseEvent::default()
         .json_data(payload)
         .context("failed to construct SSE event")?;
@@ -172,26 +189,29 @@ fn make_sse_event(msg: redis::Msg) -> anyhow::Result<SseEvent> {
 }
 
 pub async fn event_stream(
-    mut pubsub: redis::aio::PubSub,
-    stopper: Stopper,
+    mut pg_listener: PgListener,
 ) -> Result<impl Stream<Item = Result<SseEvent, Infallible>>, Error> {
     use crate::error::Context;
 
-    pubsub
-        .subscribe(NOTIFICATION_CHANNEL_NAME)
+    pg_listener
+        .listen(EVENT_CHANNEL_NAME)
         .await
-        .context_internal_server_error("failed to subscribe Redis channel")?;
-    let stream = stopper
-        .stop_stream(pubsub.into_on_message())
-        .filter_map(|msg| {
-            let opt = match make_sse_event(msg) {
+        .context_internal_server_error("failed to listen Postgres channel")?;
+    let stream = pg_listener.into_stream().filter_map(|msg| {
+        let opt = match msg {
+            Ok(msg) => match make_sse_event(msg) {
                 Ok(event) => Some(Result::<_, Infallible>::Ok(event)),
                 Err(error) => {
                     tracing::error!("failed to make SSE event\n{:?}", error);
                     None
                 }
-            };
-            async move { opt }
-        });
+            },
+            Err(error) => {
+                tracing::error!("failed to listen from Postgres channel\n{:?}", error);
+                None
+            }
+        };
+        async move { opt }
+    });
     Ok(stream)
 }

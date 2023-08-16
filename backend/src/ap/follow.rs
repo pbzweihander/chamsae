@@ -85,7 +85,7 @@ impl ActivityHandler for Follow {
         let event = Event::Notification(Notification::new(NotificationType::CreateFollower {
             user_id: follower.from_id.into(),
         }));
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
 
         Ok(())
     }
@@ -149,7 +149,7 @@ impl ActivityHandler for FollowAccept {
         let event = Event::Notification(Notification::new(NotificationType::AcceptFollow {
             user_id: follow.to_id.into(),
         }));
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
 
         Ok(())
     }
@@ -247,7 +247,7 @@ impl ActivityHandler for FollowReject {
             let event = Event::Notification(Notification::new(NotificationType::RejectFollow {
                 user_id: follow_id.into(),
             }));
-            event.send(&*data.db, &mut data.redis()).await?;
+            event.send(&*data.db).await?;
 
             Ok(())
         } else {

@@ -207,7 +207,7 @@ impl Object for reaction::Model {
         let event = Event::Update(Update::DeleteReaction {
             post_id: post_id.into(),
         });
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
 
         Ok(())
     }

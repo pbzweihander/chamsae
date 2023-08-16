@@ -66,15 +66,13 @@ async fn main() -> anyhow::Result<()> {
     let db = Database::connect(crate::config::CONFIG.database_url.as_str())
         .await
         .context("failed to connect to database")?;
-    let redis_client = redis::Client::open(crate::config::CONFIG.redis_url.as_str())
-        .context("failed to open Redis client")?;
 
     migration::Migrator::up(&db, None)
         .await
         .context("failed to migrate database")?;
 
     let stopper = Stopper::new();
-    let state = crate::state::State::new(db, redis_client, stopper.clone())
+    let state = crate::state::State::new(db, stopper.clone())
         .await
         .context("failed to construct app state")?;
     let federation_config = FederationConfig::builder()

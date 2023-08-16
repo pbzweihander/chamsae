@@ -68,7 +68,7 @@ impl ActivityHandler for Announce {
         let event = Event::Update(Update::CreatePost {
             post_id: post.id.into(),
         });
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
 
         if let Some(repost_id) = post.repost_id {
             let local_person_reposted_count = post::Entity::find_by_id(repost_id)
@@ -84,7 +84,7 @@ impl ActivityHandler for Announce {
                         .into(),
                     post_id: repost_id.into(),
                 }));
-                event.send(&*data.db, &mut data.redis()).await?;
+                event.send(&*data.db).await?;
             }
         }
 

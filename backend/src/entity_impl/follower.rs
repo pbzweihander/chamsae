@@ -124,7 +124,7 @@ impl Object for follower::Model {
         let event = Event::Notification(Notification::new(NotificationType::DeleteFollower {
             user_id: user_id.into(),
         }));
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
 
         Ok(())
     }

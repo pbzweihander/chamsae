@@ -289,7 +289,7 @@ impl ActivityHandler for PersonUpdate {
         let event = Event::Update(Update::UpdateUser {
             user_id: user.id.into(),
         });
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
         Ok(())
     }
 }

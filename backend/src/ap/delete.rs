@@ -111,7 +111,7 @@ impl ActivityHandler for Delete {
             let event = Event::Update(Update::DeletePost {
                 post_id: post_id.into(),
             });
-            event.send(&*data.db, &mut data.redis()).await?;
+            event.send(&*data.db).await?;
 
             return Ok(());
         }
@@ -134,7 +134,7 @@ impl ActivityHandler for Delete {
             let event = Event::Update(Update::DeleteUser {
                 user_id: user_id.into(),
             });
-            event.send(&*data.db, &mut data.redis()).await?;
+            event.send(&*data.db).await?;
 
             return Ok(());
         }

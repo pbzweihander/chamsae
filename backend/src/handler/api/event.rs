@@ -30,6 +30,6 @@ async fn get_event_stream(
     data: Data<State>,
     _access: Access,
 ) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, Error> {
-    let stream = event_stream(data.redis_pubsub().await?, data.stopper.clone()).await?;
+    let stream = event_stream(data.pg_listener().await?).await?;
     Ok(Sse::new(data.stopper.stop_stream(stream)))
 }

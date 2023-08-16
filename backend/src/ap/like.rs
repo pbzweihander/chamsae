@@ -83,7 +83,7 @@ impl ActivityHandler for Like {
         let event = Event::Update(Update::CreateReaction {
             post_id: reaction.post_id.into(),
         });
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
 
         let local_person_reacted_count = reaction
             .find_related(post::Entity)
@@ -96,7 +96,7 @@ impl ActivityHandler for Like {
                 post_id: reaction.post_id.into(),
                 reaction_id: reaction.id.into(),
             }));
-            event.send(&*data.db, &mut data.redis()).await?;
+            event.send(&*data.db).await?;
         }
 
         Ok(())

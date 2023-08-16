@@ -21,10 +21,6 @@ fn default_database_url() -> Url {
     Url::parse("postgresql://postgres:chamsae@localhost:5432").unwrap()
 }
 
-fn default_redis_url() -> Url {
-    Url::parse("redis://localhost:6379/0").unwrap()
-}
-
 fn default_object_store_local_file_base_path() -> PathBuf {
     PathBuf::from("./files/")
 }
@@ -79,9 +75,6 @@ pub struct Config {
 
     #[serde(default = "default_database_url")]
     pub database_url: Url,
-
-    #[serde(default = "default_redis_url")]
-    pub redis_url: Url,
 
     #[serde(flatten)]
     pub object_store_config: ObjectStoreConfig,

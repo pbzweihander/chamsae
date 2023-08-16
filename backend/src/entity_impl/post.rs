@@ -532,7 +532,7 @@ impl Object for post::Model {
             .await
             .context_internal_server_error("failed to delete from database")?;
         let event = Event::Update(Update::DeletePost { post_id: id.into() });
-        event.send(&*data.db, &mut data.redis()).await?;
+        event.send(&*data.db).await?;
         Ok(())
     }
 }
