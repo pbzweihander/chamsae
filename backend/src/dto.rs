@@ -211,6 +211,8 @@ pub struct Post {
     pub created_at: DateTime<FixedOffset>,
     #[schema(value_type = Option<String>, format = "ulid")]
     pub reply_id: Option<Ulid>,
+    #[schema(value_type = Vec<String>, format = "ulid")]
+    pub replies_id: Vec<Ulid>,
     #[schema(value_type = Option<String>, format = "ulid")]
     pub repost_id: Option<Ulid>,
     pub text: String,
@@ -241,6 +243,19 @@ impl Post {
         } else {
             None
         };
+
+        let replies_id = post::Entity::find()
+            .filter(post::Column::ReplyId.eq(post.id))
+            .select_only()
+            .column(post::Column::Id)
+            .into_tuple::<uuid::Uuid>()
+            .all(db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+        let replies_id = replies_id
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<Ulid>>();
 
         let remote_files = post
             .find_related(remote_file::Entity)
@@ -315,6 +330,7 @@ impl Post {
             id: post.id.into(),
             created_at: post.created_at,
             reply_id: post.reply_id.map(Into::into),
+            replies_id,
             repost_id: post.repost_id.map(Into::into),
             text: post.text,
             title: post.title,
