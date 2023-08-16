@@ -19,7 +19,6 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 ### Requirements
 
 - PostgreSQL
-- Redis
 
 ### Backend
 
@@ -31,7 +30,6 @@ You can also use `.env` file.
 DEBUG=true \
   DOMAIN=localhost \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
-  REDIS_URL=redis://localhost:6379/0 \
   OBJECT_STORE_TYPE=local_filesystem \
   OBJECT_STORE_LOCAL_FILE_BASE_PATH=./files/ \
   cargo run --bin chamsae
@@ -43,7 +41,6 @@ DEBUG=true \
 DEBUG=true \
   DOMAIN=localhost \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
-  REDIS_URL=redis://localhost:6379/0 \
   OBJECT_STORE_TYPE=s3 \
   OBJECT_STORE_BUCKET=bucket \
   OBJECT_STORE_PUBLIC_URL_BASE=https://example.com/bucket \
