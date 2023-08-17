@@ -30,12 +30,12 @@ export const NameResponse = z.object({
 export const User = z.object({
   id: Id,
   handle: z.string(),
-  name: z.nullable(z.string()),
-  description: z.nullable(z.string()),
+  name: z.string().nullish(),
+  description: z.string().nullish(),
   host: z.string(),
   uri: z.string().url(),
-  avatarUrl: z.nullable(z.string().url()),
-  bannerUrl: z.nullable(z.string().url()),
+  avatarUrl: z.string().url().nullish(),
+  bannerUrl: z.string().url().nullish(),
   manuallyApprovesFollowers: z.boolean(),
   isBot: z.boolean(),
 });
@@ -50,7 +50,7 @@ export const Mention = z.object({
 export const File = z.object({
   mediaType: z.string(),
   url: z.string().url(),
-  alt: z.nullable(z.string()),
+  alt: z.string().nullish(),
 });
 
 export const Emoji = z.object({
@@ -71,20 +71,20 @@ export const CreateReaction = z.union([CreateContentReaction, CreateEmojiReactio
 
 export const Reaction = z.object({
   id: Id,
-  user: z.nullable(User),
+  user: User.nullish(),
   content: z.string(),
-  emoji: z.nullable(Emoji),
+  emoji: Emoji.nullish(),
 });
 
 export const Post = z.object({
   id: Id,
   createdAt: z.string().datetime({ offset: true }),
-  replyId: z.nullable(Id),
+  replyId: Id.nullish(),
   repliesId: z.array(Id),
-  repostId: z.nullable(Id),
+  repostId: Id.nullish(),
   text: z.string(),
-  title: z.nullable(z.string()),
-  user: z.nullable(User),
+  title: z.string().nullish(),
+  user: User.nullish(),
   visibility: Visibility,
   isSensitive: z.boolean(),
   uri: z.string().url(),
@@ -96,10 +96,10 @@ export const Post = z.object({
 });
 
 export const CreatePost = z.object({
-  replyId: z.nullable(Id),
-  repostId: z.nullable(Id),
+  replyId: Id.nullish(),
+  repostId: Id.nullish(),
   text: z.string(),
-  title: z.nullable(z.string()),
+  title: z.string().nullish(),
   visibility: Visibility,
   isSensitive: z.boolean(),
   files: z.array(Id),
@@ -111,10 +111,10 @@ export const CreatePost = z.object({
 export const LocalFile = z.object({
   id: Id,
   posted: z.boolean(),
-  emojiName: z.nullable(z.string()),
+  emojiName: z.string().nullish(),
   mediaType: z.string(),
   url: z.string().url(),
-  alt: z.nullable(z.string()),
+  alt: z.string().nullish(),
 });
 
 export const LocalEmoji = z.object({
@@ -136,14 +136,14 @@ export const CreateFollow = z.object({
 });
 
 export const Setting = z.object({
-  userName: z.nullable(z.string()),
-  userDescription: z.nullable(z.string()),
-  instanceDescription: z.nullable(z.string()),
-  avatarFileId: z.nullable(Id),
-  bannerFileId: z.nullable(Id),
-  maintainerName: z.nullable(z.string()),
-  maintainerEmail: z.nullable(z.string().email()),
-  themeColor: z.nullable(z.string()),
+  userName: z.string().nullish(),
+  userDescription: z.string().nullish(),
+  instanceDescription: z.string().nullish(),
+  avatarFileId: Id.nullish(),
+  bannerFileId: Id.nullish(),
+  maintainerName: z.string().nullish(),
+  maintainerEmail: z.string().email().nullish(),
+  themeColor: z.string().nullish(),
 });
 
 export const Object = z.union([User, Post]);
