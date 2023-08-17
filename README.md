@@ -51,15 +51,6 @@ DEBUG=true \
   cargo run --bin chamsae
 ```
 
-#### Initialize instance
-
-```
-xh -v POST :3000/api/setting/initial \
-  instanceName=my-instance \
-  userHandle=admin \
-  userPassword={your_password}
-```
-
 #### Serve HTTPS with caddy
 
 To serve HTTPS with caddy:
@@ -72,7 +63,15 @@ You may need to run `sudo setcap cap_net_bind_service=+ep $(which caddy)` first.
 
 ### Frontend
 
-TODO
+```
+cd frontend
+yarn dev
+```
+
+### Initialize instance
+
+Open `localhost:8000` with your browser.
+You can now initialize instance.
 
 ## License
 

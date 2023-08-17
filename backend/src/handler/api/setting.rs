@@ -27,12 +27,9 @@ pub(super) fn create_router() -> Router {
     responses(
         (status = 200, body = Setting),
     ),
-    security(
-        ("access_key" = []),
-    ),
 )]
-#[tracing::instrument(skip(data, _access))]
-async fn get_setting(data: Data<State>, _access: Access) -> Result<Json<Setting>> {
+#[tracing::instrument(skip(data))]
+async fn get_setting(data: Data<State>) -> Result<Json<Setting>> {
     let setting = setting::Model::get(&*data.db).await?;
     Ok(Json(Setting::from_model(setting)))
 }
