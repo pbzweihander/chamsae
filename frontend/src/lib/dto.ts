@@ -7,7 +7,7 @@ export const ErrorResponse = z.object({
   error: z.string(),
 });
 
-export async function throwError(resp: Response) {
+export async function throwError(resp: Response): Promise<never> {
   const body = await resp.text();
   try {
     const parsed = ErrorResponse.parse(JSON.parse(body));
@@ -30,12 +30,12 @@ export const NameResponse = z.object({
 export const User = z.object({
   id: Id,
   handle: z.string(),
-  name: z.optional(z.string()),
-  description: z.optional(z.string()),
+  name: z.nullable(z.string()),
+  description: z.nullable(z.string()),
   host: z.string(),
   uri: z.string().url(),
-  avatarUrl: z.optional(z.string().url()),
-  bannerUrl: z.optional(z.string().url()),
+  avatarUrl: z.nullable(z.string().url()),
+  bannerUrl: z.nullable(z.string().url()),
   manuallyApprovesFollowers: z.boolean(),
   isBot: z.boolean(),
 });
@@ -50,7 +50,7 @@ export const Mention = z.object({
 export const File = z.object({
   mediaType: z.string(),
   url: z.string().url(),
-  alt: z.optional(z.string()),
+  alt: z.nullable(z.string()),
 });
 
 export const Emoji = z.object({
@@ -71,20 +71,20 @@ export const CreateReaction = z.union([CreateContentReaction, CreateEmojiReactio
 
 export const Reaction = z.object({
   id: Id,
-  user: z.optional(User),
+  user: z.nullable(User),
   content: z.string(),
-  emoji: z.optional(Emoji),
+  emoji: z.nullable(Emoji),
 });
 
 export const Post = z.object({
   id: Id,
   createdAt: z.string().datetime({ offset: true }),
-  replyId: z.optional(Id),
+  replyId: z.nullable(Id),
   repliesId: z.array(Id),
-  repostId: z.optional(Id),
+  repostId: z.nullable(Id),
   text: z.string(),
-  title: z.optional(z.string()),
-  user: z.optional(User),
+  title: z.nullable(z.string()),
+  user: z.nullable(User),
   visibility: Visibility,
   isSensitive: z.boolean(),
   uri: z.string().url(),
@@ -96,10 +96,10 @@ export const Post = z.object({
 });
 
 export const CreatePost = z.object({
-  replyId: z.optional(Id),
-  repostId: z.optional(Id),
+  replyId: z.nullable(Id),
+  repostId: z.nullable(Id),
   text: z.string(),
-  title: z.optional(z.string()),
+  title: z.nullable(z.string()),
   visibility: Visibility,
   isSensitive: z.boolean(),
   files: z.array(Id),
@@ -111,10 +111,10 @@ export const CreatePost = z.object({
 export const LocalFile = z.object({
   id: Id,
   posted: z.boolean(),
-  emojiName: z.optional(z.string()),
+  emojiName: z.nullable(z.string()),
   mediaType: z.string(),
   url: z.string().url(),
-  alt: z.optional(z.string()),
+  alt: z.nullable(z.string()),
 });
 
 export const LocalEmoji = z.object({
@@ -136,14 +136,14 @@ export const CreateFollow = z.object({
 });
 
 export const Setting = z.object({
-  userName: z.optional(z.string()),
-  userDescription: z.optional(z.string()),
-  instanceDescription: z.optional(z.string()),
-  avatarFileId: z.optional(Id),
-  bannerFileId: z.optional(Id),
-  maintainerName: z.optional(z.string()),
-  maintainerEmail: z.optional(z.string().email()),
-  themeColor: z.optional(z.string()),
+  userName: z.nullable(z.string()),
+  userDescription: z.nullable(z.string()),
+  instanceDescription: z.nullable(z.string()),
+  avatarFileId: z.nullable(Id),
+  bannerFileId: z.nullable(Id),
+  maintainerName: z.nullable(z.string()),
+  maintainerEmail: z.nullable(z.string().email()),
+  themeColor: z.nullable(z.string()),
 });
 
 export const Object = z.union([User, Post]);
