@@ -6,6 +6,7 @@ use axum::{
     http::{header, request::Parts},
     routing, Json, RequestPartsExt, Router, TypedHeader,
 };
+use axum_client_ip::InsecureClientIp;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -88,7 +89,6 @@ pub(super) fn create_router() -> Router {
 #[derive(Deserialize, ToSchema)]
 pub struct PostLoginReq {
     password: String,
-    hostname: String,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -108,6 +108,7 @@ pub struct PostLoginResp {
 #[tracing::instrument(skip(data, req))]
 async fn post_login(
     data: Data<State>,
+    InsecureClientIp(client_ip): InsecureClientIp,
     Json(req): Json<PostLoginReq>,
 ) -> Result<Json<PostLoginResp>> {
     let setting = setting::Model::get(&*data.db).await?;
@@ -116,7 +117,8 @@ async fn post_login(
     {
         let access_key_activemodel = access_key::ActiveModel {
             id: ActiveValue::Set(Ulid::new().into()),
-            name: ActiveValue::Set(req.hostname),
+            // TODO: Parse user agent for more expressive name?
+            name: ActiveValue::Set(client_ip.to_string()),
             last_used_at: ActiveValue::NotSet,
         };
         let access_key = access_key_activemodel

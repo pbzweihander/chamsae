@@ -2,6 +2,21 @@ import * as z from "zod";
 
 export const Id = z.string().length(26);
 
+export const ErrorResponse = z.object({
+  id: Id,
+  error: z.string(),
+});
+
+export async function throwError(resp: Response) {
+  const body = await resp.text();
+  try {
+    const parsed = ErrorResponse.parse(JSON.parse(body));
+    throw new Error(`failed to login. status code: ${resp.status}, error id: ${parsed.id}, message: ${parsed.error}`);
+  } catch { 
+    throw new Error(`failed to login. status code: ${resp.status}, message: ${body}`);
+  }
+}
+
 export const IdResponse = z.object({
   id: Id,
 });

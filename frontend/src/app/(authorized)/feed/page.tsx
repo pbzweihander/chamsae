@@ -1,10 +1,13 @@
+import getAccessKeyOrRedirect from "@/lib/api/getAccessKeyOrRedirect";
 import Link from "next/link";
 
 export const metadata = {
   title: "Feed",
 };
 
-export default function Feed() {
+export default async function Feed() {
+  await getAccessKeyOrRedirect();
+
   return (
     <div className="flex flex-col items-stretch">
       <FeedItem id="foo">Foo</FeedItem>
