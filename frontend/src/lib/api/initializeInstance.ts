@@ -1,7 +1,7 @@
 "use server";
 
-import { apiUrl } from ".";
 import { throwError } from "../dto";
+import { apiUrl } from ".";
 
 export default async function(instanceName: string, userHandle: string, userPassword: string) {
   const resp = await fetch(apiUrl("/api/setting/initial"), {

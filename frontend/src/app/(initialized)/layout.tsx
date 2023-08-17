@@ -6,7 +6,5 @@ export default async function RootLayout({
   children?: React.ReactNode;
 }) {
   await getSetting();
-  return (
-    <>{ children }</>
-  );
+  return <>{children}</>;
 }

@@ -8,8 +8,11 @@ async function initializeAction(formData: FormData) {
   const userHandle = formData.get("userHandle");
   const userPassword = formData.get("userPassword");
 
-  if (instanceName?.toString() == null || userHandle?.toString() == null || userPassword?.toString() == null) {
-    return
+  if (
+    instanceName?.toString() == null || userHandle?.toString() == null
+    || userPassword?.toString() == null
+  ) {
+    return;
   }
 
   await initializeInstance(instanceName.toString(), userHandle.toString(), userPassword.toString());
