@@ -17,6 +17,7 @@ export default async function login(password: string) {
       "content-type": "application/json",
     },
     body: JSON.stringify({ password }),
+    cache: "no-cache",
   });
   if (!resp.ok) {
     await throwError(resp);
