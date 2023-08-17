@@ -1,7 +1,7 @@
-'use server'
+"use server";
 
-import * as z from "zod";
 import { cookies } from "next/headers";
+import * as z from "zod";
 
 import { apiUrl } from "@/lib/api";
 import { Id, throwError } from "@/lib/dto";

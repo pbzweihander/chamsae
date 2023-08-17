@@ -2,7 +2,7 @@ import login from "@/lib/api/login";
 import { redirect } from "next/navigation";
 
 async function loginAction(formData: FormData) {
-  'use server'
+  "use server";
 
   const password = formData.get("password");
 
