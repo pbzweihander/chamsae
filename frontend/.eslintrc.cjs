@@ -5,6 +5,7 @@ module.exports = {
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "next",
+    "plugin:storybook/recommended",
   ],
   parser: "@typescript-eslint/parser",
 };
