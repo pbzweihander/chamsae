@@ -28,11 +28,24 @@ export default function Initialize() {
       </div>
       <div>
         <label className="mr-2">User handle:</label>
-        <input type="text" name="userHandle" required autoComplete="username" className="border-2 mr-2" placeholder="admin" />
+        <input
+          type="text"
+          name="userHandle"
+          required
+          autoComplete="username"
+          className="border-2 mr-2"
+          placeholder="admin"
+        />
       </div>
       <div>
         <label className="mr-2">User password:</label>
-        <input type="password" name="userPassword" required autoComplete="new-password" className="border-2 mr-2" />
+        <input
+          type="password"
+          name="userPassword"
+          required
+          autoComplete="new-password"
+          className="border-2 mr-2"
+        />
       </div>
       <input type="submit" className="bg-slate-200 px-2" value="Initialize" />
     </form>
