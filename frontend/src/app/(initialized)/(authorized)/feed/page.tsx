@@ -1,18 +1,32 @@
+import { apiUrl } from "@/lib/api";
 import getAccessKeyOrRedirect from "@/lib/api/getAccessKeyOrRedirect";
+import { Post, throwError } from "@/lib/dto";
 import Link from "next/link";
+import * as z from "zod";
 
 export const metadata = {
   title: "Feed",
 };
 
-export default async function Feed() {
-  await getAccessKeyOrRedirect();
+async function getPosts(): Promise<z.infer<typeof Post>[]> {
+  const accessKey = await getAccessKeyOrRedirect();
 
+  const resp = await fetch(apiUrl("/api/post"), {
+    headers: {
+      "authorization": `Bearer ${accessKey}`,
+    },
+  });
+  if (!resp.ok) {
+    await throwError(resp);
+  }
+  return z.array(Post).parse(await resp.json());
+}
+
+export default async function Feed() {
+  const posts = await getPosts();
   return (
     <div className="flex flex-col items-stretch">
-      <FeedItem id="foo">Foo</FeedItem>
-      <FeedItem id="bar">Bar</FeedItem>
-      <FeedItem id="baz">Baz</FeedItem>
+      {posts.map(post => <FeedItem id={post.id} key={post.id}>{post.text}</FeedItem>)}
     </div>
   );
 }
