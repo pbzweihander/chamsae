@@ -9,8 +9,6 @@ export const metadata = {
 };
 
 async function getPosts(): Promise<z.infer<typeof Post>[]> {
-  "use server";
-
   const accessKey = await getAccessKeyOrRedirect();
 
   const resp = await fetch(apiUrl("/api/post"), {
