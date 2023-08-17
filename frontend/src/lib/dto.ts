@@ -1,138 +1,142 @@
-export interface IdResponse {
-  id: string;
-}
+import * as z from "zod";
 
-export interface NameResponse {
-  name: string;
-}
+export const Id = z.string().length(26);
 
-export interface User {
-  id: string;
-  handle: string;
-  name?: string;
-  description?: string;
-  host: string;
-  uri: string;
-  avatarUrl?: string;
-  bannerUrl?: string;
-  manuallyApprovesFollowers: boolean;
-  isBot: boolean;
-}
+export const IdResponse = z.object({
+  id: Id,
+});
 
-export type Visibility = "public" | "home" | "followers" | "directMessage";
+export const NameResponse = z.object({
+  name: z.string(),
+});
 
-export interface Mention {
-  userUri: string;
-  name: string;
-}
+export const User = z.object({
+  id: Id,
+  handle: z.string(),
+  name: z.optional(z.string()),
+  description: z.optional(z.string()),
+  host: z.string(),
+  uri: z.string().url(),
+  avatarUrl: z.optional(z.string().url()),
+  bannerUrl: z.optional(z.string().url()),
+  manuallyApprovesFollowers: z.boolean(),
+  isBot: z.boolean(),
+});
 
-export interface File {
-  mediaType: string;
-  url: string;
-  alt?: string;
-}
+export const Visibility = z.enum(["public", "home", "followers", "directMessage"]);
 
-export interface Emoji {
-  name: string;
-  mediaType: string;
-  imageUrl: string;
-}
+export const Mention = z.object({
+  userUri: z.string().url(),
+  name: z.string(),
+});
 
-export interface CreateContentReaction {
-  content: string;
-}
+export const File = z.object({
+  mediaType: z.string(),
+  url: z.string().url(),
+  alt: z.optional(z.string()),
+});
 
-export interface CreateEmojiReaction {
-  emojiName: string;
-}
+export const Emoji = z.object({
+  name: z.string(),
+  mediaType: z.string(),
+  imageUrl: z.string().url(),
+});
 
-export type CreateReaction = CreateContentReaction | CreateEmojiReaction;
+export const CreateContentReaction = z.object({
+  content: z.string(),
+});
 
-export interface Reaction {
-  id: string;
-  user?: User;
-  content: string;
-  emoji?: Emoji;
-}
+export const CreateEmojiReaction = z.object({
+  emojiName: z.string(),
+});
 
-export interface Post {
-  id: string;
-  createdAt: string;
-  replyId?: string;
-  repliesId: string[];
-  repostId?: string;
-  text: string;
-  title?: string;
-  user?: User;
-  visibility: Visibility;
-  isSensitive: boolean;
-  uri: string;
-  files: File[];
-  reactions: Reaction[];
-  mentions: Mention[];
-  emojis: Emoji[];
-  hashtags: string[];
-}
+export const CreateReaction = z.union([CreateContentReaction, CreateEmojiReaction]);
 
-export interface CreatePost {
-  replyId?: string;
-  repostId?: string;
-  text: string;
-  title?: string;
-  visibility: Visibility;
-  isSensitive: boolean;
-  files: string[];
-  mentions: Mention[];
-  emojis: string[];
-  hashtags: string[];
-}
+export const Reaction = z.object({
+  id: Id,
+  user: z.optional(User),
+  content: z.string(),
+  emoji: z.optional(Emoji),
+});
 
-export interface LocalFile {
-  id: string;
-  posted: boolean;
-  emojiName?: string;
-  mediaType: string;
-  url: string;
-  alt?: string;
-}
+export const Post = z.object({
+  id: Id,
+  createdAt: z.string().datetime({ offset: true }),
+  replyId: z.optional(Id),
+  repliesId: z.array(Id),
+  repostId: z.optional(Id),
+  text: z.string(),
+  title: z.optional(z.string()),
+  user: z.optional(User),
+  visibility: Visibility,
+  isSensitive: z.boolean(),
+  uri: z.string().url(),
+  files: z.array(File),
+  reactions: z.array(Reaction),
+  mentions: z.array(Mention),
+  emojis: z.array(Emoji),
+  hashtags: z.array(z.string()),
+});
 
-export interface LocalEmoji {
-  name: string;
-  createdAt: string;
-  mediaType: string;
-  imageUrl: string;
-}
+export const CreatePost = z.object({
+  replyId: z.optional(Id),
+  repostId: z.optional(Id),
+  text: z.string(),
+  title: z.optional(z.string()),
+  visibility: Visibility,
+  isSensitive: z.boolean(),
+  files: z.array(Id),
+  mentions: z.array(Mention),
+  emojis: z.array(z.string()),
+  hashtags: z.array(z.string()),
+});
 
-export interface CreateEmoji {
-  fileId: string;
-  name: string;
-}
+export const LocalFile = z.object({
+  id: Id,
+  posted: z.boolean(),
+  emojiName: z.optional(z.string()),
+  mediaType: z.string(),
+  url: z.string().url(),
+  alt: z.optional(z.string()),
+});
 
-export type Follow = User & { accepted: boolean };
+export const LocalEmoji = z.object({
+  name: z.string(),
+  createdAt: z.string().datetime({ offset: true }),
+  mediaType: z.string(),
+  imageUrl: z.string().url(),
+});
 
-export interface CreateFollow {
-  toId: string;
-}
+export const CreateEmoji = z.object({
+  fileId: Id,
+  name: z.string(),
+});
 
-export interface Setting {
-  userName?: string;
-  userDescription?: string;
-  instanceDescription?: string;
-  avatarFileId?: string;
-  bannerFileId?: string;
-  maintainerName?: string;
-  maintainerEmail?: string;
-  themeColor?: string;
-}
+export const Follow = z.intersection(User, z.object({ accepted: z.boolean() }));
 
-export type Object = User | Post;
+export const CreateFollow = z.object({
+  toId: Id,
+});
 
-export interface Report {
-  from: User;
-  content: string;
-}
+export const Setting = z.object({
+  userName: z.optional(z.string()),
+  userDescription: z.optional(z.string()),
+  instanceDescription: z.optional(z.string()),
+  avatarFileId: z.optional(Id),
+  bannerFileId: z.optional(Id),
+  maintainerName: z.optional(z.string()),
+  maintainerEmail: z.optional(z.string().email()),
+  themeColor: z.optional(z.string()),
+});
 
-export interface CreateReport {
-  userId: string;
-  content: string;
-}
+export const Object = z.union([User, Post]);
+
+export const Report = z.object({
+  from: User,
+  content: z.string(),
+});
+
+export const CreateReport = z.object({
+  userId: Id,
+  content: z.string(),
+});
