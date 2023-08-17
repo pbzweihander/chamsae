@@ -28,7 +28,7 @@ export default async function Feed() {
   const posts = await getPosts();
   return (
     <div className="flex flex-col items-stretch">
-      {posts.map(post => <FeedItem id={post.id}>{post.text}</FeedItem>)}
+      {posts.map(post => <FeedItem id={post.id} key={post.id}>{post.text}</FeedItem>)}
     </div>
   );
 }
