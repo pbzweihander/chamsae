@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use activitypub_federation::config::FederationConfig;
 use anyhow::Context;
 use dotenvy::dotenv;
@@ -90,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
     let listen_addr = &crate::config::CONFIG.listen_addr;
     tracing::info!(%listen_addr, "starting http server...");
     axum::Server::bind(&listen_addr.parse()?)
-        .serve(router.into_make_service())
+        .serve(router.into_make_service_with_connect_info::<SocketAddr>())
         .with_graceful_shutdown(shutdown_signal(stopper))
         .await?;
 

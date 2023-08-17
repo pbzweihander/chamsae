@@ -9,6 +9,7 @@ anyhow = { version = "1.0.72", features = ["backtrace"] }
 async-stream = "0.3.5"
 async-trait = "0.1.72"
 axum = { version = "0.6.20", features = ["headers"] }
+axum-client-ip = "0.4.1"
 axum-extra = { version = "0.7.7", features = ["async-read-body"] }
 bcrypt = "0.15.0"
 chrono = { version = "0.4.26", features = ["serde"] }
