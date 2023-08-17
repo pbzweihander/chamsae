@@ -1562,7 +1562,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/template@npm:^7.22.5":
+"@babel/template@npm:^7.20.7, @babel/template@npm:^7.22.5":
   version: 7.22.5
   resolution: "@babel/template@npm:7.22.5"
   dependencies:
@@ -1591,7 +1591,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/types@npm:^7.0.0, @babel/types@npm:^7.2.0, @babel/types@npm:^7.20.7, @babel/types@npm:^7.22.10, @babel/types@npm:^7.22.5, @babel/types@npm:^7.4.4, @babel/types@npm:^7.8.3":
+"@babel/types@npm:^7.0.0, @babel/types@npm:^7.2.0, @babel/types@npm:^7.20.7, @babel/types@npm:^7.21.5, @babel/types@npm:^7.22.10, @babel/types@npm:^7.22.5, @babel/types@npm:^7.4.4, @babel/types@npm:^7.8.3":
   version: 7.22.10
   resolution: "@babel/types@npm:7.22.10"
   dependencies:
@@ -3133,6 +3133,51 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@storybook/addon-styling@npm:^1.3.6":
+  version: 1.3.6
+  resolution: "@storybook/addon-styling@npm:1.3.6"
+  dependencies:
+    "@babel/template": ^7.20.7
+    "@babel/types": ^7.21.5
+    "@storybook/api": ^7.0.12
+    "@storybook/components": ^7.0.12
+    "@storybook/core-common": ^7.0.12
+    "@storybook/core-events": ^7.0.12
+    "@storybook/manager-api": ^7.0.12
+    "@storybook/node-logger": ^7.0.12
+    "@storybook/preview-api": ^7.0.12
+    "@storybook/theming": ^7.0.12
+    "@storybook/types": ^7.0.12
+    css-loader: ^6.7.3
+    less-loader: ^11.1.0
+    postcss-loader: ^7.2.4
+    prettier: ^2.8.0
+    resolve-url-loader: ^5.0.0
+    sass-loader: ^13.2.2
+    style-loader: ^3.3.2
+  peerDependencies:
+    less: ^3.5.0 || ^4.0.0
+    postcss: ^7.0.0 || ^8.0.1
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    webpack: ^5.0.0
+  peerDependenciesMeta:
+    less:
+      optional: true
+    postcss:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    webpack:
+      optional: true
+  bin:
+    addon-styling-setup: postinstall.js
+  checksum: 1335b6b666f1c2bb294b784894cf19cb0888ebae31bf7b941a78c5808e0350df32dc50da406a7dd8dd854f44481b3bf408b0fc646a6d4b6fe234492977dddc8e
+  languageName: node
+  linkType: hard
+
 "@storybook/addon-toolbars@npm:7.3.1":
   version: 7.3.1
   resolution: "@storybook/addon-toolbars@npm:7.3.1"
@@ -3176,6 +3221,24 @@ __metadata:
     react-dom:
       optional: true
   checksum: 98e396bc34b400eb6a7036f1efe7ce9ef625ea3f84a26575aa91247e010fd2a48f3374e3f8f7f136ba65f0a1acbffa049f60100e3e12d187687539aecd1cb419
+  languageName: node
+  linkType: hard
+
+"@storybook/api@npm:^7.0.12":
+  version: 7.3.1
+  resolution: "@storybook/api@npm:7.3.1"
+  dependencies:
+    "@storybook/client-logger": 7.3.1
+    "@storybook/manager-api": 7.3.1
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+  peerDependenciesMeta:
+    react:
+      optional: true
+    react-dom:
+      optional: true
+  checksum: e9ae2472a0b2158e76f05cff2eb902cb38f114a5a93bd3e8106a880677553c16612fe7209b9d30eed2ca7eea8067c8daac89b3279ec1c038ef613b5f5cb617fd
   languageName: node
   linkType: hard
 
@@ -3380,7 +3443,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/components@npm:7.3.1, @storybook/components@npm:^7.3.1":
+"@storybook/components@npm:7.3.1, @storybook/components@npm:^7.0.12, @storybook/components@npm:^7.3.1":
   version: 7.3.1
   resolution: "@storybook/components@npm:7.3.1"
   dependencies:
@@ -3412,7 +3475,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/core-common@npm:7.3.1":
+"@storybook/core-common@npm:7.3.1, @storybook/core-common@npm:^7.0.12":
   version: 7.3.1
   resolution: "@storybook/core-common@npm:7.3.1"
   dependencies:
@@ -3442,7 +3505,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/core-events@npm:7.3.1":
+"@storybook/core-events@npm:7.3.1, @storybook/core-events@npm:^7.0.12":
   version: 7.3.1
   resolution: "@storybook/core-events@npm:7.3.1"
   checksum: 7575e8fde8e6e86c14f085908beae22656b0c3ec96cbb97f0d09489ba2456cf6f96e34f518f6913fe71aff36e9e725f2a40455283cd0c0892ac92ca711a96449
@@ -3608,7 +3671,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/manager-api@npm:7.3.1, @storybook/manager-api@npm:^7.3.1":
+"@storybook/manager-api@npm:7.3.1, @storybook/manager-api@npm:^7.0.12, @storybook/manager-api@npm:^7.3.1":
   version: 7.3.1
   resolution: "@storybook/manager-api@npm:7.3.1"
   dependencies:
@@ -3709,7 +3772,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/node-logger@npm:7.3.1":
+"@storybook/node-logger@npm:7.3.1, @storybook/node-logger@npm:^7.0.12":
   version: 7.3.1
   resolution: "@storybook/node-logger@npm:7.3.1"
   checksum: 71b4a7d63259ed004259ae66ccb3e7f20ed73555cf10e27b3c76bfe881021b5b822382566a391f38f2ed4d7d21c41d75321b130188026e19821091b12889c929
@@ -3756,7 +3819,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/preview-api@npm:7.3.1":
+"@storybook/preview-api@npm:7.3.1, @storybook/preview-api@npm:^7.0.12":
   version: 7.3.1
   resolution: "@storybook/preview-api@npm:7.3.1"
   dependencies:
@@ -3890,7 +3953,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/theming@npm:7.3.1":
+"@storybook/theming@npm:7.3.1, @storybook/theming@npm:^7.0.12":
   version: 7.3.1
   resolution: "@storybook/theming@npm:7.3.1"
   dependencies:
@@ -3905,7 +3968,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/types@npm:7.3.1":
+"@storybook/types@npm:7.3.1, @storybook/types@npm:^7.0.12":
   version: 7.3.1
   resolution: "@storybook/types@npm:7.3.1"
   dependencies:
@@ -5992,6 +6055,7 @@ __metadata:
     "@storybook/addon-interactions": ^7.3.1
     "@storybook/addon-links": ^7.3.1
     "@storybook/addon-onboarding": ^1.0.8
+    "@storybook/addon-styling": ^1.3.6
     "@storybook/blocks": ^7.3.1
     "@storybook/global": ^5.0.0
     "@storybook/nextjs": ^7.3.1
@@ -6004,6 +6068,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^6.1.0
     "@typescript-eslint/parser": ^6.1.0
     autoprefixer: ^10.4.14
+    clsx: ^2.0.0
     dprint: ^0.40.2
     eslint: ^8.46.0
     eslint-config-next: ^13.4.13
@@ -6158,6 +6223,13 @@ __metadata:
   version: 1.0.4
   resolution: "clone@npm:1.0.4"
   checksum: d06418b7335897209e77bdd430d04f882189582e67bd1f75a04565f3f07f5b3f119a9d670c943b6697d0afb100f03b866b3b8a1f91d4d02d72c4ecf2bb64b5dd
+  languageName: node
+  linkType: hard
+
+"clsx@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "clsx@npm:2.0.0"
+  checksum: a2cfb2351b254611acf92faa0daf15220f4cd648bdf96ce369d729813b85336993871a4bf6978ddea2b81b5a130478339c20d9d0b5c6fc287e5147f0c059276e
   languageName: node
   linkType: hard
 
@@ -9674,6 +9746,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"less-loader@npm:^11.1.0":
+  version: 11.1.3
+  resolution: "less-loader@npm:11.1.3"
+  peerDependencies:
+    less: ^3.5.0 || ^4.0.0
+    webpack: ^5.0.0
+  checksum: fe0de6b5ab930a4521d04555d9bd77723164bfa0f71eb5724d91c45090af544000e2d7f598cd83ec4e1445e6b943cc0c0dd1445fb2e83fd7c12f4ad3a0db05c5
+  languageName: node
+  linkType: hard
+
 "leven@npm:^3.1.0":
   version: 3.1.0
   resolution: "leven@npm:3.1.0"
@@ -11190,7 +11272,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss-loader@npm:^7.0.2":
+"postcss-loader@npm:^7.0.2, postcss-loader@npm:^7.2.4":
   version: 7.3.3
   resolution: "postcss-loader@npm:7.3.3"
   dependencies:
@@ -12285,6 +12367,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"sass-loader@npm:^13.2.2":
+  version: 13.3.2
+  resolution: "sass-loader@npm:13.3.2"
+  dependencies:
+    neo-async: ^2.6.2
+  peerDependencies:
+    fibers: ">= 3.1.0"
+    node-sass: ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0 || ^9.0.0
+    sass: ^1.3.0
+    sass-embedded: "*"
+    webpack: ^5.0.0
+  peerDependenciesMeta:
+    fibers:
+      optional: true
+    node-sass:
+      optional: true
+    sass:
+      optional: true
+    sass-embedded:
+      optional: true
+  checksum: 7394a8d1b818a289b9caabd979543c907b83e28ae08bc80ccb836e0ccabc4ae574c077ab2fa520ba5fb8abb2ec3e7c9822a1cbd8c58a28ff30018be9d1dc6c27
+  languageName: node
+  linkType: hard
+
 "scheduler@npm:^0.23.0":
   version: 0.23.0
   resolution: "scheduler@npm:0.23.0"
@@ -12899,7 +13005,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"style-loader@npm:^3.3.1":
+"style-loader@npm:^3.3.1, style-loader@npm:^3.3.2":
   version: 3.3.3
   resolution: "style-loader@npm:3.3.3"
   peerDependencies:
