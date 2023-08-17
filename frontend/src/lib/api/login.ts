@@ -14,7 +14,7 @@ export default async function login(password: string) {
   const resp = await fetch(apiUrl("/api/auth/login"), {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "content-type": "application/json",
     },
     body: JSON.stringify({ password }),
   });

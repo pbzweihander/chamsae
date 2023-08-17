@@ -12,7 +12,7 @@ export default async function getAccessKey(): Promise<string | undefined> {
 
   const resp = await fetch(apiUrl("/api/auth/check"), {
     headers: {
-      "Authorization": `Bearer ${token}`,
+      "authorization": `Bearer ${token}`,
     },
   });
   if (!resp.ok) {
