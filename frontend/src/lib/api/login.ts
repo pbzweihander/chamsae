@@ -22,5 +22,5 @@ export default async function login(password: string) {
     await throwError(resp);
   }
   const parsed = PostLoginResp.parse(await resp.json());
-  cookies().set("accessKey", parsed.token, { secure: true });
+  cookies().set("accessKey", parsed.token, { secure: true, httpOnly: true, sameSite: "lax" });
 }
