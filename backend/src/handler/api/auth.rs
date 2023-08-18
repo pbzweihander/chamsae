@@ -8,7 +8,7 @@ use axum::{
 };
 use axum_client_ip::InsecureClientIp;
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, TransactionTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, ModelTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 use utoipa::ToSchema;
@@ -83,6 +83,7 @@ where
 pub(super) fn create_router() -> Router {
     Router::new()
         .route("/login", routing::post(post_login))
+        .route("/logout", routing::post(post_logout))
         .route("/check", routing::get(get_check))
 }
 
@@ -132,6 +133,23 @@ async fn post_login(
     } else {
         Err(format_err!(BAD_REQUEST, "failed to authenticate"))
     }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/logout",
+    responses(
+        (status = 200)
+    )
+)]
+#[tracing::instrument(skip(data, access))]
+async fn post_logout(data: Data<State>, access: Access) -> Result<()> {
+    access
+        .key
+        .delete(&*data.db)
+        .await
+        .context_internal_server_error("failed to delete from database")?;
+    Ok(())
 }
 
 #[utoipa::path(
