@@ -157,3 +157,88 @@ export const CreateReport = z.object({
   userId: Id,
   content: z.string(),
 });
+
+export const Update = z.union([
+  z.object({
+    type: z.literal("createPost"),
+    postId: Id,
+  }),
+  z.object({
+    type: z.literal("deletePost"),
+    postId: Id,
+  }),
+  z.object({
+    type: z.literal("createReaction"),
+    postId: Id,
+  }),
+  z.object({
+    type: z.literal("deleteReaction"),
+    postId: Id,
+  }),
+  z.object({
+    type: z.literal("updateUser"),
+    userId: Id,
+  }),
+  z.object({
+    type: z.literal("deleteUser"),
+    userId: Id,
+  }),
+]);
+
+export const Notification = z.intersection(
+  z.object({ id: Id }),
+  z.union([
+    z.object({
+      type: z.literal("acceptFollow"),
+      userId: Id,
+    }),
+    z.object({
+      type: z.literal("rejectFollow"),
+      userId: Id,
+    }),
+    z.object({
+      type: z.literal("createFollower"),
+      userId: Id,
+    }),
+    z.object({
+      type: z.literal("deleteFollower"),
+      userId: Id,
+    }),
+    z.object({
+      type: z.literal("createReport"),
+      reportId: Id,
+    }),
+    z.object({
+      type: z.literal("mentioned"),
+      postId: Id,
+    }),
+    z.object({
+      type: z.literal("reposted"),
+      postId: Id,
+    }),
+    z.object({
+      type: z.literal("quoted"),
+      postId: Id,
+    }),
+    z.object({
+      type: z.literal("reacted"),
+      postId: Id,
+      reactionId: Id,
+    }),
+  ]),
+);
+
+export const Event = z.union([
+  z.intersection(
+    z.object({
+      eventType: z.literal("update"),
+    }),
+    Update,
+  ),
+  z.intersection(
+    z.object({
+      eventType: z.literal("notification"),
+    }),
+    Notification,
+  ),
+]);
