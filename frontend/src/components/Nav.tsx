@@ -2,9 +2,11 @@
 
 import logout from "@/lib/api/logout";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function Nav() {
+  const router = useRouter();
+
   return (
     <nav className="border-r px-4 py-12 flex flex-col">
       <Link href="/feed">Feed</Link>
@@ -13,7 +15,8 @@ export default function Nav() {
       <button
         onClick={async () => {
           await logout();
-          redirect("/");
+          router.push("/");
+          router.refresh();
         }}
       >
         Logout
