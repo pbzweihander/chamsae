@@ -1,13 +1,6 @@
-import twemoji from "twemoji";
+import { parse as parseEmoji } from "twemoji-parser";
 
 import type { CustomEmojiMapper } from "./Mfm";
-
-// From twemoji source code
-function rawUnicodeEmojiToId(emoji: string): string {
-  return twemoji.convert.toCodePoint(
-    emoji.includes("\u200d") ? emoji : emoji.replaceAll("\ufe0f", ""),
-  );
-}
 
 type Props =
   | { custom?: false; code: string }
@@ -24,8 +17,19 @@ export default function MfmEmoji(props: Props) {
     alt = `:${props.code}:`;
   } else {
     containerClassName += " aspect-square";
-    id = rawUnicodeEmojiToId(props.code);
-    src = `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/${id}.svg`;
+    const parsed = parseEmoji(props.code, {
+      buildUrl(codepoints) {
+        return `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/${codepoints}.svg`;
+      },
+      assetType: "svg",
+    });
+    if (parsed[0]) {
+      id = parsed[0].text;
+      src = parsed[0].url;
+    } else {
+      id = props.code;
+      src = undefined;
+    }
     alt = props.code;
   }
 

@@ -23,7 +23,7 @@
     "react-dom": "^18.2.0",
     "sharp": "^0.32.4",
     "swr": "^2.2.0",
-    "twemoji": "^14.0.2",
+    "twemoji-parser": "^14.0.0",
     "webpack": "^5.88.2",
     "zod": "^3.22.1"
   },
@@ -42,6 +42,7 @@
     "@types/node": "^20.4.3",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
+    "@types/twemoji-parser": "^13.1.1",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
     "@typescript-eslint/parser": "^6.1.0",
     "autoprefixer": "^10.4.14",
