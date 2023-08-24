@@ -237,6 +237,8 @@ pub enum Post {
     IsSensitive,
     Uri,
     RepostId,
+    SourceContent,
+    SourceMediaType,
 }
 
 #[derive(Iden)]

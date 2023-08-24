@@ -18,6 +18,8 @@ pub struct Model {
     #[sea_orm(unique)]
     pub uri: String,
     pub repost_id: Option<Uuid>,
+    pub source_content: Option<String>,
+    pub source_media_type: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

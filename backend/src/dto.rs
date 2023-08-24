@@ -217,6 +217,8 @@ pub struct Post {
     pub repost_id: Option<Ulid>,
     pub text: String,
     pub title: Option<String>,
+    pub source_content: Option<String>,
+    pub source_media_type: Option<String>,
     pub user: Option<User>,
     pub visibility: Visibility,
     pub is_sensitive: bool,
@@ -334,6 +336,8 @@ impl Post {
             repost_id: post.repost_id.map(Into::into),
             text: post.text,
             title: post.title,
+            source_content: post.source_content,
+            source_media_type: post.source_media_type,
             user,
             visibility: match post.visibility {
                 sea_orm_active_enums::Visibility::Public => Visibility::Public,

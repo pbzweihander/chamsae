@@ -39,6 +39,13 @@ pub struct Attachment {
     pub name: Option<String>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Source {
+    pub content: Option<String>,
+    pub media_type: Option<String>,
+}
+
 #[derive(Clone, Derivative, Deserialize, Serialize)]
 #[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
@@ -62,6 +69,8 @@ pub struct Note {
     #[serde(default)]
     pub summary: Option<String>,
     pub content: String,
+    #[serde(default)]
+    pub source: Option<Source>,
     #[derivative(Debug(format_with = "crate::fmt::debug_format_option_display"))]
     pub in_reply_to: Option<ObjectId<post::Model>>,
     #[serde(default)]

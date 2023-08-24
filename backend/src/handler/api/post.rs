@@ -139,6 +139,8 @@ async fn post_post(
         }),
         is_sensitive: ActiveValue::Set(req.is_sensitive),
         uri: ActiveValue::Set(post::Model::ap_id_from_id(id)?.to_string()),
+        source_content: ActiveValue::Set(None), // TODO: Set to MFM?
+        source_media_type: ActiveValue::Set(None),
     };
     let post = post_activemodel
         .insert(&tx)

@@ -13,7 +13,7 @@ use url::Url;
 use crate::{
     ap::{
         announce::Announce,
-        note::{Attachment, Note},
+        note::{Attachment, Note, Source},
         person::LocalPerson,
         tag::{Emoji, EmojiIcon, Hashtag, Mention, Tag},
         NoteOrAnnounce,
@@ -276,6 +276,10 @@ impl Object for post::Model {
             cc,
             summary: self.title,
             content: self.text,
+            source: Some(Source {
+                content: self.source_content,
+                media_type: self.source_media_type,
+            }),
             in_reply_to: in_reply_to_id.map(Into::into),
             attachment,
             sensitive: self.is_sensitive,
@@ -326,6 +330,16 @@ impl Object for post::Model {
                     visibility: ActiveValue::Set(visibility),
                     is_sensitive: ActiveValue::Set(json.sensitive),
                     uri: ActiveValue::Set(json.id.inner().to_string()),
+                    source_content: ActiveValue::Set(
+                        json.source
+                            .as_ref()
+                            .and_then(|source| source.content.clone()),
+                    ),
+                    source_media_type: ActiveValue::Set(
+                        json.source
+                            .as_ref()
+                            .and_then(|source| source.media_type.clone()),
+                    ),
                 };
 
                 let tx = data
@@ -486,6 +500,8 @@ impl Object for post::Model {
                     visibility: ActiveValue::Set(visibility),
                     is_sensitive: ActiveValue::Set(false),
                     uri: ActiveValue::Set(json.id.inner().to_string()),
+                    source_content: ActiveValue::Set(None),
+                    source_media_type: ActiveValue::Set(None),
                 };
 
                 let tx = data
