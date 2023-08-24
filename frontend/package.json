@@ -16,12 +16,14 @@
   },
   "dependencies": {
     "clsx": "^2.0.0",
+    "mfm-js": "^0.23.3",
     "negotiator": "^0.6.3",
     "next": "^13.4.13",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sharp": "^0.32.4",
     "swr": "^2.2.0",
+    "twemoji": "^14.0.2",
     "webpack": "^5.88.2",
     "zod": "^3.22.1"
   },
