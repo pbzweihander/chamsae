@@ -7,7 +7,7 @@ type Props =
   | { custom: true; code: string; srcMapper?: CustomEmojiMapper };
 
 export default function MfmEmoji(props: Props) {
-  let containerClassName = "inline-block align-bottom overflow-hidden h-6";
+  let containerClassName = "inline-block align-bottom overflow-hidden min-w-max h-[1.5em]";
   let id;
   let src;
   let alt;

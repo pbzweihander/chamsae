@@ -18,7 +18,7 @@ const meta = {
     Story =>
       React.createElement(
         "div",
-        { className: "border w-[320px] p-2" },
+        { className: "border overflow-hidden w-[320px] p-2" },
         React.createElement(Story),
       ),
   ],
@@ -58,6 +58,12 @@ export const UnicodeEmojis: Story = {
 export const CustomEmojis: Story = {
   args: {
     content: ":plachta: :send_money:",
+  },
+};
+
+export const EmojiZoom: Story = {
+  args: {
+    content: ":send_money:\n$[x2 :send_money:]\n$[x3 :send_money:]\n$[x4 :send_money:]",
   },
 };
 

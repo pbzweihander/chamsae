@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import type { CustomEmojiMapper } from "./Mfm";
 import MfmEmoji from "./MfmEmoji";
+import MfmFunction from "./MfmFunction";
 
 interface Props {
   nodes: Mfm.MfmNode[];
@@ -73,6 +74,8 @@ export default function MfmRenderer({ nodes, customEmojiMapper }: Props) {
         return <MfmEmoji key={idx} code={node.props.emoji} />;
       case "emojiCode":
         return <MfmEmoji key={idx} custom code={node.props.name} srcMapper={customEmojiMapper} />;
+      case "fn":
+        return <MfmFunction key={idx} {...node} customEmojiMapper={customEmojiMapper} />;
       default:
         return null;
     }
@@ -90,7 +93,7 @@ function MfmText({ text }: Mfm.MfmText["props"]) {
     rendered.push(line);
   });
 
-  return <span>{rendered}</span>;
+  return <>{rendered}</>;
 }
 
 function MfmMention({ username, host }: Mfm.MfmMention["props"]) {
