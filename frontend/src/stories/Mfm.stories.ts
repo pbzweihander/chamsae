@@ -3,6 +3,7 @@ import React from "react";
 
 import Mfm from "@/components/mfm/Mfm";
 
+import transformsTestdata from "./assets/mfm-transforms.json";
 import plachta from "./assets/plachta.png";
 import recruitSimulatorTestdata from "./assets/recruit.json";
 import sendMoney from "./assets/send-money.png";
@@ -65,6 +66,10 @@ export const EmojiZoom: Story = {
   args: {
     content: ":send_money:\n$[x2 :send_money:]\n$[x3 :send_money:]\n$[x4 :send_money:]",
   },
+};
+
+export const Transforms: Story = {
+  args: transformsTestdata,
 };
 
 export const RecruitSimulator: Story = {
