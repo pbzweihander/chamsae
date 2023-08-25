@@ -3096,19 +3096,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-onboarding@npm:^1.0.8":
-  version: 1.0.8
-  resolution: "@storybook/addon-onboarding@npm:1.0.8"
-  dependencies:
-    "@storybook/telemetry": ^7.1.0-alpha.32
-    react-confetti: ^6.1.0
-  peerDependencies:
-    react: ^16.8.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
-  checksum: f7f27869a06fd84058d4144aa94d72ace862ef726a083dd0f3cffae9916d7264ef4e8d154585eb6143eda85e4b21ee784e9114b9ca7905b82baab77738f8d0cf
-  languageName: node
-  linkType: hard
-
 "@storybook/addon-outline@npm:7.3.1":
   version: 7.3.1
   resolution: "@storybook/addon-outline@npm:7.3.1"
@@ -3926,7 +3913,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/telemetry@npm:7.3.1, @storybook/telemetry@npm:^7.1.0-alpha.32":
+"@storybook/telemetry@npm:7.3.1":
   version: 7.3.1
   resolution: "@storybook/telemetry@npm:7.3.1"
   dependencies:
@@ -4540,6 +4527,13 @@ __metadata:
     "@types/mime": "*"
     "@types/node": "*"
   checksum: 15c261dbfc57890f7cc17c04d5b22b418dfa0330c912b46c5d8ae2064da5d6f844ef7f41b63c7f4bbf07675e97ebe6ac804b032635ec742ae45d6f1274259b3e
+  languageName: node
+  linkType: hard
+
+"@types/twemoji-parser@npm:^13.1.1":
+  version: 13.1.1
+  resolution: "@types/twemoji-parser@npm:13.1.1"
+  checksum: dbb915a0e1d4b1471a9c0bad52f81293ea8b1f3e92a2dc288261e6eb6dfb8b9ad37dcb6adf77832c5965a0e29f279f6a8d531f91f1c1f78ef4e592d177115d39
   languageName: node
   linkType: hard
 
@@ -6054,7 +6048,6 @@ __metadata:
     "@storybook/addon-essentials": ^7.3.1
     "@storybook/addon-interactions": ^7.3.1
     "@storybook/addon-links": ^7.3.1
-    "@storybook/addon-onboarding": ^1.0.8
     "@storybook/addon-styling": ^1.3.6
     "@storybook/blocks": ^7.3.1
     "@storybook/global": ^5.0.0
@@ -6065,6 +6058,7 @@ __metadata:
     "@types/node": ^20.4.3
     "@types/react": ^18.2.15
     "@types/react-dom": ^18.2.7
+    "@types/twemoji-parser": ^13.1.1
     "@typescript-eslint/eslint-plugin": ^6.1.0
     "@typescript-eslint/parser": ^6.1.0
     autoprefixer: ^10.4.14
@@ -6073,6 +6067,7 @@ __metadata:
     eslint: ^8.46.0
     eslint-config-next: ^13.4.13
     eslint-plugin-storybook: ^0.6.13
+    mfm-js: ^0.23.3
     negotiator: ^0.6.3
     next: ^13.4.13
     postcss: ^8.4.27
@@ -6082,6 +6077,7 @@ __metadata:
     storybook: ^7.3.1
     swr: ^2.2.0
     tailwindcss: ^3.3.3
+    twemoji-parser: ^14.0.0
     typescript: ^5.1.6
     webpack: ^5.88.2
     zod: ^3.22.1
@@ -10097,6 +10093,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mfm-js@npm:^0.23.3":
+  version: 0.23.3
+  resolution: "mfm-js@npm:0.23.3"
+  dependencies:
+    twemoji-parser: 14.0.0
+  checksum: 7079f80a53a9afc8599333f3256fb18a6bf7c01102a2f8f2be657843726a34835e2af34e26bc5b27e45b217fb2f120c0d3006e9fab2a972c845e9f7361e3cc1b
+  languageName: node
+  linkType: hard
+
 "micromatch@npm:^4.0.2, micromatch@npm:^4.0.4, micromatch@npm:^4.0.5":
   version: 4.0.5
   resolution: "micromatch@npm:4.0.5"
@@ -11717,17 +11722,6 @@ __metadata:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
   checksum: e432b7cb0df57e8f0bcdc3b012d2e93fcbcb6092c9e0f85654788d5ebfc4442536d8cc35b2418061ba3c4afb8b7788cc101c606d86a1732407921de7a9244c8d
-  languageName: node
-  linkType: hard
-
-"react-confetti@npm:^6.1.0":
-  version: 6.1.0
-  resolution: "react-confetti@npm:6.1.0"
-  dependencies:
-    tween-functions: ^1.2.0
-  peerDependencies:
-    react: ^16.3.0 || ^17.0.1 || ^18.0.0
-  checksum: 24b6975df144d2bf09d8e1c95ddc49e547775f911efaa8d96b49e522659d931539e9d9e48cc0db3a01f3a671be7e3824e6e728db85096f5527db5d1c69ebb153
   languageName: node
   linkType: hard
 
@@ -13499,10 +13493,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tween-functions@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "tween-functions@npm:1.2.0"
-  checksum: 880708d680eff5c347ddcb9f922ad121703a91c78ce308ed309073e73a794b633eb0b80589a839365803f150515ad34c9646809ae8a0e90f09e62686eefb1ab6
+"twemoji-parser@npm:14.0.0, twemoji-parser@npm:^14.0.0":
+  version: 14.0.0
+  resolution: "twemoji-parser@npm:14.0.0"
+  checksum: 8eede69cf71f94735de7b6fddf5dfbfe3cb2e01baefc3201360984ccc97cfc659f206c8f73bd1405a2282779af3b79a8c9bed3864c672e15e2dc6f8ce4810452
   languageName: node
   linkType: hard
 
