@@ -120,7 +120,7 @@ function MfmUrlLike(props: (Mfm.MfmUrl | Mfm.MfmLink) & { customEmojiMapper?: Cu
     text = props.props.url;
     href = props.props.url;
   } else {
-    text = <MfmRenderer nodes={props.children} />;
+    text = <MfmRenderer nodes={props.children} customEmojiMapper={props.customEmojiMapper} />;
     href = props.props.url;
   }
 
