@@ -5,7 +5,7 @@ import { CustomEmojiMapper } from "./Mfm";
 import MfmRenderer from "./MfmRenderer";
 
 function parseFloatWithDefault(value: string | true | undefined, defaultValue: string): string {
-  if (typeof value !== "string" || !/^\d+(:?\.\d+)?$/.test(value)) {
+  if (typeof value !== "string" || !/^[-+]?\d+(:?\.\d+)?$/.test(value)) {
     return defaultValue;
   }
   return value;
@@ -47,6 +47,10 @@ export default function MfmFunction(
       const degrees = parseFloatWithDefault(props.args.deg, "90");
       className = "inline-block";
       style = { transform: `rotate(${degrees}deg)` };
+      break;
+    }
+    case "blur": {
+      className = "transition duration-300 blur hover:blur-none";
       break;
     }
   }

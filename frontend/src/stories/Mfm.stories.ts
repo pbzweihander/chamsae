@@ -3,6 +3,7 @@ import React from "react";
 
 import Mfm from "@/components/mfm/Mfm";
 
+import foodTestdata from "./assets/mfm-food.json";
 import transformsTestdata from "./assets/mfm-transforms.json";
 import plachta from "./assets/plachta.png";
 import recruitSimulatorTestdata from "./assets/recruit.json";
@@ -74,4 +75,8 @@ export const Transforms: Story = {
 
 export const RecruitSimulator: Story = {
   args: recruitSimulatorTestdata,
+};
+
+export const Food: Story = {
+  args: foodTestdata,
 };
