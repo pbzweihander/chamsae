@@ -49,6 +49,10 @@ export default function MfmFunction(
       style = { transform: `rotate(${degrees}deg)` };
       break;
     }
+    case "blur": {
+      className = "transition duration-300 blur hover:blur-none";
+      break;
+    }
   }
 
   if (!className && !style) {
