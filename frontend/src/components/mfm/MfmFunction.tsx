@@ -5,7 +5,7 @@ import { CustomEmojiMapper } from "./Mfm";
 import MfmRenderer from "./MfmRenderer";
 
 function parseFloatWithDefault(value: string | true | undefined, defaultValue: string): string {
-  if (typeof value !== "string" || !/^\d+(:?\.\d+)?$/.test(value)) {
+  if (typeof value !== "string" || !/^[-+]?\d+(:?\.\d+)?$/.test(value)) {
     return defaultValue;
   }
   return value;
