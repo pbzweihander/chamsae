@@ -41,7 +41,7 @@ fn calculate_visibility(to: &[Url], cc: &[Url]) -> sea_orm_active_enums::Visibil
 
 impl post::Model {
     pub fn ap_id_from_id(id: Ulid) -> Result<Url, Error> {
-        Url::parse(&format!("https://{}/ap/note/{}", CONFIG.domain, id))
+        Url::parse(&format!("https://{}/note/{}", CONFIG.domain, id))
             .context_internal_server_error("failed to construct follow URL ID")
     }
 

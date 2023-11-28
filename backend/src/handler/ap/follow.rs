@@ -12,7 +12,7 @@ use crate::{
     state::State,
 };
 
-pub(super) fn create_router() -> Router {
+pub fn create_router() -> Router {
     Router::new().route("/:id", routing::get(get_follow))
 }
 
