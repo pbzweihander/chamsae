@@ -19,6 +19,12 @@ use crate::{
     state::State,
 };
 
+impl user::Model {
+    pub fn display_name(&self) -> &str {
+        self.name.as_deref().unwrap_or(&self.handle)
+    }
+}
+
 #[async_trait]
 impl Object for user::Model {
     type DataType = State;

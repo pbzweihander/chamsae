@@ -1,4 +1,5 @@
 mod emoji;
+mod enums;
 mod follow;
 mod follower;
 mod local_file;

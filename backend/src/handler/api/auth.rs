@@ -1,10 +1,10 @@
 use activitypub_federation::config::Data;
 use async_trait::async_trait;
 use axum::{
-    extract::{rejection::TypedHeaderRejectionReason, FromRequestParts},
+    extract::{rejection::TypedHeaderRejectionReason, FromRequestParts, TypedHeader},
     headers,
     http::{header, request::Parts},
-    routing, Json, RequestPartsExt, Router, TypedHeader,
+    routing, Json, RequestPartsExt, Router,
 };
 use axum_client_ip::InsecureClientIp;
 use chrono::Utc;

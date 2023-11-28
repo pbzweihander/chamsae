@@ -87,8 +87,48 @@ impl LocalPerson {
         Ok(Self(setting::Model::get(db).await?))
     }
 
-    pub fn handle(&self) -> &str {
-        &self.0.user_handle
+    pub fn display_name(&self) -> &str {
+        self.0.user_name.as_deref().unwrap_or(&self.0.user_handle)
+    }
+
+    pub fn description(&self) -> &Option<String> {
+        &self.0.user_description
+    }
+
+    pub async fn get_avatar_url(&self, db: &impl ConnectionTrait) -> Result<Option<Url>, Error> {
+        if let Some(file_id) = self.0.avatar_file_id {
+            let url = local_file::Entity::find_by_id(file_id)
+                .select_only()
+                .column(local_file::Column::Url)
+                .into_tuple::<String>()
+                .one(db)
+                .await
+                .context_internal_server_error("failed to query database")?
+                .context_internal_server_error("file not found")?;
+            Ok(Some(
+                Url::parse(&url).context_internal_server_error("malformed file URL")?,
+            ))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn get_banner_url(&self, db: &impl ConnectionTrait) -> Result<Option<Url>, Error> {
+        if let Some(file_id) = self.0.banner_file_id {
+            let url = local_file::Entity::find_by_id(file_id)
+                .select_only()
+                .column(local_file::Column::Url)
+                .into_tuple::<String>()
+                .one(db)
+                .await
+                .context_internal_server_error("failed to query database")?
+                .context_internal_server_error("file not found")?;
+            Ok(Some(
+                Url::parse(&url).context_internal_server_error("malformed file URL")?,
+            ))
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn followers() -> Result<Url, Error> {
@@ -136,49 +176,24 @@ impl Object for LocalPerson {
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = self.id();
 
-        let setting = setting::Model::get(&*data.db).await?;
-
-        let avatar_url = if let Some(file_id) = setting.avatar_file_id {
-            let url = local_file::Entity::find_by_id(file_id)
-                .select_only()
-                .column(local_file::Column::Url)
-                .into_tuple::<String>()
-                .one(&*data.db)
-                .await
-                .context_internal_server_error("failed to query database")?
-                .context_internal_server_error("file not found")?;
-            Some(Url::parse(&url).context_internal_server_error("malformed file URL")?)
-        } else {
-            None
-        };
-        let banner_url = if let Some(file_id) = setting.banner_file_id {
-            let url = local_file::Entity::find_by_id(file_id)
-                .select_only()
-                .column(local_file::Column::Url)
-                .into_tuple::<String>()
-                .one(&*data.db)
-                .await
-                .context_internal_server_error("failed to query database")?
-                .context_internal_server_error("file not found")?;
-            Some(Url::parse(&url).context_internal_server_error("malformed file URL")?)
-        } else {
-            None
-        };
-
         Ok(Self::Kind {
             ty: ActorType::Person,
             id: id.clone().into(),
-            preferred_username: self.handle().to_string(),
-            name: setting.user_name,
-            summary: setting.user_description,
-            icon: avatar_url.map(|url| PersonImage {
-                ty: Default::default(),
-                url,
-            }),
-            image: banner_url.map(|url| PersonImage {
-                ty: Default::default(),
-                url,
-            }),
+            preferred_username: self.display_name().to_string(),
+            icon: self
+                .get_avatar_url(&*data.db)
+                .await?
+                .map(|url| PersonImage {
+                    ty: Default::default(),
+                    url,
+                }),
+            image: self
+                .get_banner_url(&*data.db)
+                .await?
+                .map(|url| PersonImage {
+                    ty: Default::default(),
+                    url,
+                }),
             inbox: self.inbox(),
             shared_inbox: Some(self.inbox()),
             public_key: PublicKey {
@@ -187,6 +202,8 @@ impl Object for LocalPerson {
                 public_key_pem: self.public_key_pem().to_string(),
             },
             manually_approves_followers: false,
+            name: self.0.user_name,
+            summary: self.0.user_description,
         })
     }
 

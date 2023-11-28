@@ -6,15 +6,16 @@ use axum::{
     http::{header, HeaderMap},
     routing, Router,
 };
+use reqwest::StatusCode;
 use sea_orm::EntityTrait;
 use ulid::Ulid;
 
 use crate::{
-    ap::NoteOrAnnounce,
-    entity::{post, sea_orm_active_enums},
+    ap::{person::LocalPerson, NoteOrAnnounce},
+    entity::{post, user},
     error::{Context, Result},
     format_err,
-    handler::frontend::RespOrFrontend,
+    handler::frontend::{FrontendContext, RespOrFrontend},
     state::State,
 };
 
@@ -28,28 +29,63 @@ async fn get_note(
     extract::Path(id): extract::Path<Ulid>,
     headers: HeaderMap,
 ) -> Result<RespOrFrontend<FederationJson<WithContext<NoteOrAnnounce>>>> {
+    let this = post::Entity::find_by_id(id)
+        .one(&*data.db)
+        .await
+        .context_internal_server_error("failed to query database")?;
+    if let Some(this) = this {
+        if this.visibility.is_visible() {
+            if headers
+                .get(header::ACCEPT)
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v.starts_with("application/activity+json"))
+                .unwrap_or_default()
+            {
+                let this = this.into_json(&data).await?;
+                return Ok(RespOrFrontend::resp(FederationJson(
+                    WithContext::new_default(this),
+                )));
+            } else {
+                let (name, avatar_url) = if let Some(user_id) = this.user_id {
+                    let user = user::Entity::find_by_id(user_id)
+                        .one(&*data.db)
+                        .await
+                        .context_internal_server_error("failed to query database")?
+                        .context_internal_server_error("user not found")?;
+                    (user.display_name().to_string(), user.avatar_url)
+                } else {
+                    let local_user = LocalPerson::get(&*data.db).await?;
+                    (
+                        local_user.display_name().to_string(),
+                        local_user
+                            .get_avatar_url(&*data.db)
+                            .await?
+                            .map(|url| url.to_string()),
+                    )
+                };
+
+                let ctx = FrontendContext {
+                    title: Some(name.clone()),
+                    description: Some(this.text.clone()),
+                    og_type: Some("article".to_string()),
+                    og_title: Some(name),
+                    og_description: Some(this.text),
+                    og_image: avatar_url,
+                };
+
+                return RespOrFrontend::frontend(StatusCode::OK, &*data.db, ctx).await;
+            }
+        }
+    }
     if headers
         .get(header::ACCEPT)
         .and_then(|v| v.to_str().ok())
         .map(|v| v.starts_with("application/activity+json"))
         .unwrap_or_default()
     {
-        let this = post::Entity::find_by_id(id)
-            .one(&*data.db)
-            .await
-            .context_internal_server_error("failed to query database")?
-            .context_not_found("post not found")?;
-        if this.visibility == sea_orm_active_enums::Visibility::Followers
-            || this.visibility == sea_orm_active_enums::Visibility::DirectMessage
-        {
-            Err(format_err!(NOT_FOUND, "post not found"))
-        } else {
-            let this = this.into_json(&data).await?;
-            Ok(RespOrFrontend::Resp(FederationJson(
-                WithContext::new_default(this),
-            )))
-        }
+        Err(format_err!(NOT_FOUND, "post not found"))
     } else {
-        Ok(RespOrFrontend::Frontend)
+        let ctx = FrontendContext::site_default(&*data.db).await?;
+        RespOrFrontend::frontend(StatusCode::NOT_FOUND, &*data.db, ctx).await
     }
 }

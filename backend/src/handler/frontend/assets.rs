@@ -1,4 +1,4 @@
-use axum::{headers::ContentType, routing, Router, TypedHeader};
+use axum::{extract::TypedHeader, headers::ContentType, routing, Router};
 use include_dir::{include_dir, Dir, DirEntry};
 
 const FRONTEND_ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../frontend/dist/assets");

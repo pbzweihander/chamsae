@@ -144,12 +144,12 @@ pub async fn create_router(federation_config: FederationConfig<State>) -> anyhow
             "/openapi.json",
             routing::get(|| async move { Json(ApiDoc::openapi()) }),
         )
-        .layer(FederationMiddleware::new(federation_config))
         .layer(TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)))
-        .merge(Redoc::with_url("/api-doc", ApiDoc::openapi()))
-        .nest("/assets", assets)
-        .route("/*path", routing::get(self::frontend::get_index))
         .route("/", routing::get(self::frontend::get_index))
+        .route("/*path", routing::get(self::frontend::get_not_found))
+        .layer(FederationMiddleware::new(federation_config))
+        .nest("/assets", assets)
+        .merge(Redoc::with_url("/api-doc", ApiDoc::openapi()))
         .layer(axum::middleware::from_fn(server_header_middleware));
 
     Ok(router)
