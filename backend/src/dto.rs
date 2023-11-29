@@ -500,6 +500,7 @@ pub struct Setting {
     pub user_handle: String,
     pub user_name: Option<String>,
     pub user_description: Option<String>,
+    pub instance_name: String,
     pub instance_description: Option<String>,
     #[schema(value_type = Option<String>, format = "ulid")]
     pub avatar_file_id: Option<Ulid>,
@@ -516,6 +517,7 @@ impl Setting {
             user_handle: setting.user_handle,
             user_name: setting.user_name,
             user_description: setting.user_description,
+            instance_name: setting.instance_name,
             instance_description: setting.instance_description,
             avatar_file_id: setting.avatar_file_id.map(Into::into),
             banner_file_id: setting.banner_file_id.map(Into::into),

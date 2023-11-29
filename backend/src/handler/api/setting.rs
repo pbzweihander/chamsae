@@ -2,6 +2,7 @@ use activitypub_federation::config::Data;
 use axum::{routing, Json, Router};
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, PaginatorTrait, TransactionTrait};
 use serde::Deserialize;
+use ulid::Ulid;
 use utoipa::ToSchema;
 
 use crate::{
@@ -34,10 +35,33 @@ async fn get_setting(data: Data<State>) -> Result<Json<Setting>> {
     Ok(Json(Setting::from_model(setting)))
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PutSettingReq {
+    #[serde(default)]
+    pub user_name: Option<String>,
+    #[serde(default)]
+    pub user_description: Option<String>,
+    #[serde(default)]
+    pub instance_description: Option<String>,
+    #[schema(value_type = Option<String>, format = "ulid")]
+    #[serde(default)]
+    pub avatar_file_id: Option<Ulid>,
+    #[schema(value_type = Option<String>, format = "ulid")]
+    #[serde(default)]
+    pub banner_file_id: Option<Ulid>,
+    #[serde(default)]
+    pub maintainer_name: Option<String>,
+    #[serde(default)]
+    pub maintainer_email: Option<String>,
+    #[serde(default)]
+    pub theme_color: Option<String>,
+}
+
 #[utoipa::path(
     put,
     path = "/api/setting",
-    request_body = Setting,
+    request_body = PutSettingReq,
     responses(
         (status = 200, body = Setting),
     ),
@@ -49,7 +73,7 @@ async fn get_setting(data: Data<State>) -> Result<Json<Setting>> {
 async fn put_setting(
     data: Data<State>,
     _access: Access,
-    Json(req): Json<Setting>,
+    Json(req): Json<PutSettingReq>,
 ) -> Result<Json<Setting>> {
     let setting = setting::Model::get(&*data.db).await?;
 

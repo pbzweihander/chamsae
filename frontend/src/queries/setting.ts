@@ -28,3 +28,26 @@ export function useInitializeSettingMutation(): JsonMutationRet<
     },
   });
 }
+
+export interface PutSettingReq {
+  userName?: string;
+  userDescription?: string;
+  instanceDescription?: string;
+  avatarFileId?: string;
+  bannerFileId?: string;
+  maintainerName?: string;
+  maintainerEmail?: string;
+  themeColor?: string;
+}
+
+export function usePutSettingMutation(): JsonMutationRet<
+  PutSettingReq,
+  typeof Setting
+> {
+  const queryClient = useQueryClient();
+  return useJsonMutation("PUT", "/api/setting", Setting, {
+    onSuccess: () => {
+      queryClient.invalidateQueries(SETTING_KEY);
+    },
+  });
+}

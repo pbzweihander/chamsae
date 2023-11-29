@@ -151,11 +151,12 @@ export const Setting = z.object({
   userHandle: z.string(),
   userName: z.string().nullish(),
   userDescription: z.string().nullish(),
+  instanceName: z.string(),
   instanceDescription: z.string().nullish(),
   avatarFileId: Id.nullish(),
   bannerFileId: Id.nullish(),
   maintainerName: z.string().nullish(),
-  maintainerEmail: z.string().email().nullish(),
+  maintainerEmail: z.string().nullish(),
   themeColor: z.string().nullish(),
 });
 

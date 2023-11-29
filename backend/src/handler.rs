@@ -96,6 +96,7 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         crate::queue::NotificationType,
         self::api::auth::PostLoginReq,
         self::api::auth::PostLoginResp,
+        self::api::setting::PutSettingReq,
         self::api::setting::PostInitialSettingReq,
     )),
     modifiers(&AccessKeyAddon),

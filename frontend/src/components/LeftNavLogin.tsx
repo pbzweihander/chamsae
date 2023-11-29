@@ -30,7 +30,7 @@ export default function LeftNavLogin() {
       </button>
       <dialog ref={modalRef} className="modal">
         <form
-          className="modal-box form-control"
+          className="form-control modal-box"
           onSubmit={handleSubmit(onSubmit)}
         >
           <label className="label label-text">Password</label>
@@ -43,9 +43,10 @@ export default function LeftNavLogin() {
           <input
             type="submit"
             className="btn btn-primary mt-4"
+            value="Login"
             disabled={isLoginLoading}
           />
-          {error && <div className="text-error mt-5">{error.message}</div>}
+          {error && <div className="mt-5 text-error">{error.message}</div>}
         </form>
         <form method="dialog" className="modal-backdrop">
           <button>close</button>

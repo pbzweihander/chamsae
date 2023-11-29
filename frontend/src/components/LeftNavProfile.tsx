@@ -22,9 +22,7 @@ export default function LeftNavProfile() {
       {setting.userName != null ? (
         <span>
           {setting.userName}
-          <span className="text-neutral-content ml-2">
-            @{setting.userHandle}
-          </span>
+          <span className="ml-2 text-gray-500">@{setting.userHandle}</span>
         </span>
       ) : (
         <span>@{setting.userHandle}</span>
@@ -35,7 +33,7 @@ export default function LeftNavProfile() {
         }}
         disabled={isLogoutLoading}
       >
-        <ArrowLeftOnRectangleIcon className="text-error ml-4 h-6 w-6" />
+        <ArrowLeftOnRectangleIcon className="ml-4 h-6 w-6 text-error" />
       </button>
     </div>
   );
