@@ -4,38 +4,37 @@ run-name: "Docker: build"
 on:
   push:
     branches:
-    - main
+      - main
     tags:
-    - v*
+      - v*
   pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: docker/setup-qemu-action@v2
-      if: github.event_name != 'pull_request'
-    - uses: docker/setup-buildx-action@v2
-    - uses: docker/metadata-action@v4
-      id: meta
-      with:
-        images: |
-          ghcr.io/${{ github.repository }}
-        tags: |
-          type=edge,branch=main
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=ref,event=pr
-        flavor:
-          latest=auto
-    - uses: actions/checkout@v3
-    - uses: docker/build-push-action@v4
-      with:
-        context: .
-        platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-        push: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        cache-to: type=gha,scope=docker
-        cache-from: type=gha,scope=docker,mode=max
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+      - uses: docker/setup-qemu-action@v2
+        if: github.event_name != 'pull_request'
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=pr
+          flavor: latest=auto
+      - uses: actions/checkout@v3
+      - uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          cache-to: type=gha,scope=docker
+          cache-from: type=gha,scope=docker,mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
