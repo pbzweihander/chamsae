@@ -9,6 +9,8 @@ use serde::Serialize;
 use tracing_error::SpanTrace;
 use ulid::Ulid;
 
+use crate::config::CONFIG;
+
 #[derive(Debug)]
 pub struct Error {
     pub id: Ulid,
@@ -57,12 +59,21 @@ impl IntoResponse for Error {
                 self.context
             );
         } else {
-            tracing::warn!(
-                "responding client error, id: {}\n{:?}\nContext\n{}",
-                self.id,
-                self.inner,
-                self.context
-            );
+            if CONFIG.debug {
+                tracing::warn!(
+                    "responding client error, id: {}\n{:?}\nContext\n{}",
+                    self.id,
+                    self.inner,
+                    self.context
+                );
+            } else {
+                tracing::debug!(
+                    "responding client error, id: {}\n{:?}\nContext\n{}",
+                    self.id,
+                    self.inner,
+                    self.context
+                );
+            }
         }
         (self.status_code, Json(resp)).into_response()
     }

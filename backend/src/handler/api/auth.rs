@@ -1,9 +1,9 @@
 use activitypub_federation::config::Data;
 use async_trait::async_trait;
 use axum::{
-    extract::{rejection::TypedHeaderRejectionReason, FromRequestParts, TypedHeader},
+    extract::{FromRequestParts, TypedHeader},
     headers,
-    http::{header, request::Parts},
+    http::request::Parts,
     routing, Json, RequestPartsExt, Router,
 };
 use axum_client_ip::InsecureClientIp;
@@ -40,15 +40,7 @@ where
         let bearer = parts
             .extract::<TypedHeader<headers::Authorization<headers::authorization::Bearer>>>()
             .await
-            .map_err(|e| match *e.name() {
-                header::COOKIE => match e.reason() {
-                    TypedHeaderRejectionReason::Missing => {
-                        format_err!(UNAUTHORIZED, "user not authorized")
-                    }
-                    _ => format_err!(INTERNAL_SERVER_ERROR, "failed to authorize"),
-                },
-                _ => format_err!(INTERNAL_SERVER_ERROR, "failed to authorize"),
-            })?;
+            .context_unauthorized("user not authorized")?;
 
         let access_key_id =
             Ulid::from_string(bearer.token()).context_unauthorized("user not authorized")?;

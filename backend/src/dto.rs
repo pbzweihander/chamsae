@@ -497,6 +497,7 @@ pub struct CreateFollow {
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Setting {
+    pub user_handle: String,
     pub user_name: Option<String>,
     pub user_description: Option<String>,
     pub instance_description: Option<String>,
@@ -512,6 +513,7 @@ pub struct Setting {
 impl Setting {
     pub fn from_model(setting: setting::Model) -> Self {
         Self {
+            user_handle: setting.user_handle,
             user_name: setting.user_name,
             user_description: setting.user_description,
             instance_description: setting.instance_description,

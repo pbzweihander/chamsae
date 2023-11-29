@@ -7,18 +7,24 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "prettier": "prettier --write --config prettier.config.cjs index.html './src/**/*.{js,jsx,ts,tsx,css}'",
-    "prettier:check": "prettier --check --config prettier.config.cjs index.html './src/**/*.{js,jsx,ts,tsx,css}'",
+    "prettier": "prettier --write --config .prettierrc.json index.html './src/**/*.{js,jsx,ts,tsx,css}'",
+    "prettier:check": "prettier --check --config .prettierrc.json index.html './src/**/*.{js,jsx,ts,tsx,css}'",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@heroicons/react": "^2.0.18",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.48.2",
+    "react-query": "^3.39.3",
+    "react-router-dom": "^6.20.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
+    "@types/react-router-dom": "^5.3.3",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
     "@vitejs/plugin-react": "^4.2.0",

@@ -35,9 +35,9 @@ impl FrontendContext {
         };
 
         Ok(Self {
-            og_title: title.clone(),
+            og_title: title,
             og_description: description.clone(),
-            title,
+            title: None,
             description,
             og_type: None,
             og_image: None,
