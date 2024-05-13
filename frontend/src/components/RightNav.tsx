@@ -8,7 +8,7 @@ export default function RightNav() {
   const isAuthed = useIsAuthed() ?? false;
 
   return (
-    <div className="h-full p-4">
+    <div className="w-50 h-full p-4">
       {isAuthed && (
         <>
           <div className="mb-4">

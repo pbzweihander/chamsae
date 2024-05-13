@@ -8,7 +8,7 @@ export default function LeftNav() {
   const isAuthed = useIsAuthed() ?? false;
 
   return (
-    <div className="flex h-full w-64 flex-col p-4">
+    <div className="w-50 flex h-full flex-col p-4">
       <h1 className="text-xl font-bold">{setting?.instanceName}</h1>
       <div className="flex-grow" />
       {isAuthed ? <LeftNavProfile /> : <LeftNavLogin />}

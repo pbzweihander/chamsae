@@ -22,7 +22,7 @@ export function LogInIndexPage() {
 
   return (
     <div className="relative flex h-full w-full">
-      <div className="h-full w-full overflow-y-scroll py-10">
+      <div className="h-full w-full overflow-y-scroll p-6">
         {(notes ?? []).map((note) => (
           <div
             key={note.id}
