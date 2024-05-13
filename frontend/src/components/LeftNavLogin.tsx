@@ -29,25 +29,24 @@ export default function LeftNavLogin() {
         Login
       </button>
       <dialog ref={modalRef} className="modal">
-        <form
-          className="form-control modal-box"
-          onSubmit={handleSubmit(onSubmit)}
-        >
-          <label className="label label-text">Password</label>
-          <input
-            type="password"
-            className="input input-bordered w-full"
-            required
-            {...register("password")}
-          />
-          <input
-            type="submit"
-            className="btn btn-primary mt-4"
-            value="Login"
-            disabled={isLoginLoading}
-          />
-          {error && <div className="mt-5 text-error">{error.message}</div>}
-        </form>
+        <div className="form-control modal-box">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <label className="label label-text">Password</label>
+            <input
+              type="password"
+              className="input input-bordered w-full"
+              required
+              {...register("password")}
+            />
+            <input
+              type="submit"
+              className="btn btn-primary mt-4"
+              value="Login"
+              disabled={isLoginLoading}
+            />
+            {error && <div className="mt-5 text-error">{error.message}</div>}
+          </form>
+        </div>
         <form method="dialog" className="modal-backdrop">
           <button>close</button>
         </form>

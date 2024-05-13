@@ -22,9 +22,12 @@ export function LogInIndexPage() {
 
   return (
     <div className="relative flex h-full w-full">
-      <div className="h-full w-full overflow-y-scroll">
+      <div className="h-full w-full overflow-y-scroll py-10">
         {(notes ?? []).map((note) => (
-          <div className={`chat chat-${note.user != null ? "start" : "end"}`}>
+          <div
+            key={note.id}
+            className={`chat chat-${note.user != null ? "start" : "end"}`}
+          >
             {note.user && (
               <div className="chat-header">
                 {note.user.name != null ? (
