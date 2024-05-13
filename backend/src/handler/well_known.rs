@@ -35,7 +35,7 @@ async fn get_webfinger(
     let name = extract_webfinger_name(&query.resource, &data)
         .context_bad_request("failed to extract resource name")?;
     if name == setting.user_handle {
-        let resp = build_webfinger_response(name, LocalPerson::id());
+        let resp = build_webfinger_response(name.to_string(), LocalPerson::id());
         Ok(Json(resp))
     } else {
         Err(format_err!(NOT_FOUND, "user not found"))

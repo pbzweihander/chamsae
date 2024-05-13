@@ -4,7 +4,7 @@ use activitypub_federation::{
     traits::{Actor, Object},
 };
 use async_trait::async_trait;
-use chrono::{NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QuerySelect,
     TransactionTrait,
@@ -31,8 +31,8 @@ impl Object for user::Model {
     type Kind = Person;
     type Error = Error;
 
-    fn last_refreshed_at(&self) -> Option<NaiveDateTime> {
-        Some(self.last_fetched_at.naive_utc())
+    fn last_refreshed_at(&self) -> Option<DateTime<Utc>> {
+        Some(self.last_fetched_at.into())
     }
 
     #[tracing::instrument(skip(data))]

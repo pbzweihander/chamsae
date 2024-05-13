@@ -1,5 +1,5 @@
 use activitypub_federation::{
-    activity_queue::send_activity,
+    activity_queue::queue_activity,
     config::Data,
     fetch::object_id::ObjectId,
     kinds::activity::{AcceptType, FollowType, RejectType},
@@ -48,7 +48,8 @@ impl Follow {
         let inbox = object.dereference(data).await?.inbox;
         let inbox = Url::parse(&inbox).context_internal_server_error("malformed user inbox URL")?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &me, vec![inbox], data).await
+        queue_activity(&with_context, &me, vec![inbox], data).await?;
+        Ok(())
     }
 }
 
@@ -112,7 +113,8 @@ impl FollowAccept {
         let inbox = actor.dereference(data).await?.inbox;
         let inbox = Url::parse(&inbox).context_internal_server_error("malformed user inbox URL")?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &me, vec![inbox], data).await
+        queue_activity(&with_context, &me, vec![inbox], data).await?;
+        Ok(())
     }
 }
 
@@ -189,7 +191,8 @@ impl FollowReject {
     pub async fn send(self, data: &Data<State>, inbox: Url) -> Result<(), Error> {
         let me = LocalPerson::get(&*data.db).await?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &me, vec![inbox], data).await
+        queue_activity(&with_context, &me, vec![inbox], data).await?;
+        Ok(())
     }
 }
 

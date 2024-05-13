@@ -1,5 +1,5 @@
 use activitypub_federation::{
-    activity_queue::send_activity,
+    activity_queue::queue_activity,
     config::Data,
     fetch::object_id::ObjectId,
     kinds::activity::LikeType,
@@ -53,7 +53,8 @@ impl Like {
         let inbox =
             Url::parse(&user.inbox).context_internal_server_error("malformed user inbox URL")?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &me, vec![inbox], data).await
+        queue_activity(&with_context, &me, vec![inbox], data).await?;
+        Ok(())
     }
 }
 

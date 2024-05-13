@@ -58,22 +58,20 @@ impl IntoResponse for Error {
                 self.inner,
                 self.context
             );
+        } else if CONFIG.debug {
+            tracing::warn!(
+                "responding client error, id: {}\n{:?}\nContext\n{}",
+                self.id,
+                self.inner,
+                self.context
+            );
         } else {
-            if CONFIG.debug {
-                tracing::warn!(
-                    "responding client error, id: {}\n{:?}\nContext\n{}",
-                    self.id,
-                    self.inner,
-                    self.context
-                );
-            } else {
-                tracing::debug!(
-                    "responding client error, id: {}\n{:?}\nContext\n{}",
-                    self.id,
-                    self.inner,
-                    self.context
-                );
-            }
+            tracing::debug!(
+                "responding client error, id: {}\n{:?}\nContext\n{}",
+                self.id,
+                self.inner,
+                self.context
+            );
         }
         (self.status_code, Json(resp)).into_response()
     }

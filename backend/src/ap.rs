@@ -1,5 +1,5 @@
 use activitypub_federation::{
-    activity_queue::send_activity, config::Data, protocol::context::WithContext,
+    activity_queue::queue_activity, config::Data, protocol::context::WithContext,
     traits::ActivityHandler,
 };
 use serde::{Deserialize, Serialize};
@@ -43,11 +43,13 @@ impl NoteOrAnnounce {
             Self::Note(note) => {
                 let create_note = self::note::CreateNote::new(note)?;
                 let with_context = WithContext::new_default(create_note);
-                send_activity(with_context, &me, inboxes, data).await
+                queue_activity(&with_context, &me, inboxes, data).await?;
+                Ok(())
             }
             Self::Announce(announce) => {
                 let with_context = WithContext::new_default(announce);
-                send_activity(with_context, &me, inboxes, data).await
+                queue_activity(&with_context, &me, inboxes, data).await?;
+                Ok(())
             }
         }
     }

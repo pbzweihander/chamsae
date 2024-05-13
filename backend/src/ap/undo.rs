@@ -1,5 +1,5 @@
 use activitypub_federation::{
-    activity_queue::send_activity,
+    activity_queue::queue_activity,
     config::Data,
     kinds::activity::UndoType,
     protocol::{context::WithContext, verification::verify_domains_match},
@@ -56,7 +56,8 @@ where
     pub async fn send(self, data: &Data<State>, inboxes: Vec<Url>) -> Result<(), Error> {
         let me = LocalPerson::get(&*data.db).await?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &me, inboxes, data).await
+        queue_activity(&with_context, &me, inboxes, data).await?;
+        Ok(())
     }
 }
 

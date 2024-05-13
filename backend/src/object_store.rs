@@ -53,7 +53,7 @@ impl ObjectStore {
         let path = Path::parse(key)
             .context_internal_server_error("failed to construct object store key")?;
         self.inner
-            .put(&path, body)
+            .put(&path, body.into())
             .await
             .context_internal_server_error("failed to put object to object store")?;
         Ok(match &self.config {

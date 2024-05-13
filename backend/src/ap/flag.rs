@@ -1,5 +1,5 @@
 use activitypub_federation::{
-    activity_queue::send_activity,
+    activity_queue::queue_activity,
     config::Data,
     fetch::object_id::ObjectId,
     kinds::activity::FlagType,
@@ -52,7 +52,8 @@ impl Flag {
     pub async fn send(self, data: &Data<State>, inbox: Url) -> Result<(), Error> {
         let me = LocalPerson::get(&*data.db).await?;
         let with_context = WithContext::new_default(self);
-        send_activity(with_context, &me, vec![inbox], data).await
+        queue_activity(&with_context, &me, vec![inbox], data).await?;
+        Ok(())
     }
 }
 
