@@ -28,7 +28,7 @@ You can also use `.env` file.
 
 ```
 DEBUG=true \
-  DOMAIN=localhost \
+  PUBLIC_DOMAIN=localhost \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
   OBJECT_STORE_TYPE=local_filesystem \
   OBJECT_STORE_LOCAL_FILE_BASE_PATH=./files/ \
@@ -39,7 +39,7 @@ DEBUG=true \
 
 ```
 DEBUG=true \
-  DOMAIN=localhost \
+  PUBLIC_DOMAIN=localhost \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
   OBJECT_STORE_TYPE=s3 \
   OBJECT_STORE_BUCKET=bucket \
