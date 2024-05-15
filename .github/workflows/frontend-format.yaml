@@ -15,8 +15,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:
-          path: frontend/.yarn/cache
-          key: frontend-yarn-${{ runner.os }}-${{ hashFiles('frontend/yarn.lock') }}
+          path: node_modules
+          key: frontend-yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: |
             frontend-yarn-${{ runner.os }}-
       - name: Install dependencies
