@@ -29,8 +29,8 @@ export default function LeftNavLogin() {
         Login
       </button>
       <dialog ref={modalRef} className="modal">
-        <div className="form-control modal-box">
-          <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="modal-box">
+          <form className="form-control" onSubmit={handleSubmit(onSubmit)}>
             <label className="label label-text">Password</label>
             <input
               type="password"

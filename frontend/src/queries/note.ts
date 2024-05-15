@@ -1,13 +1,13 @@
 import { useQueryClient } from "react-query";
 import z from "zod";
 
-import { JsonMutationRet, useJsonQuery, useJsonMutation } from ".";
+import { JsonMutationRet, useJsonMutation, useInfiniteJsonQuery } from ".";
 import { CreatePost, IdResponse, Post } from "../dto";
 
 const NOTES_KEY = ["notes"];
 
 export function useNotes() {
-  return useJsonQuery(z.array(Post), NOTES_KEY, "/api/post");
+  return useInfiniteJsonQuery(z.array(Post), NOTES_KEY, "/api/post");
 }
 
 export function usePostNoteMutation(

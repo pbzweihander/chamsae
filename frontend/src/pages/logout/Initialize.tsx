@@ -19,8 +19,8 @@ export default function InitializePage() {
 
   return (
     <dialog className="modal modal-open">
-      <div className="form-control modal-box">
-        <form onSubmit={handleSubmit(onSubmit)}>
+      <div className="modal-box">
+        <form className="form-control" onSubmit={handleSubmit(onSubmit)}>
           <h2 className="text-xl font-bold">Initialize instance</h2>
           <label className="label label-text">Instance name</label>
           <input

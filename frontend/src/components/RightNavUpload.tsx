@@ -43,8 +43,8 @@ export default function RightNavUpload() {
         <span className="text-lg">Upload</span>
       </button>
       <dialog ref={modalRef} className="modal">
-        <div className="form-control modal-box">
-          <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="modal-box">
+          <form className="form-control" onSubmit={handleSubmit(onSubmit)}>
             <input
               type="file"
               className="file-input file-input-bordered mb-4 w-full"
