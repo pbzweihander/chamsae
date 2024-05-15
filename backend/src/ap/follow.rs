@@ -179,8 +179,11 @@ impl FollowReject {
             object: Follow {
                 ty: Default::default(),
                 id: Some(
-                    Url::parse(&format!("https://{}/follower/{}", CONFIG.domain, user_id))
-                        .context_internal_server_error("failed to construct URL")?,
+                    Url::parse(&format!(
+                        "https://{}/follower/{}",
+                        CONFIG.public_domain, user_id
+                    ))
+                    .context_internal_server_error("failed to construct URL")?,
                 ),
                 actor: user_uri,
                 object: LocalPerson::id(),

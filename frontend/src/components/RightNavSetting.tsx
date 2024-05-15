@@ -40,6 +40,7 @@ export default function RightNavSetting({
       </button>
       <dialog ref={modalRef} className="modal">
         <div className="modal-box">
+          <h2 className="mb-4 text-lg font-bold">Settings</h2>
           <form className="form-control" onSubmit={handleSubmit(onSubmit)}>
             <label className="label label-text">User name</label>
             <input

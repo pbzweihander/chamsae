@@ -59,7 +59,7 @@ async fn get_nodeinfo() -> Result<Json<NodeInfoWellKnown>> {
         links: vec![NodeInfoWellKnownLinks {
             rel: Url::parse("http://nodeinfo.diaspora.software/ns/schema/2.0")
                 .context_internal_server_error("failed to construct URL")?,
-            href: Url::parse(&format!("https://{}/nodeinfo/2.0", CONFIG.domain,))
+            href: Url::parse(&format!("https://{}/nodeinfo/2.0", CONFIG.public_domain,))
                 .context_internal_server_error("failed to construct URL")?,
         }],
     }))

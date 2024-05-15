@@ -138,7 +138,7 @@ impl LocalPerson {
 
     pub fn id() -> Url {
         static ID: Lazy<Url> = Lazy::new(|| {
-            Url::parse(&format!("https://{}/person", CONFIG.domain))
+            Url::parse(&format!("https://{}/person", CONFIG.public_domain))
                 .expect("failed to construct ID URL")
         });
         ID.clone()
@@ -146,7 +146,7 @@ impl LocalPerson {
 
     pub fn inbox() -> Url {
         static INBOX: Lazy<Url> = Lazy::new(|| {
-            Url::parse(&format!("https://{}/inbox", CONFIG.domain))
+            Url::parse(&format!("https://{}/inbox", CONFIG.public_domain))
                 .expect("failed to construct inbox URL")
         });
         INBOX.clone()

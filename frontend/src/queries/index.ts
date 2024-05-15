@@ -7,7 +7,7 @@ import {
   useMutation,
   useInfiniteQuery,
   UseInfiniteQueryResult,
-  QueryOptions,
+  UseQueryOptions,
 } from "react-query";
 import z from "zod";
 
@@ -24,7 +24,7 @@ export function useJsonQuery<T extends z.ZodTypeAny>(
   key: string[],
   url: string,
   params?: URLSearchParams,
-  options?: QueryOptions<T, Error>,
+  options?: UseQueryOptions<T, Error>,
 ): UseJsonQueryResult<T> {
   const [accessKey] = useContext(AccessKeyContext);
 

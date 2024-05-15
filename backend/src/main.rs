@@ -64,6 +64,7 @@ async fn main() -> anyhow::Result<()> {
     if crate::config::CONFIG.debug {
         tracing::warn!("Enabling debug mode... DO NOT USE IN PRODUCTION!");
     }
+    tracing::info!("Using domain `{}`", crate::config::CONFIG.public_domain);
 
     let db = Database::connect(crate::config::CONFIG.database_url.as_str())
         .await
@@ -78,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("failed to construct app state")?;
     let federation_config = FederationConfig::builder()
-        .domain(&crate::config::CONFIG.domain)
+        .domain(&crate::config::CONFIG.public_domain)
         .app_data(state.clone())
         .debug(crate::config::CONFIG.debug)
         .build()

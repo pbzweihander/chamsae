@@ -13,6 +13,10 @@ fn default_debug() -> bool {
     false
 }
 
+fn default_public_domain() -> String {
+    "localhost".to_string()
+}
+
 fn default_listen_addr() -> String {
     "0.0.0.0:3000".to_string()
 }
@@ -65,10 +69,11 @@ pub struct Config {
     #[serde(default = "default_debug")]
     pub debug: bool,
 
-    /// Domain of the instance.
+    /// Public domain of the instance.
     /// DO NOT CHANGE!
     /// e.g. `example.com`
-    pub domain: String,
+    #[serde(default = "default_public_domain")]
+    pub public_domain: String,
 
     #[serde(default = "default_listen_addr")]
     pub listen_addr: String,

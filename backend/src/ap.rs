@@ -24,8 +24,12 @@ pub mod tag;
 pub mod undo;
 
 pub fn generate_object_id() -> Result<Url, Error> {
-    Url::parse(&format!("https://{}/object/{}", CONFIG.domain, Ulid::new(),))
-        .context_internal_server_error("failed to construct object URL")
+    Url::parse(&format!(
+        "https://{}/object/{}",
+        CONFIG.public_domain,
+        Ulid::new(),
+    ))
+    .context_internal_server_error("failed to construct object URL")
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

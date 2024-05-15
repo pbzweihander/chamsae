@@ -75,7 +75,7 @@ impl ObjectStore {
                     .to_string_lossy()
                     .to_string(),
                 sea_orm_active_enums::ObjectStoreType::LocalFileSystem,
-                Url::parse(&format!("https://{}/file/{}", CONFIG.domain, key))
+                Url::parse(&format!("https://{}/file/{}", CONFIG.public_domain, key))
                     .context_internal_server_error("failed to construct public URL")?,
             ),
         })

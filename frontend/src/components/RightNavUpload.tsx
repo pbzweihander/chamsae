@@ -2,7 +2,7 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 import { useRef } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
-import { useFileUploadMutation } from "../queries/file";
+import { useLocalFileUploadMutation } from "../queries/file";
 
 // import { PostFileQuery } from "../queries/file";
 
@@ -13,12 +13,13 @@ interface UploadForm {
 
 export default function RightNavUpload() {
   const modalRef = useRef<HTMLDialogElement>(null);
-  const { register, handleSubmit } = useForm<UploadForm>();
+  const { register, handleSubmit, reset } = useForm<UploadForm>();
   const {
     mutate: upload,
     isLoading,
     error,
-  } = useFileUploadMutation(() => {
+  } = useLocalFileUploadMutation(() => {
+    reset();
     modalRef.current?.close();
   });
 
@@ -44,6 +45,7 @@ export default function RightNavUpload() {
       </button>
       <dialog ref={modalRef} className="modal">
         <div className="modal-box">
+          <h2 className="mb-4 text-lg font-bold">Upload</h2>
           <form className="form-control" onSubmit={handleSubmit(onSubmit)}>
             <input
               type="file"

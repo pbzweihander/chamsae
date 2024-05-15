@@ -16,12 +16,15 @@ use crate::{
 
 impl emoji::Model {
     pub fn ap_id(&self) -> Result<Url, Error> {
-        Url::parse(&format!("https://{}/emoji/{}", CONFIG.domain, self.name))
-            .context_internal_server_error("failed to construct follow URL ID")
+        Url::parse(&format!(
+            "https://{}/emoji/{}",
+            CONFIG.public_domain, self.name
+        ))
+        .context_internal_server_error("failed to construct follow URL ID")
     }
 
     pub fn parse_ap_id(url: &str) -> Option<String> {
-        url.strip_prefix(&format!("https://{}/emoji/", CONFIG.domain))
+        url.strip_prefix(&format!("https://{}/emoji/", CONFIG.public_domain))
             .map(str::to_string)
     }
 }

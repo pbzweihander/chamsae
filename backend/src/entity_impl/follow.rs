@@ -24,12 +24,12 @@ impl follow::Model {
     }
 
     pub fn ap_id_from_id(id: Ulid) -> Result<Url, Error> {
-        Url::parse(&format!("https://{}/follow/{}", CONFIG.domain, id))
+        Url::parse(&format!("https://{}/follow/{}", CONFIG.public_domain, id))
             .context_internal_server_error("failed to construct follow URL ID")
     }
 
     pub fn parse_ap_id(url: &str) -> Option<Ulid> {
-        url.strip_prefix(&format!("https://{}/follow/", CONFIG.domain))
+        url.strip_prefix(&format!("https://{}/follow/", CONFIG.public_domain))
             .and_then(|id| Ulid::from_string(id).ok())
     }
 }
