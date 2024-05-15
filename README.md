@@ -11,7 +11,7 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 
 ## Usage
 
-> **NOTE**
+> [!NOTE]
 > You have to serve chamsae with HTTPS.
 > This is not optional.
 > For development, [Caddy](https://caddyserver.com/) is helpful.
@@ -22,11 +22,18 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 
 ### Backend
 
-You can also use `.env` file.
+First, due to static-serving, you have to build frontend first.
+
+```shell
+cd frontend
+yarn build
+```
+
+For the environment variables, you can use `.env` file.
 
 #### Example: Using local filesystem as object store
 
-```
+```shell
 DEBUG=true \
   PUBLIC_DOMAIN=localhost \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
@@ -37,7 +44,7 @@ DEBUG=true \
 
 #### Example: Using CloudFlare R2 as object store
 
-```
+```shell
 DEBUG=true \
   PUBLIC_DOMAIN=localhost \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
@@ -51,11 +58,11 @@ DEBUG=true \
   cargo run --bin chamsae
 ```
 
-#### Serve HTTPS with caddy
+You can also use other S3-compatible object stores.
 
-To serve HTTPS with caddy:
+#### Serve HTTPS with caddy for debugging
 
-```
+```shell
 caddy reverse-proxy --to :3000
 ```
 
@@ -70,7 +77,7 @@ yarn dev
 
 ### Initialize instance
 
-Open `localhost:8000` with your browser.
+Open `http://localhost:5173` with your browser.
 You can now initialize instance.
 
 ## License
