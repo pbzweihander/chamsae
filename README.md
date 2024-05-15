@@ -22,10 +22,9 @@ chamsae is for a single user who wants to join the fediverse, but not want to ru
 
 ### Backend
 
-First, due to static-serving, you have to build frontend first.
+First, due to static-serving, you have to build frontend.
 
 ```shell
-cd frontend
 yarn build
 ```
 
@@ -71,7 +70,6 @@ You may need to run `sudo setcap cap_net_bind_service=+ep $(which caddy)` first.
 ### Frontend
 
 ```
-cd frontend
 yarn dev
 ```
 
