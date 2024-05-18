@@ -266,6 +266,13 @@ impl Post {
             .await
             .context_internal_server_error("failed to query database")?;
 
+        let local_files = post
+            .find_related(local_file::Entity)
+            .order_by_asc(local_file::Column::Order)
+            .all(db)
+            .await
+            .context_internal_server_error("failed to query database")?;
+
         let files = remote_files
             .into_iter()
             .filter_map(|file| {
@@ -275,6 +282,13 @@ impl Post {
                     alt: file.alt,
                 })
             })
+            .chain(local_files.into_iter().filter_map(|file| {
+                Some(File {
+                    media_type: file.media_type.parse().ok()?,
+                    url: file.url.parse().ok()?,
+                    alt: file.alt,
+                })
+            }))
             .collect::<Vec<_>>();
 
         let reactions = reaction::Entity::find()
