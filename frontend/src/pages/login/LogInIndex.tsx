@@ -1,15 +1,11 @@
 import { PlusIcon } from "@heroicons/react/24/outline";
-import { Fragment, useEffect } from "react";
+import { Fragment } from "react";
 
 import BottomNewChirp from "../../components/NewChirp/BottomNewChirp";
 import { useNotes } from "../../queries/note";
 
 export function LogInIndexPage() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useNotes();
-
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
 
   return (
     <div className="relative flex h-full w-full">
