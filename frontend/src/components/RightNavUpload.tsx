@@ -64,11 +64,13 @@ export default function RightNavUpload() {
               required
               {...register("files")}
             />
-            <div className="mb-4 flex h-[24rem] w-full items-center justify-center border border-solid">
+            <div className="size-full mb-4 flex items-center justify-center border border-solid">
               {imagePreview !== "" ? (
                 <img src={imagePreview} alt="uploaded image" />
               ) : (
-                <PhotoIcon width={48} height={48} stroke="#e6e6e6" />
+                <div className="flex h-[24rem] w-[24rem] items-center justify-center">
+                  <PhotoIcon width={48} height={48} stroke="#e6e6e6" />
+                </div>
               )}
             </div>
             <textarea
