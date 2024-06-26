@@ -1,18 +1,20 @@
 import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
+import { atom, useSetAtom } from "jotai";
 import { Fragment, useRef } from "react";
-import { useDispatch } from "react-redux";
 
 import { useLocalFiles } from "../../queries/file";
-import { storeUrl } from "../../slices/UrlSlice";
+
+export const pictureUrl = atom<string[]>([]);
 
 export default function BottomUpload() {
   const modalRef = useRef<HTMLDialogElement>(null);
-  const dispatch = useDispatch();
+  const setUrl = useSetAtom(pictureUrl);
 
   const { data } = useLocalFiles();
 
   const handlePictureClick = (url: string) => {
-    dispatch(storeUrl(url));
+    setUrl((el) => [...el, url]);
+
     modalRef?.current?.close();
   };
 
