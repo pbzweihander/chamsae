@@ -1,0 +1,11 @@
+{
+  "name": "chamsae",
+  "workspaces": [
+    "frontend"
+  ],
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && yarn dev",
+    "build": "cd frontend && yarn build"
+  }
+}

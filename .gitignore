@@ -15,5 +15,7 @@ target/
 
 # End of https://www.toptal.com/developers/gitignore/api/rust
 
+node_modules/
+
 .env
 files/
