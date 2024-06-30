@@ -6,8 +6,8 @@ import z from "zod";
 
 import { CreatePost } from "../../dto";
 import { usePostNoteMutation } from "../../queries/note";
+import { pictureUrl } from "../../states/states";
 import BottomUpload from "./BottomUpload";
-import { pictureUrl } from "./BottomUpload";
 
 export default function BottomNewChirp() {
   const { register, handleSubmit, setValue, reset } =
@@ -36,7 +36,7 @@ export default function BottomNewChirp() {
       el.substring(el.length - 26, el.length),
     );
     setValue("files", ulid);
-  }, [setValue, pictureUrlArr]);
+  }, [pictureUrlArr]);
 
   return (
     <>

@@ -1,10 +1,9 @@
 import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
-import { atom, useSetAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import { Fragment, useRef } from "react";
 
 import { useLocalFiles } from "../../queries/file";
-
-export const pictureUrl = atom<string[]>([]);
+import { pictureUrl } from "../../states/states";
 
 export default function BottomUpload() {
   const modalRef = useRef<HTMLDialogElement>(null);
