@@ -31,7 +31,11 @@ export function LogInIndexPage() {
                     )}
                   </div>
                 )}
-                <div className="chat-bubble">{note.text}</div>
+                <div className="chat-bubble">
+                  {note.files &&
+                    note.files.map((file) => <img src={file.url} />)}
+                  {note.text}
+                </div>
               </div>
             ))}
           </Fragment>
