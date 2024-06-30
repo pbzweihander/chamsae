@@ -57,7 +57,7 @@ export const Mention = z.object({
 });
 
 export const File = z.object({
-  id: Id,
+  //id: Id,
   mediaType: z.string(),
   url: z.string().url(),
   alt: z.string().nullish(),
