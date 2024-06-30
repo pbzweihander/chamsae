@@ -30,16 +30,22 @@ export default function BottomUpload() {
           {(data?.pages ?? []).map((page, i) => (
             <div key={i} className="flex">
               <Fragment>
-                {page.map((file) => (
-                  <div key={file.id}>
-                    <img
-                      src={file.url}
-                      alt={file.alt ?? undefined}
-                      className="cursor-pointer rounded-lg border border-solid hover:shadow-lg"
-                      onClick={() => handlePictureClick(file.url)}
-                    />
+                {page.length !== 0 ? (
+                  <div>
+                    {page.map((file) => (
+                      <div key={file.id}>
+                        <img
+                          src={file.url}
+                          alt={file.alt ?? undefined}
+                          className="cursor-pointer rounded-lg border border-solid hover:shadow-lg"
+                          onClick={() => handlePictureClick(file.url)}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <span>no items</span>
+                )}
               </Fragment>
             </div>
           ))}
