@@ -31,9 +31,9 @@ export default function BottomUpload() {
             <div key={i} className="flex">
               <Fragment>
                 {page.length !== 0 ? (
-                  <div>
+                  <div className="grid grid-cols-3 gap-4">
                     {page.map((file) => (
-                      <div key={file.id}>
+                      <div key={file.id} className="h-48 w-48">
                         <img
                           src={file.url}
                           alt={file.alt ?? undefined}
