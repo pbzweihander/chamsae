@@ -1,6 +1,7 @@
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { Fragment } from "react";
 
+import Images from "../../components/Images";
 import BottomNewChirp from "../../components/NewChirp/BottomNewChirp";
 import { useNotes } from "../../queries/note";
 
@@ -32,8 +33,7 @@ export function LogInIndexPage() {
                   </div>
                 )}
                 <div className="chat-bubble">
-                  {note.files &&
-                    note.files.map((file) => <img src={file.url} />)}
+                  <Images files={note.files} />
                   {note.text}
                 </div>
               </div>
