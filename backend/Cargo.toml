@@ -4,14 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-activitypub_federation = { version = "0.5.6", default-features = false, features = [
-    "axum",
-] }
-anyhow = { version = "1.0.83", features = ["backtrace"] }
+activitypub_federation = { version = "0.5.8", default-features = false, features = ["axum"] }
+anyhow = { version = "1.0.86", features = ["backtrace"] }
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.3.0"
 async-stream = "0.3.5"
-async-trait = "0.1.80"
+async-trait = "0.1.81"
 axum = { version = "0.6.20", features = ["headers"] }
 axum-client-ip = "0.4.2"
 axum-extra = { version = "0.8.0", features = ["async-read-body"] }
@@ -22,26 +20,26 @@ dotenvy = "0.15.7"
 enum_delegate = "0.2.0"
 envy = "0.4.2"
 futures-util = "0.3.30"
-include_dir = "0.7.3"
+include_dir = "0.7.4"
 migration = { version = "0.1.0", path = "../migration" }
 mime = "0.3.17"
-mime_guess = "2.0.4"
+mime_guess = "2.0.5"
 mime_serde_shim = "0.2.2"
-object_store = { version = "0.10.0", features = ["aws"] }
+object_store = { version = "0.10.2", features = ["aws"] }
 once_cell = "1.19.0"
-reqwest = { version = "0.11.27", features = ["json"] }
+reqwest = { version = "0.11.27", default-features = false, features = ["json", "rustls-tls"] }
 sea-orm = { version = "0.12.15", features = [
     "sqlx-postgres",
-    "runtime-tokio-native-tls",
+    "runtime-tokio-rustls",
     "macros",
     "sea-orm-internal",
 ] }
-serde = { version = "1.0.201", features = ["derive"] }
-serde_json = "1.0.117"
+serde = { version = "1.0.204", features = ["derive"] }
+serde_json = "1.0.120"
 sqlx = { version = "0.7.4", features = ["postgres"] }
 sqlx-postgres = "0.7.4"
-stopper = "0.2.7"
-tokio = { version = "1.37.0", features = [
+stopper = "0.2.8"
+tokio = { version = "1.39.1", features = [
     "rt-multi-thread",
     "macros",
     "signal",
@@ -52,8 +50,8 @@ tower-http = { version = "0.4.4", features = ["trace"] }
 tracing = { version = "0.1.40", features = ["log"] }
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
-ulid = { version = "1.1.2", features = ["serde", "uuid"] }
-url = { version = "2.5.0", features = ["serde"] }
+ulid = { version = "1.1.3", features = ["serde", "uuid"] }
+url = { version = "2.5.2", features = ["serde"] }
 utoipa = { version = "4.2.3", features = ["axum_extras", "chrono"] }
 utoipa-redoc = { version = "1.0.0", features = ["axum"] }
-uuid = { version = "1.8.0", features = ["serde", "v4"] }
+uuid = { version = "1.10.0", features = ["serde", "v4"] }

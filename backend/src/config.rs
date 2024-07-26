@@ -59,6 +59,7 @@ pub enum ObjectStoreConfig {
     /// - `AWS_SESSION_TOKEN`
     /// - `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`
     /// - `AWS_ALLOW_HTTP`
+    ///
     /// Reference: https://docs.rs/object_store/latest/object_store/aws/struct.AmazonS3Builder.html#method.from_env
     S3(ObjectStorageS3Config),
     LocalFilesystem(ObjectStorageLocalFilesystemConfig),
