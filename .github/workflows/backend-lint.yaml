@@ -18,7 +18,7 @@ jobs:
     - name: Add fake frontend
       run: |
         mkdir -p frontend/dist/assets
-        touch frontend/dist/index.html
+        cp frontend/index.html frontend/dist/index.html
     - name: Check clippy
       run: |
         cargo clippy --no-deps --all-targets -- -D warnings
