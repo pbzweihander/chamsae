@@ -1,10 +1,9 @@
 name: frontend-build
-run-name: "Frontend: build"
 
 on:
   push:
     branches:
-      - main
+    - main
   pull_request:
 
 jobs:
@@ -12,16 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     container: node:20
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: node_modules
           key: frontend-yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: |
             frontend-yarn-${{ runner.os }}-
       - name: Install dependencies
-        working-directory: frontend
-        run: yarn --immutable
+        run: yarn install --fronzen-lockfile
       - name: Build
-        working-directory: frontend
         run: yarn build

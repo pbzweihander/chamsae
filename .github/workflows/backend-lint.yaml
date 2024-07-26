@@ -1,24 +1,24 @@
 name: backend-lint
-run-name: "Backend: lint"
 
 on:
   push:
     branches:
-      - main
+    - main
   pull_request:
 
 jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --no-deps --all-targets -- -D warnings
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+    - uses: actions/checkout@v4
+    - uses: Swatinem/rust-cache@v2
+    - name: Add fake frontend
+      run: |
+        mkdir -p frontend/dist
+        touch frontend/dist/index.html
+    - name: Check clippy
+      run: |
+        cargo clippy --no-deps --all-targets -- -D warnings

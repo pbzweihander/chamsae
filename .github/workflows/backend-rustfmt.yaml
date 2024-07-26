@@ -1,24 +1,19 @@
 name: backend-format
-run-name: "Backend: format"
 
 on:
   push:
     branches:
-      - main
+    - main
   pull_request:
 
 jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: rustfmt
-      - name: Check rustfmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: -- --check
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - uses: actions/checkout@v4
+    - name: Check rustfmt
+      run: |
+        cargo fmt -- --check

@@ -1,10 +1,9 @@
 name: frontend-format
-run-name: "Frontend: format"
 
 on:
   push:
     branches:
-      - main
+    - main
   pull_request:
 
 jobs:
@@ -12,16 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     container: node:20
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
-        with:
-          path: node_modules
-          key: frontend-yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            frontend-yarn-${{ runner.os }}-
-      - name: Install dependencies
-        working-directory: frontend
-        run: yarn --immutable
-      - name: Check formatting
-        working-directory: frontend
-        run: yarn prettier:check
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: frontend-yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          frontend-yarn-${{ runner.os }}-
+    - name: Install dependencies
+      run: yarn install --fronzen-lockfile
+    - name: Check formatting
+      run: yarn prettier:check
