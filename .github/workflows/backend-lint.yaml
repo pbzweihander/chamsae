@@ -17,7 +17,7 @@ jobs:
     - uses: Swatinem/rust-cache@v2
     - name: Add fake frontend
       run: |
-        mkdir -p frontend/dist
+        mkdir -p frontend/dist/assets
         touch frontend/dist/index.html
     - name: Check clippy
       run: |
