@@ -36,7 +36,7 @@ export default function BottomNewChirp() {
       el.substring(el.length - 26, el.length),
     );
     setValue("files", ulid);
-  }, [pictureUrlArr]);
+  }, [pictureUrlArr, setValue]);
 
   return (
     <>
