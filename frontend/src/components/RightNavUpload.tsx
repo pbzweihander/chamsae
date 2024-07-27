@@ -64,7 +64,7 @@ export default function RightNavUpload() {
               required
               {...register("files")}
             />
-            <div className="size-full mb-4 flex items-center justify-center border border-solid">
+            <div className="mb-4 flex size-full items-center justify-center border border-solid">
               {imagePreview !== "" ? (
                 <img src={imagePreview} alt="uploaded image" />
               ) : (
