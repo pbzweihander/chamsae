@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-//import "./Images.css";
-
 interface propsType {
   files: {
     url: string;

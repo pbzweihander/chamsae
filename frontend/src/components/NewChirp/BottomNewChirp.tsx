@@ -46,12 +46,6 @@ export default function BottomNewChirp() {
       >
         <input type="hidden" value="public" {...register("visibility")} />
         <div className="chat-bubble chat-bubble-primary">
-          {/*           <textarea
-      className="textarea w-full resize-y bg-transparent text-base-content"
-      placeholder="Jot something..."
-      required
-      {...register("text")}
-    /> */}
           <div className="flex items-center">
             <BottomUpload />
             <div>
