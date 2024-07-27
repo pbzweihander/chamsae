@@ -1,11 +1,10 @@
 import { useState } from "react";
+import z from "zod";
+
+import { File } from "../dto";
 
 interface propsType {
-  files: {
-    url: string;
-    mediaType: string;
-    alt?: string | null | undefined;
-  }[];
+  files: z.infer<typeof File>[];
 }
 
 const Images = ({ files }: propsType) => {
