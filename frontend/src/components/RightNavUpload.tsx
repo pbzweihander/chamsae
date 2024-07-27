@@ -1,5 +1,5 @@
-import { PlusIcon } from "@heroicons/react/24/outline";
-import { useRef } from "react";
+import { PlusIcon, PhotoIcon } from "@heroicons/react/24/outline";
+import { useEffect, useRef, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
 import { useLocalFileUploadMutation } from "../queries/file";
@@ -13,7 +13,8 @@ interface UploadForm {
 
 export default function RightNavUpload() {
   const modalRef = useRef<HTMLDialogElement>(null);
-  const { register, handleSubmit, reset } = useForm<UploadForm>();
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const { register, handleSubmit, reset, watch } = useForm<UploadForm>();
   const {
     mutate: upload,
     isLoading,
@@ -22,6 +23,7 @@ export default function RightNavUpload() {
     reset();
     modalRef.current?.close();
   });
+  const image = watch("files");
 
   const onSubmit: SubmitHandler<UploadForm> = (data) => {
     if (!data.files) {
@@ -31,6 +33,15 @@ export default function RightNavUpload() {
 
     upload({ file, mediaType: file.type, alt: data.alt });
   };
+
+  useEffect(() => {
+    if (image && image.length > 0) {
+      const file = image[0];
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      setImagePreview("");
+    }
+  }, [image]);
 
   return (
     <>
@@ -53,6 +64,15 @@ export default function RightNavUpload() {
               required
               {...register("files")}
             />
+            <div className="mb-4 flex size-full items-center justify-center border border-solid">
+              {imagePreview !== "" ? (
+                <img src={imagePreview} alt="uploaded image" />
+              ) : (
+                <div className="flex h-[24rem] w-[24rem] items-center justify-center">
+                  <PhotoIcon width={48} height={48} stroke="#e6e6e6" />
+                </div>
+              )}
+            </div>
             <textarea
               className="textarea textarea-bordered mb-4 w-full"
               placeholder="Alt text..."
