@@ -88,55 +88,55 @@ where
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub trait AddContext<T> {
-    fn context<C>(self, context: C) -> Result<T>
-    where
-        C: fmt::Display + Send + Sync + 'static;
+// pub trait AddContext<T> {
+//     fn context<C>(self, context: C) -> Result<T>
+//     where
+//         C: fmt::Display + Send + Sync + 'static;
 
-    fn with_context<C, F>(self, f: F) -> Result<T>
-    where
-        C: fmt::Display + Send + Sync + 'static,
-        F: FnOnce() -> C;
-}
+//     fn with_context<C, F>(self, f: F) -> Result<T>
+//     where
+//         C: fmt::Display + Send + Sync + 'static,
+//         F: FnOnce() -> C;
+// }
 
-impl<T> AddContext<T> for Result<T> {
-    fn context<C>(self, context: C) -> Result<T>
-    where
-        C: fmt::Display + Send + Sync + 'static,
-    {
-        match self {
-            Err(mut error) => {
-                error.inner = error.inner.context(context);
-                Err(error)
-            }
-            ok => ok,
-        }
-    }
+// impl<T> AddContext<T> for Result<T> {
+//     fn context<C>(self, context: C) -> Result<T>
+//     where
+//         C: fmt::Display + Send + Sync + 'static,
+//     {
+//         match self {
+//             Err(mut error) => {
+//                 error.inner = error.inner.context(context);
+//                 Err(error)
+//             }
+//             ok => ok,
+//         }
+//     }
 
-    fn with_context<C, F>(self, f: F) -> Result<T>
-    where
-        C: fmt::Display + Send + Sync + 'static,
-        F: FnOnce() -> C,
-    {
-        match self {
-            Err(mut error) => {
-                error.inner = error.inner.context(f());
-                Err(error)
-            }
-            ok => ok,
-        }
-    }
-}
+//     fn with_context<C, F>(self, f: F) -> Result<T>
+//     where
+//         C: fmt::Display + Send + Sync + 'static,
+//         F: FnOnce() -> C,
+//     {
+//         match self {
+//             Err(mut error) => {
+//                 error.inner = error.inner.context(f());
+//                 Err(error)
+//             }
+//             ok => ok,
+//         }
+//     }
+// }
 
 pub trait Context<T> {
     fn context<C>(self, context: C, status_code: StatusCode) -> Result<T>
     where
         C: fmt::Display + fmt::Debug + Send + Sync + 'static;
 
-    fn with_context<C, F>(self, f: F) -> Result<T>
-    where
-        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
-        F: FnOnce() -> (C, StatusCode);
+    // fn with_context<C, F>(self, f: F) -> Result<T>
+    // where
+    //     C: fmt::Display + fmt::Debug + Send + Sync + 'static,
+    //     F: FnOnce() -> (C, StatusCode);
 
     fn context_bad_request<C>(self, context: C) -> Result<T>
     where
@@ -188,20 +188,20 @@ where
         }
     }
 
-    fn with_context<C, F>(self, f: F) -> Result<T>
-    where
-        C: fmt::Display + Send + Sync + 'static,
-        F: FnOnce() -> (C, StatusCode),
-    {
-        match self {
-            Ok(ok) => Ok(ok),
-            Err(error) => {
-                let (context, status_code) = f();
-                let inner = anyhow::Error::new(error).context(context);
-                Err(Error::from_anyhow(status_code, inner))
-            }
-        }
-    }
+    // fn with_context<C, F>(self, f: F) -> Result<T>
+    // where
+    //     C: fmt::Display + Send + Sync + 'static,
+    //     F: FnOnce() -> (C, StatusCode),
+    // {
+    //     match self {
+    //         Ok(ok) => Ok(ok),
+    //         Err(error) => {
+    //             let (context, status_code) = f();
+    //             let inner = anyhow::Error::new(error).context(context);
+    //             Err(Error::from_anyhow(status_code, inner))
+    //         }
+    //     }
+    // }
 }
 
 impl<T> Context<T> for std::option::Option<T> {
@@ -215,19 +215,19 @@ impl<T> Context<T> for std::option::Option<T> {
         }
     }
 
-    fn with_context<C, F>(self, f: F) -> Result<T>
-    where
-        C: fmt::Display + fmt::Debug + Send + Sync + 'static,
-        F: FnOnce() -> (C, StatusCode),
-    {
-        match self {
-            Some(ok) => Ok(ok),
-            None => {
-                let (context, status_code) = f();
-                Err(Error::new(status_code, context))
-            }
-        }
-    }
+    // fn with_context<C, F>(self, f: F) -> Result<T>
+    // where
+    //     C: fmt::Display + fmt::Debug + Send + Sync + 'static,
+    //     F: FnOnce() -> (C, StatusCode),
+    // {
+    //     match self {
+    //         Some(ok) => Ok(ok),
+    //         None => {
+    //             let (context, status_code) = f();
+    //             Err(Error::new(status_code, context))
+    //         }
+    //     }
+    // }
 }
 
 #[macro_export]
