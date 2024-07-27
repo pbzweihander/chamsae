@@ -4,7 +4,7 @@ interface propsType {
   files: {
     url: string;
     mediaType: string;
-    alt?: string | null | undefined;
+    alt?: string;
   }[];
 }
 
