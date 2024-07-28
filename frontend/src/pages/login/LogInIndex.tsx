@@ -1,8 +1,8 @@
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { Fragment } from "react";
 
+import BottomNewChirp from "../../components/BottomNewChirp";
 import Images from "../../components/Images";
-import BottomNewChirp from "../../components/NewChirp/BottomNewChirp";
 import { useNotes } from "../../queries/note";
 
 export function LogInIndexPage() {

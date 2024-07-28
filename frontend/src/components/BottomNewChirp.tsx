@@ -1,15 +1,26 @@
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
 
-import { CreatePost } from "../../dto";
-import { usePostNoteMutation } from "../../queries/note";
-import { pictureUrl } from "../../states/states";
-import BottomUpload from "./BottomUpload";
+import { CreatePost } from "../dto";
+import { useLocalFiles } from "../queries/file";
+import { usePostNoteMutation } from "../queries/note";
+import { pictureUrl } from "../states/states";
 
 export default function BottomNewChirp() {
+  const modalRef = useRef<HTMLDialogElement>(null);
+  const setUrl = useSetAtom(pictureUrl);
+
+  const { data: localFiles } = useLocalFiles();
+
+  const handlePictureClick = (url: string) => {
+    setUrl((el) => [...el, url]);
+
+    modalRef?.current?.close();
+  };
+
   const { register, handleSubmit, setValue, reset } =
     useForm<z.infer<typeof CreatePost>>();
   const {
@@ -47,7 +58,12 @@ export default function BottomNewChirp() {
         <input type="hidden" value="public" {...register("visibility")} />
         <div className="chat-bubble chat-bubble-primary">
           <div className="flex items-center">
-            <BottomUpload />
+            <button
+              onClick={() => modalRef?.current?.showModal()}
+              className="btn btn-ghost btn-sm mr-2"
+            >
+              <ArrowUpTrayIcon width={24} height={24} />
+            </button>
             <div>
               {pictureUrlArr.length > 0 && (
                 <div>
@@ -74,7 +90,6 @@ export default function BottomNewChirp() {
                   ))}
                 </div>
               )}
-
               <input
                 type="text"
                 className="input w-full bg-transparent"
@@ -95,6 +110,35 @@ export default function BottomNewChirp() {
         </div>
         {error && <div className="mt-5 text-error">{error.message}</div>}
       </form>
+      <dialog ref={modalRef} className="modal">
+        <div className="modal-box max-w-screen-xl">
+          {(localFiles?.pages ?? []).map((page, i) => (
+            <div key={i} className="flex">
+              <>
+                {page.length !== 0 ? (
+                  <div className="grid grid-cols-3 gap-4">
+                    {page.map((file) => (
+                      <div key={file.id} className="h-48 w-48">
+                        <img
+                          src={file.url}
+                          alt={file.alt ?? undefined}
+                          className="cursor-pointer rounded-lg border border-solid hover:shadow-lg"
+                          onClick={() => handlePictureClick(file.url)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span>no items</span>
+                )}
+              </>
+            </div>
+          ))}
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
     </>
   );
 }
