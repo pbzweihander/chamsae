@@ -30,34 +30,12 @@ yarn build
 
 For the environment variables, you can use `.env` file.
 
-#### Example: Using local filesystem as object store
-
 ```shell
 DEBUG=true \
   PUBLIC_DOMAIN=localhost \
   DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
-  OBJECT_STORE_TYPE=local_filesystem \
-  OBJECT_STORE_LOCAL_FILE_BASE_PATH=./files/ \
   cargo run --bin chamsae
 ```
-
-#### Example: Using CloudFlare R2 as object store
-
-```shell
-DEBUG=true \
-  PUBLIC_DOMAIN=localhost \
-  DATABASE_URL=postgresql://postgres:postgres@localhost:5432 \
-  OBJECT_STORE_TYPE=s3 \
-  OBJECT_STORE_BUCKET=bucket \
-  OBJECT_STORE_PUBLIC_URL_BASE=https://example.com/bucket \
-  AWS_DEFAULT_REGION=auto \
-  AWS_ENDPOINT=https://{account_id}.r2.cloudflarestorage.com \
-  AWS_ACCESS_KEY_ID={access_key} \
-  AWS_SECRET_ACCESS_KEY={secret_key} \
-  cargo run --bin chamsae
-```
-
-You can also use other S3-compatible object stores.
 
 #### Serve HTTPS with caddy for debugging
 
