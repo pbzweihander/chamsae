@@ -3,7 +3,7 @@ import z from "zod";
 
 import { useJsonQuery } from ".";
 import { useJsonMutation, type JsonMutationRet } from ".";
-import { Setting } from "../dto";
+import { ObjectStoreType, Setting } from "../dto";
 
 const SETTING_KEY = ["setting"];
 
@@ -39,6 +39,10 @@ export interface PutSettingReq {
   maintainerName?: string;
   maintainerEmail?: string;
   themeColor?: string;
+  objectStoreType?: z.infer<typeof ObjectStoreType>;
+  objectStoreS3Bucket?: string;
+  objectStoreS3PublicUrlBase?: string;
+  objectStoreLocalFileSystemBasePath?: string;
 }
 
 export function usePutSettingMutation(): JsonMutationRet<

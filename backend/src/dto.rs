@@ -106,6 +106,31 @@ pub enum Visibility {
     DirectMessage,
 }
 
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ObjectStoreType {
+    S3,
+    LocalFileSystem,
+}
+
+impl From<ObjectStoreType> for sea_orm_active_enums::ObjectStoreType {
+    fn from(value: ObjectStoreType) -> Self {
+        match value {
+            ObjectStoreType::S3 => Self::S3,
+            ObjectStoreType::LocalFileSystem => Self::LocalFileSystem,
+        }
+    }
+}
+
+impl From<sea_orm_active_enums::ObjectStoreType> for ObjectStoreType {
+    fn from(value: sea_orm_active_enums::ObjectStoreType) -> Self {
+        match value {
+            sea_orm_active_enums::ObjectStoreType::S3 => Self::S3,
+            sea_orm_active_enums::ObjectStoreType::LocalFileSystem => Self::LocalFileSystem,
+        }
+    }
+}
+
 #[derive(Derivative, Deserialize, Serialize, ToSchema)]
 #[derivative(Debug)]
 #[serde(rename_all = "camelCase")]
@@ -523,6 +548,11 @@ pub struct Setting {
     pub maintainer_name: Option<String>,
     pub maintainer_email: Option<String>,
     pub theme_color: Option<String>,
+    pub object_store_type: Option<ObjectStoreType>,
+    pub object_store_s3_bucket: Option<String>,
+    #[schema(value_type = Option<String>, format = "url")]
+    pub object_store_s3_public_url_base: Option<String>,
+    pub object_store_local_file_system_base_path: Option<String>,
 }
 
 impl Setting {
@@ -538,6 +568,11 @@ impl Setting {
             maintainer_name: setting.maintainer_name,
             maintainer_email: setting.maintainer_email,
             theme_color: setting.theme_color,
+            object_store_type: setting.object_store_type.map(Into::into),
+            object_store_s3_bucket: setting.object_store_s3_bucket,
+            object_store_s3_public_url_base: setting.object_store_s3_public_url_base,
+            object_store_local_file_system_base_path: setting
+                .object_store_local_file_system_base_path,
         }
     }
 }

@@ -19,6 +19,13 @@ export default function RightNavSetting({
       instanceDescription: setting?.instanceDescription ?? undefined,
       maintainerName: setting?.maintainerName ?? undefined,
       maintainerEmail: setting?.maintainerEmail ?? undefined,
+      themeColor: setting?.themeColor ?? undefined,
+      objectStoreType: setting?.objectStoreType ?? undefined,
+      objectStoreS3Bucket: setting?.objectStoreS3Bucket ?? undefined,
+      objectStoreS3PublicUrlBase:
+        setting?.objectStoreS3PublicUrlBase ?? undefined,
+      objectStoreLocalFileSystemBasePath:
+        setting?.objectStoreLocalFileSystemBasePath ?? undefined,
     },
   });
   const { mutate: putSetting, isLoading, error } = usePutSettingMutation();
@@ -69,6 +76,47 @@ export default function RightNavSetting({
               type="email"
               className="input input-bordered w-full"
               {...register("maintainerEmail")}
+            />
+            <label className="label label-text">Object store type</label>
+            <label className="label cursor-pointer">
+              <span className="label-text">Local filesystem</span>
+              <input
+                type="radio"
+                className="radio"
+                value="localFileSystem"
+                {...register("objectStoreType")}
+              />
+            </label>
+            <label className="label cursor-pointer">
+              <span className="label-text">S3</span>
+              <input
+                type="radio"
+                className="radio"
+                value="s3"
+                {...register("objectStoreType")}
+              />
+            </label>
+            <label className="label label-text">Object store S3 bucket</label>
+            <input
+              type="text"
+              className="input input-bordered w-full"
+              {...register("objectStoreS3Bucket")}
+            />
+            <label className="label label-text">
+              Object store S3 public URL base
+            </label>
+            <input
+              type="text"
+              className="input input-bordered w-full"
+              {...register("objectStoreS3PublicUrlBase")}
+            />
+            <label className="label label-text">
+              Object store local filesystem base path
+            </label>
+            <input
+              type="text"
+              className="input input-bordered w-full"
+              {...register("objectStoreLocalFileSystemBasePath")}
             />
             <input
               type="submit"

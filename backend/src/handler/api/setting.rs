@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use crate::{
     ap::person::PersonUpdate,
-    dto::Setting,
+    dto::{self, Setting},
     entity::{local_file, setting},
     error::{Context, Result},
     format_err,
@@ -89,6 +89,15 @@ pub struct PutSettingReq {
     pub maintainer_email: Option<String>,
     #[serde(default)]
     pub theme_color: Option<String>,
+    #[serde(default)]
+    pub object_store_type: Option<dto::ObjectStoreType>,
+    #[serde(default)]
+    pub object_store_s3_bucket: Option<String>,
+    #[schema(value_type = Option<String>, format = "url")]
+    #[serde(default)]
+    pub object_store_s3_public_url_base: Option<String>,
+    #[serde(default)]
+    pub object_store_local_file_system_base_path: Option<String>,
 }
 
 #[utoipa::path(
@@ -112,13 +121,19 @@ async fn put_setting(
 
     let mut setting_activemodel: setting::ActiveModel = setting.into();
     if let Some(v) = req.user_name {
-        setting_activemodel.user_name = ActiveValue::Set(Some(v));
+        if !v.is_empty() {
+            setting_activemodel.user_name = ActiveValue::Set(Some(v));
+        }
     }
     if let Some(v) = req.user_description {
-        setting_activemodel.user_description = ActiveValue::Set(Some(v));
+        if !v.is_empty() {
+            setting_activemodel.user_description = ActiveValue::Set(Some(v));
+        }
     }
     if let Some(v) = req.instance_description {
-        setting_activemodel.instance_description = ActiveValue::Set(Some(v));
+        if !v.is_empty() {
+            setting_activemodel.instance_description = ActiveValue::Set(Some(v));
+        }
     }
     if let Some(v) = req.avatar_file_id {
         setting_activemodel.avatar_file_id = ActiveValue::Set(Some(v.into()));
@@ -127,13 +142,38 @@ async fn put_setting(
         setting_activemodel.banner_file_id = ActiveValue::Set(Some(v.into()));
     }
     if let Some(v) = req.maintainer_name {
-        setting_activemodel.maintainer_name = ActiveValue::Set(Some(v));
+        if !v.is_empty() {
+            setting_activemodel.maintainer_name = ActiveValue::Set(Some(v));
+        }
     }
     if let Some(v) = req.maintainer_email {
-        setting_activemodel.maintainer_email = ActiveValue::Set(Some(v));
+        if !v.is_empty() {
+            setting_activemodel.maintainer_email = ActiveValue::Set(Some(v));
+        }
     }
     if let Some(v) = req.theme_color {
-        setting_activemodel.theme_color = ActiveValue::Set(Some(v));
+        if !v.is_empty() {
+            setting_activemodel.theme_color = ActiveValue::Set(Some(v));
+        }
+    }
+    if let Some(v) = req.object_store_type {
+        setting_activemodel.object_store_type = ActiveValue::Set(Some(v.into()));
+    }
+    if let Some(v) = req.object_store_s3_bucket {
+        if !v.is_empty() {
+            setting_activemodel.object_store_s3_bucket = ActiveValue::Set(Some(v));
+        }
+    }
+    if let Some(v) = req.object_store_s3_public_url_base {
+        if !v.is_empty() {
+            setting_activemodel.object_store_s3_public_url_base = ActiveValue::Set(Some(v));
+        }
+    }
+    if let Some(v) = req.object_store_local_file_system_base_path {
+        if !v.is_empty() {
+            setting_activemodel.object_store_local_file_system_base_path =
+                ActiveValue::Set(Some(v));
+        }
     }
 
     let tx = data

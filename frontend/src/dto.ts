@@ -51,6 +51,8 @@ export const Visibility = z.enum([
   "directMessage",
 ]);
 
+export const ObjectStoreType = z.enum(["s3", "localFileSystem"]);
+
 export const Mention = z.object({
   userUri: z.string().url(),
   name: z.string(),
@@ -158,6 +160,10 @@ export const Setting = z.object({
   maintainerName: z.string().nullish(),
   maintainerEmail: z.string().nullish(),
   themeColor: z.string().nullish(),
+  objectStoreType: ObjectStoreType.nullish(),
+  objectStoreS3Bucket: z.string().nullish(),
+  objectStoreS3PublicUrlBase: z.string().url().nullish(),
+  objectStoreLocalFileSystemBasePath: z.string().nullish(),
 });
 
 export const Object = z.union([User, Post]);
