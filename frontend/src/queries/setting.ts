@@ -15,6 +15,7 @@ export interface InitializeSettingReq {
   instanceName: string;
   userHandle: string;
   userPassword: string;
+  objectStoreLocalFileSystemBasePath: string;
 }
 
 export function useInitializeSettingMutation(): JsonMutationRet<
@@ -22,7 +23,7 @@ export function useInitializeSettingMutation(): JsonMutationRet<
   z.ZodVoid
 > {
   const queryClient = useQueryClient();
-  return useJsonMutation("POST", "/api/setting/initial", z.void(), {
+  return useJsonMutation("POST", "/api/setting", z.void(), {
     onSuccess: () => {
       queryClient.invalidateQueries(SETTING_KEY);
     },

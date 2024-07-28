@@ -74,7 +74,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(Iden)]
-enum ObjectStoreType {
+pub enum ObjectStoreType {
     Table,
     S3,
     LocalFileSystem,

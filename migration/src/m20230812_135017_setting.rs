@@ -79,4 +79,8 @@ pub enum Setting {
     MaintainerEmail,
     ThemeColor,
     UserDescription,
+    ObjectStoreType,
+    ObjectStoreS3Bucket,
+    ObjectStoreS3PublicUrlBase,
+    ObjectStoreLocalFileSystemBasePath,
 }

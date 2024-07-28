@@ -5,7 +5,7 @@ use sea_orm::{
 use ulid::Ulid;
 
 use crate::{
-    entity::setting,
+    entity::{sea_orm_active_enums::ObjectStoreType, setting},
     error::{Context, Error},
     format_err,
 };
@@ -15,6 +15,7 @@ impl setting::Model {
         instance_name: String,
         user_handle: String,
         user_password: String,
+        object_store_local_file_system_base_path: String,
         db: &impl TransactionTrait,
     ) -> Result<Self, Error> {
         let tx = db
@@ -43,6 +44,10 @@ impl setting::Model {
             user_password_hash: ActiveValue::Set(user_password_hash),
             user_public_key: ActiveValue::Set(keypair.public_key),
             user_private_key: ActiveValue::Set(keypair.private_key),
+            object_store_type: ActiveValue::Set(Some(ObjectStoreType::LocalFileSystem)),
+            object_store_local_file_system_base_path: ActiveValue::Set(Some(
+                object_store_local_file_system_base_path,
+            )),
             ..Default::default()
         };
         let setting = setting_activemodel

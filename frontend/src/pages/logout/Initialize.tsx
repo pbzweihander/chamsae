@@ -46,6 +46,14 @@ export default function InitializePage() {
             autoComplete="new-password"
             {...register("userPassword")}
           />
+          <label className="label label-text">Object store local file system base path</label>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            placeholder="./files/"
+            required
+            {...register("objectStoreLocalFileSystemBasePath")}
+          />
           <input
             type="submit"
             className="btn btn-primary mt-4"

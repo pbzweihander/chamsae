@@ -4,9 +4,9 @@ use sea_orm::{ActiveModelTrait, ActiveValue, ConnectionTrait, ModelTrait};
 use ulid::Ulid;
 
 use crate::{
-    entity::{local_file, sea_orm_active_enums},
+    entity::{local_file, sea_orm_active_enums, setting},
     error::{Context, Result},
-    object_store::OBJECT_STORE,
+    object_store::ObjectStore,
 };
 
 impl local_file::Model {
@@ -19,8 +19,11 @@ impl local_file::Model {
     ) -> Result<Self> {
         let id = Ulid::new();
 
+        let setting = setting::Model::get(db).await?;
+        let object_store = ObjectStore::from_setting(&setting)?;
+
         let (object_store_key, object_store_type, url) =
-            OBJECT_STORE.put(&id.to_string(), data).await?;
+            object_store.put(&id.to_string(), data).await?;
 
         let this_activemodel = local_file::ActiveModel {
             id: ActiveValue::Set(id.into()),
@@ -81,7 +84,10 @@ impl local_file::Model {
 
     #[tracing::instrument(skip(db))]
     pub async fn delete(self, db: &impl ConnectionTrait) -> Result<()> {
-        OBJECT_STORE
+        let setting = setting::Model::get(db).await?;
+        let object_store = ObjectStore::from_setting(&setting)?;
+
+        object_store
             .delete(&self.object_store_key, &self.object_store_type)
             .await?;
 

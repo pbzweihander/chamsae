@@ -64,8 +64,8 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         self::api::resolve::get_resolve_user,
         self::api::resolve::get_resolve_link,
         self::api::setting::get_setting,
+        self::api::setting::post_setting,
         self::api::setting::put_setting,
-        self::api::setting::post_initial_setting,
     ),
     components(schemas(
         crate::dto::IdResponse,
@@ -96,8 +96,8 @@ async fn server_header_middleware<B>(req: Request<B>, next: Next<B>) -> Response
         crate::queue::NotificationType,
         self::api::auth::PostLoginReq,
         self::api::auth::PostLoginResp,
+        self::api::setting::PostSettingReq,
         self::api::setting::PutSettingReq,
-        self::api::setting::PostInitialSettingReq,
     )),
     modifiers(&AccessKeyAddon),
 )]

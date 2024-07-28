@@ -19,6 +19,7 @@ mod m20230813_081932_object_store_type;
 mod m20230814_150734_repost;
 mod m20230815_033104_notification;
 mod m20230824_155814_post_source;
+mod m20240728_175258_settings_object_store;
 
 pub struct Migrator;
 
@@ -45,6 +46,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20230814_150734_repost::Migration),
             Box::new(m20230815_033104_notification::Migration),
             Box::new(m20230824_155814_post_source::Migration),
+            Box::new(m20240728_175258_settings_object_store::Migration),
         ]
     }
 }
