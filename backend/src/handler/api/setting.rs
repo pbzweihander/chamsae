@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use crate::{
     ap::person::PersonUpdate,
-    dto::{self, Setting},
+    dto::{ObjectStoreType, Setting},
     entity::{local_file, setting},
     error::{Context, Result},
     format_err,
@@ -90,7 +90,7 @@ pub struct PutSettingReq {
     #[serde(default)]
     pub theme_color: Option<String>,
     #[serde(default)]
-    pub object_store_type: Option<dto::ObjectStoreType>,
+    pub object_store_type: Option<ObjectStoreType>,
     #[serde(default)]
     pub object_store_s3_bucket: Option<String>,
     #[schema(value_type = Option<String>, format = "url")]
