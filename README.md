@@ -4,6 +4,10 @@
 chamsae is for a single user who wants to join the fediverse, but not want to run a massive software.
 [_chamsae_ means an Eurasian tree sparrow.](https://en.wikipedia.org/wiki/Eurasian_tree_sparrow)
 
+## How to pronounce chamsae?
+
+In Korean, it is written as '참새'. pronounced `/chɑm-sæ/`, like "charm-sae"
+
 ## Features
 
 - ~~Mastodon or Misskey like microblogging service~~ TODO
