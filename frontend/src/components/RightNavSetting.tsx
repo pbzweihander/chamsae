@@ -32,6 +32,7 @@ export default function RightNavSetting({
 
   const onSubmit: SubmitHandler<PutSettingReq> = (data) => {
     putSetting(data);
+    modalRef.current?.close();
   };
 
   return (
